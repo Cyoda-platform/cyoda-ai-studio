@@ -85,16 +85,20 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir pipx virtualenv poetry && \
     pipx ensurepath
 
-# Copy requirements first (for better caching)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy project files for installation
+COPY pyproject.toml .
+COPY MANIFEST.in .
+COPY cyoda_mcp ./cyoda_mcp
+COPY application ./application
+COPY common ./common
+COPY services ./services
+
+# Install the package in editable mode (same as local development)
+RUN pip install -e .
 
 # Create non-root user
 RUN useradd -m -s /bin/bash appuser && \
     echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-# Copy application code
-COPY . .
 
 # Set ownership and permissions efficiently
 RUN chown -R appuser:appuser /app && \
