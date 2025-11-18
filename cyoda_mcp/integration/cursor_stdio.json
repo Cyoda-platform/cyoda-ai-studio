@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cyoda-mcp": {
+      "command": "python",
+      "args": ["/tmp/mcp-cyoda-quart-app/cyoda_mcp/server.py"]
+    }
+  }
+}

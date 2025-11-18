@@ -1,0 +1,35 @@
+# Include documentation and license
+include README.md
+include LICENSE
+include README.txt
+
+# Include configuration files
+include pyproject.toml
+
+# Include proto files and generated code
+recursive-include common/proto *.proto
+recursive-include common/proto *.py
+recursive-include common/proto *.pyi
+
+# Include any JSON/YAML configuration files
+recursive-include cyoda_mcp *.json *.yaml *.yml
+recursive-include common *.json *.yaml *.yml
+recursive-include application *.json *.yaml *.yml
+
+# Include documentation
+recursive-include docs *.md *.txt *.rst
+
+# Include examples
+recursive-include examples *.md *.py *.json
+
+# Exclude development and build artifacts
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude *.so
+global-exclude .DS_Store
+global-exclude *.egg-info
+global-exclude .git*
+global-exclude .env*
+global-exclude .venv*
+global-exclude .idea*
+global-exclude backup*
