@@ -1,0 +1,113 @@
+{
+  "eval_set_id": "guidelines-principles-001",
+  "name": "Guidelines Agent - Design Principles",
+  "description": "Test guidelines agent's ability to provide design principle guidance",
+  "eval_cases": [
+    {
+      "eval_id": "principle-no-reflection",
+      "conversation": [
+        {
+          "invocation_id": "principle-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Tell me about the no reflection principle"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The no reflection principle states that Cyoda applications should avoid using Python reflection or dynamic code generation."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "get_design_principle",
+                "args": {
+                  "principle_name": "no reflection"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "principle-common-module",
+      "conversation": [
+        {
+          "invocation_id": "principle-002",
+          "user_content": {
+            "parts": [
+              {
+                "text": "How should I use the common module?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The common module should contain shared utilities and base classes. It should not depend on application-specific modules."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "get_design_principle",
+                "args": {
+                  "principle_name": "use common module"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "principle-thin-routes",
+      "conversation": [
+        {
+          "invocation_id": "principle-003",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What does thin routes mean?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thin routes means route handlers should be minimal proxies to EntityService without business logic."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "get_design_principle",
+                "args": {
+                  "principle_name": "thin routes"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+

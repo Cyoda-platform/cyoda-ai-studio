@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "name": "Conversation Workflow",
+  "desc": "Workflow for managing AI Assistant conversation lifecycle",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "update_transition",
+          "next": "active",
+          "manual": true
+        },
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        },
+        {
+          "name": "delete",
+          "next": "deleted",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": [
+        {
+          "name": "reactivate",
+          "next": "active",
+          "manual": true
+        },
+        {
+          "name": "delete",
+          "next": "deleted",
+          "manual": true
+        }
+      ]
+    },
+    "deleted": {
+      "transitions": []
+    }
+  }
+}
+

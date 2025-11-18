@@ -1,0 +1,275 @@
+user: hello! please build an app in python that collects data from pet store api and builds a report
+
+ai: Hello! I’m Cyoda’s AI Assistant 🧚 — your guide through our adventure 🧭
+
+Would you like to use a public repository (using Cyoda templates) or a private repository (your own fork)? We currently support Python and Java.
+
+Also, could you please specify if you prefer to use Python (with Quart/Flask)? Let me know, and we can get started!
+
+user:private
+
+ai: Great! Since you want to use a private repository, I'll guide you through the setup process. Here’s what you need to do:
+
+Steps for Setting Up a Private Repository:
+Fork the Template Repository:
+
+Navigate to the Python template URL: https://github.com/Cyoda-platform/mcp-cyoda-quart-app
+Click the "Fork" button to create your own copy.
+Your forked repository will be at: https://github.com/YOUR-USERNAME/YOUR-PROJECT-NAME
+Install the Cyoda AI Assistant GitHub App:
+
+Visit: https://github.com/apps/cyoda-ai-assistant
+Click "Install" or "Configure".
+Select repositories (we recommend "Only select repositories" for security).
+Choose your forked repository.
+Get Your Installation ID:
+
+Go to: https://github.com/settings/installations
+Find "Cyoda AI Assistant" in the list.
+Click "Configure".
+Look at the URL - it will be in the format: https://github.com/settings/installations/XXXXXX
+The XXXXXX number is your Installation ID.
+Provide the Following Information:
+
+Your forked repository URL (format: https://github.com/YOUR-USERNAME/YOUR-PROJECT-NAME)
+Your Installation ID (the number from step 3)
+Once you have your forked repository URL and Installation ID, please share them with me, and we can proceed to build your application!
+
+
+user: 90513399 https://github.com/test-ks-001/test-mcp-python-1
+
+
+ai: 🎉 Your branch 1210bae2-9628-11b2-afc0-0e044684c169 is ready!
+
+I’ve added a GitHub branch in the repository where I’ll be posting updates. You can check it out now or come back to it anytime: 🔗 Cyoda GitHub 👀
+
+You can attach files to your message. I will use them as input data once we proceed to building the application.
+Checkout your branch and add files to the branch directly to application/resources/functional_requirements directory. I will use them as input data.
+Let me know if your requirement is complete and I can proceed to build the application.
+
+user: requirement is complete, next
+
+ai: Great! I've received your confirmation.
+Let's proceed to the next step: checking the status of your Cyoda environment.
+
+Once we confirm the environment is ready or is being deployed, we'll move on to building your application.
+Your Cyoda environment is already deployed and can be accessed at this URL. There's no need to deploy it again, so let's proceed with building your application!
+
+ai:
+Script Progress Update
+
+⏱️ Time Elapsed: 0 seconds 🌿 Branch: 1210bae2-9628-11b2-afc0-0e044684c169 📁 Repository: test-mcp-python-1
+
+Changes Made: No file changes detected. Work in progress⌛ Stay tuned🔔
+
+CYODA
+CYODA NOTIFICATION
+15:22
+Script Progress Update
+
+⏱️ Time Elapsed: 60 seconds 🌿 Branch: 1210bae2-9628-11b2-afc0-0e044684c169 📁 Repository: test-mcp-python-1
+
+Changes Made:
+
+ __init__.py | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+Work in progress⌛ Stay tuned🔔
+
+CYODA
+CYODA NOTIFICATION
+15:23
+Script Progress Update
+
+⏱️ Time Elapsed: 120 seconds 🌿 Branch: 1210bae2-9628-11b2-afc0-0e044684c169 📁 Repository: test-mcp-python-1
+
+Changes Made:
+
+ application/criterion/pet_validation_criterion.py  |  71 ++++++++++++
+ .../criterion/report_validation_criterion.py       |  59 ++++++++++
+ application/entity/pet/__init__.py                 |   8 ++
+ application/entity/pet/version_1/__init__.py       |   8 ++
+ application/entity/pet/version_1/pet.py            | 110 +++++++++++++++++++
+ application/entity/report/__init__.py              |   8 ++
+ application/entity/report/version_1/__init__.py    |   8 ++
+ application/entity/report/version_1/report.py      |  98 +++++++++++++++++
+ application/processor/pet_processor.py             |  60 ++++++++++
+ application/processor/report_processor.py          | 121 +++++++++++++++++++++
+ .../resources/workflow/pet/version_1/Pet.json      |  67 ++++++++++++
+ .../workflow/report/version_1/Report.json          |  67 ++++++++++++
+ 12 files changed, 685 insertions(+)
+
+Work in progress⌛ Stay tuned🔔
+
+CYODA
+CYODA NOTIFICATION
+15:24
+Script Progress Update
+
+⏱️ Time Elapsed: 180 seconds 🌿 Branch: 1210bae2-9628-11b2-afc0-0e044684c169 📁 Repository: test-mcp-python-1
+
+Changes Made:
+
+ application/app.py            |   6 ++
+ application/routes/pets.py    | 206 ++++++++++++++++++++++++++++++++++++++++++
+ application/routes/reports.py | 205 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 417 insertions(+)
+
+Work in progress⌛ Stay tuned🔔
+
+CYODA
+CYODA NOTIFICATION
+15:25
+Script Progress Update
+
+⏱️ Time Elapsed: 240 seconds 🌿 Branch: 1210bae2-9628-11b2-afc0-0e044684c169 📁 Repository: test-mcp-python-1
+
+Changes Made:
+
+ application/app.py                                 |   7 +-
+ application/criterion/pet_validation_criterion.py  |   7 +-
+ .../criterion/report_validation_criterion.py       |   3 +-
+ application/entity/pet/__init__.py                 |   1 -
+ application/entity/pet/version_1/__init__.py       |   1 -
+ application/entity/pet/version_1/pet.py            |  39 ++-
+ application/entity/report/__init__.py              |   1 -
+ application/entity/report/version_1/__init__.py    |   1 -
+ application/entity/report/version_1/report.py      |  34 +--
+ application/processor/pet_processor.py             |   7 +-
+ application/processor/report_processor.py          |   3 +-
+ application/routes/pets.py                         |  17 +-
+ application/routes/reports.py                      |  18 +-
+ test_create_entity.py                              |  28 +-
+ test_import_workflows.py                           |  33 +--
+ test_verify_entities.py                            |  64 +++--
+ tests/e2e/criterions/test_criterion_false.py       |   8 +-
+ tests/e2e/criterions/test_criterion_true.py        |   8 +-
+ tests/e2e/environment.py                           |  52 ++--
+ tests/e2e/processors/test_processor.py             |   8 +-
+ tests/e2e/steps/steps.py                           | 249 +++++++++--------
+ tests/unit/test_cyoda_repository.py                |  76 ++---
+ tests/unit/test_deployment_repository.py           |   2 +-
+ tests/unit/test_edge_message_repository.py         |   4 +-
+ tests/unit/test_entity_casting.py                  |   1 -
+ tests/unit/test_entity_service_impl.py             | 101 +++++--
+ tests/unit/test_grpc_calc_handlers.py              | 194 ++++++-------
+ tests/unit/test_grpc_facade.py                     |  25 +-
+ tests/unit/test_grpc_factory.py                    |   3 +-
+ tests/unit/test_grpc_handlers.py                   |   5 +-
+ tests/unit/test_grpc_middleware.py                 |   5 +-
+ tests/unit/test_grpc_middleware_config.py          |   1 -
+ tests/unit/test_grpc_outbox.py                     |   1 -
+ tests/unit/test_grpc_response_builders.py          |   1 -
+ tests/unit/test_grpc_router.py                     |   1 -
+ tests/unit/test_grpc_rpc_methods.py                | 306 ++++++++-------------
+ tests/unit/test_processor_base.py                  |  17 +-
+ tests/unit/test_temporal_queries.py                |  55 ++--
+ 38 files changed, 722 insertions(+), 665 deletions(-)
+
+Work in progress⌛ Stay tuned🔔
+
+CYODA
+CYODA NOTIFICATION
+15:26
+Script Progress Update
+
+⏱️ Time Elapsed: 300 seconds 🌿 Branch: 1210bae2-9628-11b2-afc0-0e044684c169 📁 Repository: test-mcp-python-1
+
+Changes Made:
+
+ IMPLEMENTATION_SUMMARY.md | 191 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 191 insertions(+)
+
+Work in progress⌛ Stay tuned🔔
+
+ai:
+🎉 Project Generation Completed Successfully!
+
+Your prototype application has been fully generated.
+
+📁 Project Structure:
+
+├── application/
+│   ├── routes/     # REST API endpoints
+│   ├── processor/      # Business logic
+│   ├── criteria/       # Validation rules
+│   └── entity/         # Entities
+│   └──resources/       # Configs
+
+🚀 Next Steps: You can run and test it locally or directly in GitHub Codespaces.
+
+Click Approve when you are ready to proceed and I will launch Cyoda setup assistant
+
+✅ Approval or Feedback
+
+If you're happy with the prototype, feel free to approve it.
+
+If anything's off or you'd like changes, just ping me here. 🙌
+
+Alternatively, you can use your IDE AI assistant with a suggested prompt:
+
+Prompt for your IDE:
+
+markdown
+
+
+This project is a **Cyoda client application**.
+Your role is to **validate** that entities, processors, criteria, and routers are correctly implemented according to the functional requirements and workflow definitions.
+Do **not generate or re-implement code** — focus on **reviewing, checking, and highlighting inconsistencies or missing pieces**.
+
+#### Validation Objectives
+
+* Confirm all requirements are fully implemented and consistent.
+* Ensure workflows, processors, criteria, and routers match the functional requirements and workflow JSONs.
+* Verify that the code passes all quality checks.
+* Exit once all validations succeed.
+
+#### Workflows — Validation Focus
+
+* Updates use manual transitions only.
+* No invalid states (must exist in workflow JSON).
+* Cross-check with JSON in `application/resources/workflow`.
+
+#### Repository Map — Cross-Check Against
+
+1. **Core APIs & Types** → `common/service/entity_service.py`, `common/entity/cyoda_entity.py`.
+2. **Examples** → `example_application/`.
+3. **Functional Requirements** → `application/resources/functional_requirements/*`.
+4. **Workflow JSONs** → `application/resources/workflow/*.json`.
+
+#### Validation Checklist (Per Entity)
+1. **Entities** – Implemented under `application/entity/{entity}/version_1/`.
+   * Fields match `entityName.md` from functional requirements.
+   * Constants (`ENTITY_NAME`, `ENTITY_VERSION`) correct.
+2. **Workflows** – States and transitions align with JSON.
+3. **Processors** – Match requirements in `entity_workflow.md`.
+   * No updates to current entity.
+   * Correct use of `entityService` for others.
+   * No kwargs; only entity argument.
+   * No validation of entity state.
+4. **Criteria** – Minimal, accurate, direct.
+5. **Routers** – Match requirements in `entityName_routes.md`.
+   * Endpoints exactly as specified.
+   * Technical IDs in responses.
+   * Properly registered in `app.py` (check against `example_application`).
+6. **Testing & Validation** –
+   * No `__init__.py` in project root.
+   * Run quality checks:
+
+     ```bash
+     python -m black .
+     python -m isort .
+     python -m mypy .
+     python -m flake8 .
+     ```
+
+#### Acceptance Criteria
+
+* Entities, processors, criteria, and routers match functional requirements.
+* Routes act as proxies only.
+* Code modifies only the `application` directory.
+* Project passes all quality checks.
+* Requirements in `user_requirement.md` are satisfied.
+* Criteria remain minimal and direct.
+
+**Exit when**: all entities, workflows, processors, criteria, and routers validate successfully and the project passes quality checks.

@@ -1,0 +1,178 @@
+{
+  "eval_set_id": "cyoda_assistant_integration_tests",
+  "name": "Cyoda Assistant Multi-Turn Integration Tests",
+  "description": "Integration tests for multi-turn conversations with the Cyoda Assistant",
+  "eval_cases": [
+    {
+      "eval_id": "multi_turn_setup_and_qa",
+      "conversation": [
+        {
+          "invocation_id": "mt-001-1",
+          "user_content": {
+            "parts": [
+              {
+                "text": "I'm starting a new Cyoda project. What environment variables do I need?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "For a Cyoda application, you need to configure: CYODA_HOST and CYODA_PORT for the REST API, CYODA_GRPC_HOST and CYODA_GRPC_PORT for gRPC communication, GOOGLE_MODEL and GOOGLE_API_KEY for AI features, and JWT_SECRET_KEY and JWT_ALGORITHM for authentication."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {
+                  "agent_name": "Setup"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "mt-001-2",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Thanks! Now can you explain how entity state management works?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "In Cyoda, workflows manage entity state through state machines. Entity state is workflow-managed and read-only from the application perspective. State transitions are defined in workflow JSON files."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {
+                  "agent_name": "QA"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "multi_turn_guidelines_and_setup",
+      "conversation": [
+        {
+          "invocation_id": "mt-002-1",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What are the core design principles for Cyoda?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "The core Cyoda design principles are: 1) No reflection - use common module patterns instead, 2) Use common module for shared code, 3) Thin routes - routes should be proxies to EntityService with no business logic, 4) Prefer technical IDs, 5) Use manual transitions only, 6) Entity state is workflow-managed and read-only."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {
+                  "agent_name": "Guidelines"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "mt-002-2",
+          "user_content": {
+            "parts": [
+              {
+                "text": "How do I import workflows following these principles?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "You can import workflows into Cyoda using MCP tools or the CLI. First, create your workflow JSON file with snake_case naming. Ensure entity names match exactly (case-sensitive) with your entity definitions."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {
+                  "agent_name": "Setup"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "mt-002-3",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What's the difference between technical and business IDs?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Technical IDs are UUID-based identifiers automatically generated by the system for each entity. They are immutable and used internally. Business IDs are human-readable identifiers defined by your application logic. The best practice is to prefer technical IDs."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {
+                  "agent_name": "QA"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}
+

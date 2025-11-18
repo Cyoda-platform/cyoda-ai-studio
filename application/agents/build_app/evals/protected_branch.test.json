@@ -1,0 +1,87 @@
+{
+  "eval_set_id": "build_agent_protected_branch_test",
+  "name": "Build Agent - Protected Branch Validation",
+  "description": "Test that the agent properly rejects protected branch names (main, master, develop, etc.)",
+  "eval_cases": [
+    {
+      "eval_id": "protected-branch-rejection",
+      "conversation": [
+        {
+          "invocation_id": "turn-001",
+          "user_content": {
+            "parts": [{"text": "Build a Python app that tracks inventory"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Would you like to use a public repository (Cyoda templates) or a private repository (your own fork)? We currently support Python and Java."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-002",
+          "user_content": {
+            "parts": [{"text": "private"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Great! Since you've chosen to use a private repository, I'll guide you through the setup process. Please provide your credentials/repository information."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-003",
+          "user_content": {
+            "parts": [{"text": "12345 https://github.com/test/my-repo"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Your Python application to track inventory is being set up using your private repository. Please let me know when you want to start building the application."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "set_repository_config",
+                "args": {
+                  "repository_type": "private",
+                  "installation_id": "12345",
+                  "repository_url": "https://github.com/test/my-repo"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-004",
+          "user_content": {
+            "parts": [{"text": "Start building on branch main"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I cannot use the branch 'main' because it is a protected branch. Protected branches (develop, development, main, master, prod, production) must never be used for builds. I will generate a unique branch UUID instead."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "generate_branch_uuid",
+                "args": {}
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+

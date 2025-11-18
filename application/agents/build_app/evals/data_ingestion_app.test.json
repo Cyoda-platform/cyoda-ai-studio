@@ -1,0 +1,245 @@
+{
+  "eval_set_id": "build-data-ingestion-001",
+  "name": "Build Agent - Data Ingestion Application (Wait for Confirmation)",
+  "description": "Test build agent that waits for user confirmation before starting build (requires explicit 'start building' command)",
+  "eval_cases": [
+    {
+      "eval_id": "data-ingestion-public-repo-wait-confirmation",
+      "conversation": [
+        {
+          "invocation_id": "turn-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "hi, please build a data ingestion app"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Would you like to use a public repository (Cyoda templates) or a private repository (your own fork)? We currently support Python and Java."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-002",
+          "user_content": {
+            "parts": [
+              {
+                "text": "python"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Would you like to use a public repository (Cyoda templates) or a private repository (your own fork)?"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-003",
+          "user_content": {
+            "parts": [
+              {
+                "text": "public"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "is ready"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "set_repository_config"
+              },
+              {
+                "name": "generate_branch_uuid"
+              },
+              {
+                "name": "clone_repository"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-004",
+          "user_content": {
+            "parts": [
+              {
+                "text": "start building"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "being set up"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "generate_application"
+              }
+            ],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-005",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Script Progress Update\n\n⏱️ Time Elapsed: 0 seconds 🌿 Branch: a3f40d2a-bfcb-11f0-9aff-40c2ba0ac9eb 📁 Repository: mcp-cyoda-quart-app\n\nChanges Made: No file changes detected. Work in progress⌛ Stay tuned🔔"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Build started!"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-006",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Script Progress Update\n\n⏱️ Time Elapsed: 60 seconds 🌿 Branch: a3f40d2a-bfcb-11f0-9aff-40c2ba0ac9eb 📁 Repository: mcp-cyoda-quart-app\n\nChanges Made:\n\n application/entity/data_source/__init__.py           |  1 +\n application/entity/data_source/version_1/__init__.py |  1 +\n application/entity/data_source/version_1/data_source.py | 78 ++++++++++++++++++++++++++++\n 3 files changed, 80 insertions(+)\n\nWork in progress⌛ Stay tuned🔔"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Data source entity created"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-007",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Script Progress Update\n\n⏱️ Time Elapsed: 120 seconds 🌿 Branch: a3f40d2a-bfcb-11f0-9aff-40c2ba0ac9eb 📁 Repository: mcp-cyoda-quart-app\n\nChanges Made:\n\n application/app.py                                        |   2 +\n application/entity/ingestion_job/__init__.py              |   1 +\n application/entity/ingestion_job/version_1/__init__.py    |   1 +\n application/entity/ingestion_job/version_1/ingestion_job.py | 95 ++++++++++++\n application/processor/ingestion_processor.py              | 125 ++++++++++++++++\n application/resources/workflow/data_source/version_1/DataSource.json | 31 ++++\n application/resources/workflow/ingestion_job/version_1/IngestionJob.json | 40 +++++\n application/routes/data_sources.py                        | 210 ++++++++++++++++++++++++++\n application/routes/ingestion_jobs.py                      | 210 ++++++++++++++++++++++++++\n 9 files changed, 715 insertions(+)\n\nWork in progress⌛ Stay tuned🔔"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Ingestion job entity, processor, and routes created"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-008",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Script Progress Update\n\n⏱️ Time Elapsed: 180 seconds 🌿 Branch: a3f40d2a-bfcb-11f0-9aff-40c2ba0ac9eb 📁 Repository: mcp-cyoda-quart-app\n\nChanges Made:\n\n application/app.py | 8 ++++++++\n services/config.py | 2 +-\n 2 files changed, 9 insertions(+), 1 deletion(-)\n\nWork in progress⌛ Stay tuned🔔"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Configuration updates applied"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-009",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Build completed successfully"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "🎉 Project Generation Completed Successfully"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {
+                  "agent_name": "post_build_setup",
+                  "context": {
+                    "branch_name": "a3f40d2a-bfcb-11f0-9aff-40c2ba0ac9eb",
+                    "language": "python"
+                  }
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,76 @@
+{
+  "eval_set_id": "setup-project-structure-001",
+  "name": "Setup Agent - Project Structure Validation",
+  "description": "Test setup agent's ability to check Cyoda project structure",
+  "eval_cases": [
+    {
+      "eval_id": "check-structure-basic",
+      "conversation": [
+        {
+          "invocation_id": "check-structure-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Verify the Cyoda project structure is correct"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I'll check the project structure for you."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "check_project_structure",
+                "args": {}
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "check-structure-with-path",
+      "conversation": [
+        {
+          "invocation_id": "check-structure-002",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Check if the application directory exists and has the correct structure"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I'll validate the application directory structure."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "check_project_structure",
+                "args": {
+                  "base_path": "application"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+

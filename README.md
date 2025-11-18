@@ -180,8 +180,6 @@ git clone <repository-url>
 cd mcp-cyoda-quart-app
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-
 # Run code quality checks
 python -m black . && python -m isort . && python -m mypy . && python -m flake8 . && python -m bandit -r .
 
@@ -232,7 +230,36 @@ export CYODA_CLIENT_SECRET="your-client-secret"
 export CYODA_HOST="client-<id>.eu.cyoda.net"
 ```
 
-### 5. Run the MCP Server
+### 5. Run the Application
+
+#### Option A: Run the Quart Web Application
+
+The Quart web application provides REST API endpoints and web interface. You can run it in multiple ways:
+
+```bash
+# Method 1: Using the run.py script (recommended)
+python run.py
+
+# Method 2: Run directly from application directory
+python application/app.py
+
+# Method 3: Using Python module syntax
+python -m application.app
+
+# With custom host/port (optional)
+APP_HOST=0.0.0.0 APP_PORT=8080 python run.py
+
+# With debug mode (optional)
+APP_DEBUG=true python run.py
+```
+
+The application will start on `http://127.0.0.1:8000` by default.
+
+**Note**: All three methods work identically. The application automatically handles path resolution, so you can use whichever method is most convenient for your workflow.
+
+#### Option B: Run the MCP Server
+
+The MCP server provides AI assistant integration:
 
 ```bash
 # Run directly from source

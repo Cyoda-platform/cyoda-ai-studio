@@ -454,7 +454,13 @@ class EntityServiceImpl(EntityService):
             # Convert SearchConditionRequest to repository format
             criteria = self._convert_search_condition(condition)
 
-            data = await self._repository.find_all_by_criteria(meta, criteria)
+            # Pass limit and offset to repository for server-side pagination
+            data = await self._repository.find_all_by_criteria(
+                meta,
+                criteria,
+                limit=condition.limit,
+                offset=condition.offset
+            )
 
             # Handle repository errors
             data = self._handle_repository_error(data, "search", entity_class)
@@ -469,10 +475,7 @@ class EntityServiceImpl(EntityService):
                 response = self._create_entity_response(parsed_item)
                 results.append(response)
 
-            # Apply limit if specified
-            if condition.limit and len(results) > condition.limit:
-                results = results[: condition.limit]
-
+            # Note: No need to apply limit client-side anymore since Cyoda handles it
             logger.debug(f"Search found {len(results)} entities of type {entity_class}")
             return results
 
@@ -576,29 +579,25 @@ class EntityServiceImpl(EntityService):
         entity_id: str,
         entity: Dict[str, Any],
         entity_class: str,
-        transition: Optional[str] = None,
         entity_version: str = "1.0",
     ) -> EntityResponse:
         """
         Update existing entity by technical UUID (FASTEST - use when you have UUID).
 
+        Uses Cyoda's loopback transition pattern for updates.
+
         Args:
             entity_id: Technical UUID
             entity: Updated entity data
             entity_class: Entity class/model name
-            transition: Optional workflow transition name
             entity_version: Entity model version
 
         Returns:
             EntityResponse with updated entity and metadata
         """
         try:
-            additional_meta: Dict[str, Any] = {}
-            if transition:
-                additional_meta["update_transition"] = transition
-
             meta = await self._get_repository_meta(
-                "", entity_class, entity_version, additional_meta
+                "", entity_class, entity_version, {}
             )
 
             updated_id = await self._repository.update(meta, entity_id, entity)
@@ -635,17 +634,17 @@ class EntityServiceImpl(EntityService):
         entity: Dict[str, Any],
         business_id_field: str,
         entity_class: str,
-        transition: Optional[str] = None,
         entity_version: str = "1.0",
     ) -> EntityResponse:
         """
         Update existing entity by business identifier (MEDIUM SPEED).
 
+        Uses Cyoda's loopback transition pattern for updates.
+
         Args:
             entity: Updated entity data (must contain business ID)
             business_id_field: Field name containing the business ID
             entity_class: Entity class/model name
-            transition: Optional workflow transition name
             entity_version: Entity model version
 
         Returns:
@@ -672,7 +671,7 @@ class EntityServiceImpl(EntityService):
 
             # Update using technical ID
             return await self.update(
-                existing.get_id(), entity, entity_class, transition, entity_version
+                existing.get_id(), entity, entity_class, entity_version
             )
 
         except EntityServiceError:
@@ -910,16 +909,39 @@ class EntityServiceImpl(EntityService):
                     f"Entity not found: {entity_id}", entity_class, entity_id
                 )
 
-            # Execute transition by updating with transition
+            # Execute transition using repository's transition mechanism
+            additional_meta: Dict[str, Any] = {"update_transition": transition}
+            meta = await self._get_repository_meta(
+                "", entity_class, entity_version, additional_meta
+            )
+
+            # Get entity data
             if hasattr(current_entity.data, "model_dump"):
                 entity_data: Dict[str, Any] = current_entity.data.model_dump(
                     by_alias=True
                 )
             else:
                 entity_data = cast(Dict[str, Any], current_entity.data)
-            return await self.update(
-                entity_id, entity_data, entity_class, transition, entity_version
-            )
+
+            # Execute transition via repository
+            updated_id = await self._repository.update(meta, entity_id, entity_data)
+
+            if not updated_id:
+                raise EntityServiceError(
+                    "Transition execution returned no entity ID", entity_class, entity_id
+                )
+
+            # Add technical_id to entity data
+            entity_with_id = {**entity_data, "technical_id": str(updated_id)}
+
+            # Parse entity data
+            parsed_entity = self._parse_entity_data(entity_with_id, entity_class)
+
+            # Create response
+            response = self._create_entity_response(parsed_entity, str(updated_id))
+
+            logger.debug(f"Executed transition {transition} on entity {entity_id}")
+            return response
 
         except EntityServiceError:
             raise
@@ -1248,12 +1270,21 @@ class EntityServiceImpl(EntityService):
         )
 
         try:
+            # Check if transition is requested
             transition = (
                 meta.get("update_transition") if isinstance(meta, dict) else None
             )
-            result = await self.update(
-                technical_id, entity, entity_model, transition, entity_version
-            )
+
+            if transition:
+                # Use execute_transition for explicit transitions
+                result = await self.execute_transition(
+                    technical_id, transition, entity_model, entity_version
+                )
+            else:
+                # Use regular update for loopback transitions
+                result = await self.update(
+                    technical_id, entity, entity_model, entity_version
+                )
             return result.get_id()
         except EntityServiceError:
             return None

@@ -1,0 +1,131 @@
+{
+  "eval_set_id": "build-error-handling-001",
+  "name": "Build Agent - Error Handling (Context Preservation)",
+  "description": "Test build agent's ability to handle explicit parameters when context might be lost",
+  "eval_cases": [
+    {
+      "eval_id": "inventory-app-explicit-params",
+      "conversation": [
+        {
+          "invocation_id": "turn-001",
+          "user_content": {
+            "parts": [{"text": "Build a Python app that tracks inventory"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Would you like to use a public repository (Cyoda templates) or a private repository (your own fork)? We currently support Python and Java."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-002",
+          "user_content": {
+            "parts": [{"text": "private"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Great! Since you've chosen to use a private repository, I'll guide you through the setup process. Please provide your credentials/repository information."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-003",
+          "user_content": {
+            "parts": [{"text": "12345 https://github.com/test/my-repo"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Your Python application to track inventory is being set up using your private repository. Please let me know when you want to start building the application."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "set_repository_config",
+                "args": {
+                  "repository_type": "private",
+                  "installation_id": "12345",
+                  "repository_url": "https://github.com/test/my-repo"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-004",
+          "user_content": {
+            "parts": [{"text": "Start building the application"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "🎉 Your branch test-branch-123 is ready! Please confirm when you are ready to proceed to the next step."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "generate_branch_uuid",
+                "args": {}
+              },
+              {
+                "name": "clone_repository",
+                "args": {
+                  "language": "python",
+                  "branch_name": "test-branch-123"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-005",
+          "user_content": {
+            "parts": [{"text": "Done, next ➡️"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Proceeded to the next step. Please confirm when your Cyoda environment is already deployed so we can build your application."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        },
+        {
+          "invocation_id": "turn-006",
+          "user_content": {
+            "parts": [{"text": "Your Cyoda environment is already deployed. Proceed to build your application."}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I will proceed to build your application."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "generate_application",
+                "args": {
+                  "requirements": "track inventory"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+
