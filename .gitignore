@@ -163,3 +163,4 @@ cython_debug/
 /chats/
 /backup/
 /.idea/
+/private-key.pem

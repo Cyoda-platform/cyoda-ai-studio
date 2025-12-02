@@ -17,3 +17,10 @@ class ForbiddenAccessError(Exception):
         self.message = message
         self.status_code = 403
         super().__init__(self.message)
+
+
+class InvalidTokenException(Exception):
+    def __init__(self, message: str = "Invalid token") -> None:
+        self.message = message
+        self.status_code = 401
+        super().__init__(self.message)

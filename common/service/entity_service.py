@@ -438,17 +438,17 @@ class EntityService(ABC):
         entity_id: str,
         entity: Dict[str, Any],
         entity_class: str,
-        transition: Optional[str] = None,
         entity_version: str = "1",
     ) -> EntityResponse:
         """
         Update existing entity by technical UUID (FASTEST - use when you have UUID).
 
+        Uses Cyoda's loopback transition pattern for updates.
+
         Args:
             entity_id: Technical UUID from EntityResponse.metadata.id
             entity: Updated entity data
             entity_class: Entity class/model name
-            transition: Optional workflow transition name (None to stay in same state)
             entity_version: Entity model version
 
         Returns:
@@ -462,17 +462,17 @@ class EntityService(ABC):
         entity: Dict[str, Any],
         business_id_field: str,
         entity_class: str,
-        transition: Optional[str] = None,
         entity_version: str = "1",
     ) -> EntityResponse:
         """
         Update existing entity by business identifier (MEDIUM SPEED).
 
+        Uses Cyoda's loopback transition pattern for updates.
+
         Args:
             entity: Updated entity data (must contain business ID)
             business_id_field: Field name containing the business ID (e.g., "cart_id")
             entity_class: Entity class/model name
-            transition: Optional workflow transition name (None to stay in same state)
             entity_version: Entity model version
 
         Returns:

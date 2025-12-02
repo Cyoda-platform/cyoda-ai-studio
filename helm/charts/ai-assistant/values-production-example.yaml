@@ -1,0 +1,200 @@
+# Production Example Values for AI Assistant
+# This file shows how to configure the Helm chart for production deployment
+
+name: ai-assistant
+
+# Enable image pull secret for private registry
+imagePullSecret:
+  enabled: true
+
+enabled: true
+useNamespaceForIngress: false
+
+imagePullSecrets:
+  - name: regcred
+
+# Container environment variables
+container:
+  env:
+    # Regular environment variables (non-sensitive)
+    vars:
+      GITHUB_APP_ID: "123"
+      GITHUB_APP_OWNER: "Cyoda-platform"
+      GITHUB_APP_CLIENT_ID: "123"
+      GITHUB_APP_PUBLIC_LINK: "https://github.com/apps/cyoda-ai-assistant"
+      GITHUB_WEBHOOK_URL: "https://example.com/api/github/webhook"
+      GITHUB_PUBLIC_REPO_INSTALLATION_ID: "123"
+      PYTHON_PUBLIC_REPO_URL: "https://github.com/Cyoda-platform/mcp-cyoda-quart-app"
+      JAVA_PUBLIC_REPO_URL: "https://github.com/Cyoda-platform/java-client-template"
+      
+      # OPTION 1: Use mounted PEM file (recommended - see githubApp.privateKey.mountFromSecret below)
+      GITHUB_APP_PRIVATE_KEY_PATH: "/secrets/private-key.pem"
+      
+      # OPTION 2: Use PEM content from environment variable (see secretVars below)
+      # GITHUB_APP_PRIVATE_KEY_PATH: ""  # Leave empty if using GITHUB_APP_PRIVATE_KEY_CONTENT
+    
+    # Sensitive environment variables (stored in Kubernetes Secret)
+    # These values should be base64 encoded
+    secretVars:
+      # Cyoda configuration
+      CYODA_URL: "123"  # base64: https://cyoda-dev.cyoda.net
+      CYODA_USERNAME: "YWRtaW4="  # base64: admin
+      CYODA_PASSWORD: "eW91ci1wYXNzd29yZA=="  # base64: your-password
+      
+      # GitHub webhook secret
+      GITHUB_WEBHOOK_SECRET: "eW91ci1wYXNzd29yZA=="  # base64: your-password
+
+    # Additional ConfigMaps to load
+    configMaps: []
+    
+    # Additional Secrets to load
+    secrets: []
+
+podAnnotations: {}
+
+# Ingress configuration
+host:
+  name: "ai.cyoda.net"
+
+# Health check configuration
+health:
+  liveness:
+    path: /actuator/health/liveness
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 30
+    failureThreshold: 10
+  readiness:
+    path: /actuator/health/readiness
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 30
+    failureThreshold: 10
+
+# Service configuration
+service:
+  name: ai-assistant-service
+  type: ClusterIP  # Use ClusterIP for production (behind ingress)
+  serverPort:
+    port: 5000
+    target: 5000
+    name: http
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  path: api
+  pathType: Prefix
+  tls:
+    - secretName: ai-assistant-tls
+      hosts:
+        - ai.cyoda.net
+
+# Autoscaling configuration
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# GitHub App Configuration
+githubApp:
+  # OPTION 1: Mount PEM file from existing secret (RECOMMENDED)
+  privateKey:
+    # Enable mounting PEM file as volume
+    mountFromSecret: true
+    # Name of the secret containing the PEM file
+    # Create this secret manually before deploying:
+    # kubectl create secret generic github-app-private-key \
+    #   --from-file=private-key.pem=./private-key.pem \
+    #   --namespace=your-namespace
+    secretName: "github-app-private-key"
+    # Key name in the secret
+    secretKey: "private-key.pem"
+    # Mount path in container
+    mountPath: "/secrets"
+  
+  # OPTION 2: Store PEM content in environment variable
+  # If you prefer this option:
+  # 1. Set mountFromSecret: false
+  # 2. Uncomment GITHUB_APP_PRIVATE_KEY_CONTENT in secretVars above
+  # 3. Set GITHUB_APP_PRIVATE_KEY_PATH to empty string in vars above
+
+# Extra volume mounts (if needed)
+extraVolumeMounts: {}
+
+# Extra volumes (if needed)
+extraVolumes: {}
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  readOnlyRootFilesystem: false
+
+# Tolerations
+tolerations: []
+
+# Priority class
+priorityClassName: ""
+
+# Service account
+serviceAccountName: ""
+
+# Host aliases
+hostAliases: []
+
+# Affinity rules
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - ai-assistant
+          topologyKey: kubernetes.io/hostname
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Image configuration
+image:
+  pullPolicy: Always
+  imageName: ai-assistant
+  tag: "latest"
+
+# Replica count (ignored if autoscaling is enabled)
+replicaCount: 2
+
+# Enable actuator endpoints
+actuatorEnabled: true
+
+# Resource limits and requests
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "2Gi"
+    cpu: "1000m"
+
+# Global configuration (set by parent chart or override)
+global:
+  registry:
+    host: "your-registry.azurecr.io"
+  hostAliases: []
+

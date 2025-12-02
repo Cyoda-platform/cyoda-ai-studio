@@ -1,0 +1,128 @@
+{
+  "eval_set_id": "coordinator_delegation_tests",
+  "name": "Coordinator Agent Delegation Tests",
+  "description": "Tests for coordinator's ability to delegate to appropriate sub-agents",
+  "eval_cases": [
+    {
+      "eval_id": "coordinator_delegates_to_qa",
+      "conversation": [
+        {
+          "invocation_id": "coord-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "How does entity state management work in Cyoda?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "In Cyoda, workflows manage entity state through state machines. Entity state is workflow-managed and read-only from the application perspective."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {
+                  "agent_name": "QA"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "coordinator_delegates_to_guidelines",
+      "conversation": [
+        {
+          "invocation_id": "coord-002",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What are the best practices for organizing entity files?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Entity files should be organized in versioned directories following this pattern: entity/example_entity/version_1/example_entity.py."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {
+                  "agent_name": "Guidelines"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "coordinator_delegates_to_setup",
+      "conversation": [
+        {
+          "invocation_id": "coord-003",
+          "user_content": {
+            "parts": [
+              {
+                "text": "How do I set up environment variables for my Cyoda project?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "For a Cyoda application, you need to configure: CYODA_HOST and CYODA_PORT for the REST API, CYODA_GRPC_HOST and CYODA_GRPC_PORT for gRPC communication."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {
+                  "agent_name": "Setup"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}
+

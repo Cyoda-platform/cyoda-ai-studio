@@ -1,0 +1,94 @@
+name: ai-assistant
+
+imagePullSecret:
+  enabled: true
+
+enabled: true
+useNamespaceForIngress: false
+
+imagePullSecrets:
+  - name: regcred
+container:
+  env:
+    vars: {}
+    additionalVars: {}
+    extraVars: []
+    configMaps: []
+    secrets: []
+    secretVars: {}
+podAnnotations: {}
+host:
+  name: ""
+
+health:
+  liveness:
+    path: /actuator/health/liveness
+    initialDelaySeconds: 120
+    timeoutSeconds: 5
+    periodSeconds: 30
+    failureThreshold: 10
+  readiness:
+    path: /actuator/health/readiness
+    initialDelaySeconds: 120
+    timeoutSeconds: 5
+    periodSeconds: 30
+    failureThreshold: 10
+service:
+  name: ai-assistant-service
+  type: NodePort
+  serverPort:
+    port: 5000
+    target: 5000
+    name: http
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  path: api
+  pathType: Prefix
+  tls: []
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+extraVolumeMounts: {}
+extraVolumes: {}
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  readOnlyRootFilesystem: false
+tolerations: { }
+priorityClassName: { }
+serviceAccountName: { }
+hostAliases: { }
+affinity: { }
+strategy: {}
+
+# GitHub App Configuration
+githubApp:
+  # Option 1: Mount PEM file from existing secret (recommended)
+  # Create secret manually: kubectl create secret generic github-app-private-key --from-file=private-key.pem=./private-key.pem
+  privateKey:
+    # Enable mounting PEM file as volume
+    mountFromSecret: false
+    # Name of the secret containing the PEM file
+    secretName: "github-app-private-key"
+    # Key name in the secret
+    secretKey: "private-key.pem"
+    # Mount path in container
+    mountPath: "/secrets"
+
+  # Option 2: Store PEM content in environment variable
+  # Set privateKeyContent in secretVars (see container.env.secretVars below)
+  # This is less secure but simpler for some deployments
+
+image:
+  pullPolicy: Always
+  imageName: ai-assistant
+replicaCount: 1
+actuatorEnabled: false

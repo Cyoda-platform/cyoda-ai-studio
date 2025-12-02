@@ -1,0 +1,108 @@
+{
+  "evaluation_config": {
+    "name": "Cyoda Assistant Agent Evaluation Configuration",
+    "description": "Configuration for evaluating Cyoda Assistant agents using Google ADK evaluation framework",
+    "criteria": {
+      "tool_trajectory_avg_score": {
+        "enabled": true,
+        "threshold": 0.9,
+        "description": "Measures exact match of tool usage trajectory. Score of 1.0 means perfect tool call sequence match.",
+        "weight": 0.3
+      },
+      "response_match_score": {
+        "enabled": true,
+        "threshold": 0.75,
+        "description": "Measures semantic similarity between expected and actual responses using embeddings.",
+        "weight": 0.4
+      },
+      "final_response_match_v2": {
+        "enabled": true,
+        "threshold": 0.8,
+        "description": "LLM-based judge that evaluates response quality, accuracy, and completeness.",
+        "weight": 0.3
+      }
+    },
+    "quality_checks": {
+      "hallucination_detection": {
+        "enabled": true,
+        "description": "Detect if agent makes up information not grounded in Cyoda documentation"
+      },
+      "safety_check": {
+        "enabled": true,
+        "description": "Ensure responses don't contain harmful or inappropriate content"
+      },
+      "delegation_accuracy": {
+        "enabled": true,
+        "description": "Verify coordinator delegates to correct sub-agent based on question topic"
+      }
+    },
+    "test_categories": {
+      "unit_tests": {
+        "description": "Individual agent functionality tests",
+        "files": [
+          "tests/integration/agents/evals/qa_agent.test.json",
+          "tests/integration/agents/evals/guidelines_agent.test.json",
+          "tests/integration/agents/evals/setup_agent.test.json",
+          "tests/integration/agents/evals/coordinator.test.json"
+        ]
+      },
+      "integration_tests": {
+        "description": "Multi-turn conversation tests",
+        "files": [
+          "tests/integration/agents/cyoda_assistant.evalset.json"
+        ]
+      }
+    },
+    "reporting": {
+      "output_format": "json",
+      "include_detailed_traces": true,
+      "save_failed_cases": true,
+      "generate_summary_report": true
+    }
+  },
+  "agent_specific_config": {
+    "qa_agent": {
+      "expected_capabilities": [
+        "Answer questions about Cyoda architecture",
+        "Explain entity management concepts",
+        "Describe workflow state machines",
+        "Troubleshoot common issues"
+      ],
+      "min_response_quality": 0.8
+    },
+    "guidelines_agent": {
+      "expected_capabilities": [
+        "Provide design principle guidance",
+        "Recommend code organization patterns",
+        "Suggest testing strategies",
+        "Explain Pythonic Cyoda development"
+      ],
+      "min_response_quality": 0.8
+    },
+    "setup_agent": {
+      "expected_capabilities": [
+        "Guide project initialization",
+        "Explain environment configuration",
+        "Help with dependency setup",
+        "Assist with workflow imports"
+      ],
+      "min_response_quality": 0.8
+    },
+    "coordinator_agent": {
+      "expected_capabilities": [
+        "Correctly identify question topic",
+        "Delegate to appropriate sub-agent",
+        "Handle multi-turn conversations",
+        "Maintain conversation context"
+      ],
+      "min_delegation_accuracy": 0.95
+    }
+  },
+  "test_execution": {
+    "parallel_execution": false,
+    "timeout_seconds": 60,
+    "retry_failed_cases": 1,
+    "verbose_logging": true
+  }
+}
+

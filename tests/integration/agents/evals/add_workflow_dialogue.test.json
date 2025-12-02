@@ -1,0 +1,256 @@
+{
+  "eval_set_id": "add_workflow_dialogue_tests",
+  "name": "Add Workflow Dialogue Evaluation",
+  "description": "Evaluates the complete add_workflow dialogue flow with proper branch selection, workflow creation, and entity addition",
+  "eval_cases": [
+    {
+      "eval_id": "add_workflow_step_1_user_request",
+      "conversation": [
+        {
+          "invocation_id": "add_workflow_001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Create a workflow for Order entity with create, update, and cancel transitions"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Waiting for your selection — please pick an option above."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "check_existing_branch_configuration",
+                "args": {}
+              },
+              {
+                "name": "ask_user_to_select_option",
+                "args": {
+                  "question": "Would you like to create a new branch or use an existing one?",
+                  "options": [
+                    {
+                      "value": "new_branch",
+                      "label": "Create a new branch",
+                      "description": "Start fresh with a new branch for your workflow"
+                    },
+                    {
+                      "value": "existing_branch",
+                      "label": "Use an existing branch",
+                      "description": "Add the workflow to a branch you've already created"
+                    }
+                  ],
+                  "selection_type": "single"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "add_workflow_step_2_branch_selection",
+      "conversation": [
+        {
+          "invocation_id": "add_workflow_002",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Create new branch"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Please select the repository type and programming language using the options shown."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "ask_repository_configuration",
+                "args": {}
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "add_workflow_step_3_workflow_confirmation",
+      "conversation": [
+        {
+          "invocation_id": "add_workflow_003",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Yes, create it"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Got it — you chose \"Yes, create it\". Before saving the workflow I need to know whether to create a new branch or use an existing one. Please use the selection UI I opened to pick: \"Create a new branch\" or \"Use an existing branch\"."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "execute_unix_command",
+                "args": {
+                  "command": "cat example_application/resources/workflow/workflow_schema.json"
+                }
+              },
+              {
+                "name": "check_existing_branch_configuration",
+                "args": {}
+              },
+              {
+                "name": "ask_user_to_select_option",
+                "args": {
+                  "question": "Would you like to create a new branch or use an existing one?",
+                  "options": [
+                    {
+                      "value": "new_branch",
+                      "label": "Create a new branch",
+                      "description": "Start fresh with a new branch for your workflow"
+                    },
+                    {
+                      "value": "existing_branch",
+                      "label": "Use an existing branch",
+                      "description": "Save the workflow to a branch you've already created"
+                    }
+                  ],
+                  "selection_type": "single"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "add_workflow_step_4_workflow_summary",
+      "conversation": [
+        {
+          "invocation_id": "add_workflow_004",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Yes, create it"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Saving and committing the workflow...\n\n✅ Workflow created and committed — changes have been pushed to your branch. Refresh the Canvas to see the update."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "add_workflow_step_5_entity_addition",
+      "conversation": [
+        {
+          "invocation_id": "add_workflow_005",
+          "user_content": {
+            "parts": [
+              {
+                "text": "please add an order entity"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Please choose \"Create a new branch\" or \"Use an existing branch\" using the options shown."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "check_existing_branch_configuration",
+                "args": {}
+              },
+              {
+                "name": "ask_user_to_select_option",
+                "args": {
+                  "question": "Would you like to create a new branch or use an existing one for this change?",
+                  "options": [
+                    {
+                      "value": "new_branch",
+                      "label": "Create a new branch",
+                      "description": "Start fresh with a new branch for your changes"
+                    },
+                    {
+                      "value": "existing_branch",
+                      "label": "Use an existing branch",
+                      "description": "Commit changes to a branch you've already created"
+                    }
+                  ],
+                  "selection_type": "single"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "cyoda-assistant",
+        "user_id": "test_user",
+        "state": {}
+      }
+    }
+  ]
+}
+

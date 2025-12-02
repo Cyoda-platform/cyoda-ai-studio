@@ -5,6 +5,9 @@ metadata:
   name:  {{ .Values.name }}
   labels:
     app.kubernetes.io/name: {{ .Values.name }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "30"
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount | default 1 }}
@@ -46,6 +49,12 @@ spec:
       volumes:
         - name: tmp
           emptyDir: { }
+        {{- if .Values.githubApp.privateKey.mountFromSecret }}
+        - name: github-app-key
+          secret:
+            secretName: {{ .Values.githubApp.privateKey.secretName }}
+            defaultMode: 0444
+        {{- end }}
         {{- with .Values.extraVolumes }}
         {{- tpl . $ | nindent 8 }}
         {{- end }}
@@ -70,6 +79,11 @@ spec:
             - name: tmp
               # Tmp folder used by spring to write data. We need to mount this because of "readOnlyRootFilesystem" (see above)
               mountPath: /tmp/
+            {{- if .Values.githubApp.privateKey.mountFromSecret }}
+            - name: github-app-key
+              mountPath: {{ .Values.githubApp.privateKey.mountPath }}
+              readOnly: true
+            {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- tpl . $ | nindent 12 }}
             {{- end }}
@@ -77,6 +91,7 @@ spec:
             - name: {{ .Values.service.serverPort.name }}
               containerPort: {{ .Values.service.serverPort.target }}
               protocol: TCP
+          resources: {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.actuatorEnabled }}
           livenessProbe:
             tcpSocket:
@@ -103,6 +118,8 @@ spec:
               value: "{{ $v }}"
             {{- end }}
           envFrom:
+            - secretRef:
+                name: ai-secrets
             {{- range .Values.container.env.configMaps }}
             - configMapRef:
                 name: {{ . }}
@@ -115,7 +132,7 @@ spec:
       hostAliases:
 {{ toYaml . | indent 8 }}
     {{- end }}
-      {{- if .Values.global.imagePullSecret.enabled | default false }}
+      {{- if .Values.imagePullSecret.enabled | default false }}
       imagePullSecrets:
         - name: regcred
       {{- end }}

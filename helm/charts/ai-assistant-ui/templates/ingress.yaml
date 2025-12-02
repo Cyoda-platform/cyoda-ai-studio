@@ -18,6 +18,10 @@ spec:
                 name: {{ .Values.service.name }}
                 port:
                   name: {{ .Values.service.serverPort.name }}
+            {{- if .Values.useNamespaceForIngress | default false }}
+            path: /{{ .Release.Namespace }}{{ .Values.ingress.path }}
+            {{- else }}
             path: /
-            pathType: "Prefix"
+            {{- end}}
+            pathType: {{ .Values.ingress.pathType }}
 {{- end}}

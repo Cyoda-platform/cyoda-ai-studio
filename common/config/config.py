@@ -50,6 +50,40 @@ PROJECT_DIR = os.getenv("PROJECT_DIR", os.path.expanduser("~/cyoda_projects"))
 CHAT_REPOSITORY = os.getenv("CHAT_REPOSITORY", "cyoda")
 IMPORT_WORKFLOWS = bool(os.getenv("IMPORT_WORKFLOWS", "true"))
 
+# GitHub Configuration
+# GitHub App configuration for public repositories
+GITHUB_APP_ID = os.getenv("GITHUB_APP_ID")
+GITHUB_APP_OWNER = os.getenv("GITHUB_APP_OWNER")
+GITHUB_APP_CLIENT_ID = os.getenv("GITHUB_APP_CLIENT_ID")
+GITHUB_APP_PRIVATE_KEY_PATH = os.getenv("GITHUB_APP_PRIVATE_KEY_PATH")
+GITHUB_APP_PRIVATE_KEY_CONTENT = os.getenv("GITHUB_APP_PRIVATE_KEY_CONTENT")
+GITHUB_APP_PUBLIC_LINK = os.getenv("GITHUB_APP_PUBLIC_LINK")
+GITHUB_WEBHOOK_URL = os.getenv("GITHUB_WEBHOOK_URL")
+GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
+
+# GitHub App - Public Repository Configuration
+GITHUB_PUBLIC_REPO_INSTALLATION_ID = os.getenv("GITHUB_PUBLIC_REPO_INSTALLATION_ID")
+PYTHON_PUBLIC_REPO_URL = os.getenv("PYTHON_PUBLIC_REPO_URL", "https://github.com/Cyoda-platform/mcp-cyoda-quart-app")
+JAVA_PUBLIC_REPO_URL = os.getenv("JAVA_PUBLIC_REPO_URL", "https://github.com/Cyoda-platform/java-client-template")
+
+# GitHub repository defaults
+GH_DEFAULT_OWNER = os.getenv("GH_DEFAULT_OWNER", "Cyoda-platform")
+GH_DEFAULT_REPOS = os.getenv("GH_DEFAULT_REPOS", "mcp-cyoda-quart-app,java-client-template").split(",")
+GH_DEFAULT_USERNAME = os.getenv("GH_DEFAULT_USERNAME", "target-username")
+GH_DEFAULT_PERMISSION = os.getenv("GH_DEFAULT_PERMISSION", "push")
+
+# Repository configuration
+REPOSITORY_URL = os.getenv("REPOSITORY_URL", "https://github.com/{owner}/{repository_name}")
+RAW_REPOSITORY_URL = os.getenv("RAW_REPOSITORY_URL", "https://raw.githubusercontent.com/{owner}/{repository_name}")
+PYTHON_REPOSITORY_NAME = os.getenv("PYTHON_REPOSITORY_NAME", "mcp-cyoda-quart-app")
+JAVA_REPOSITORY_NAME = os.getenv("JAVA_REPOSITORY_NAME", "java-client-template")
+CLIENT_GIT_BRANCH = os.getenv("CLIENT_GIT_BRANCH", "main")
+CLONE_REPO = os.getenv("CLONE_REPO", "false").lower() == "true"
+
+# AI Model Configuration
+AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-exp")
+AI_SDK = os.getenv("AI_SDK", "google")  # "google" or "openai"
+
 # Constants
 CYODA_ENTITY_TYPE_EDGE_MESSAGE = "EDGE_MESSAGE"
 GENERAL_MEMORY_TAG = "general"
