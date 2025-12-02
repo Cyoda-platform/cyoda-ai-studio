@@ -1,0 +1,36 @@
+{
+  "eval_set_id": "canvas-requirements-immediate-save-001",
+  "name": "Canvas Agent - Requirements Creation Immediate Save",
+  "description": "Test canvas agent's ability to create and save requirements immediately without preview/confirmation steps",
+  "eval_cases": [
+    {
+      "eval_id": "requirements-immediate-save-001",
+      "conversation": [
+        {
+          "invocation_id": "requirements-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Create functional requirements for an order management system with user stories for order creation, payment processing, and order tracking"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I've created and saved the functional requirements for the order management system with user stories for order creation, payment processing, and order tracking. The requirements are now saved in the repository."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+

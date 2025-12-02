@@ -1,0 +1,113 @@
+{
+  "eval_set_id": "guidelines-testing-001",
+  "name": "Guidelines Agent - Testing Guidelines",
+  "description": "Test guidelines agent's ability to provide testing guidance",
+  "eval_cases": [
+    {
+      "eval_id": "testing-unit-tests",
+      "conversation": [
+        {
+          "invocation_id": "testing-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What are the guidelines for unit tests?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Unit tests should test individual functions in isolation with comprehensive coverage of success and failure scenarios."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "get_testing_guideline",
+                "args": {
+                  "topic": "unit tests"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "testing-integration",
+      "conversation": [
+        {
+          "invocation_id": "testing-002",
+          "user_content": {
+            "parts": [
+              {
+                "text": "How should I write integration tests?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Integration tests should test end-to-end workflows with real Cyoda integration, verifying entity creation, updates, and workflow transitions."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "get_testing_guideline",
+                "args": {
+                  "topic": "integration tests"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "testing-mocking",
+      "conversation": [
+        {
+          "invocation_id": "testing-003",
+          "user_content": {
+            "parts": [
+              {
+                "text": "When should I use mocking in tests?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Use mocking for external dependencies like Cyoda gRPC calls, but test real business logic without mocks."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "get_testing_guideline",
+                "args": {
+                  "topic": "mocking"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+

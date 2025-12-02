@@ -1,0 +1,43 @@
+{
+  "eval_set_id": "canvas-github-delegation-001",
+  "name": "Canvas Agent - GitHub Agent Delegation",
+  "description": "Test canvas agent's ability to properly delegate to GitHub Agent for repository operations",
+  "eval_cases": [
+    {
+      "eval_id": "delegation-001",
+      "conversation": [
+        {
+          "invocation_id": "delegation-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Create a PaymentProcessing workflow"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I've created and saved the PaymentProcessing workflow. It's now available on the canvas."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "validate_workflow_schema",
+                "args": {
+                  "workflow_json": "{\"version\": \"1.0\", \"name\": \"PaymentProcessing\", \"desc\": \"Payment processing workflow\", \"initialState\": \"pending\", \"active\": true, \"states\": [{\"name\": \"pending\", \"transitions\": [{\"name\": \"process\", \"next\": \"processing\", \"manual\": false}]}, {\"name\": \"processing\", \"transitions\": [{\"name\": \"complete\", \"next\": \"complete\", \"manual\": false}]}, {\"name\": \"complete\", \"transitions\": []}]}"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+

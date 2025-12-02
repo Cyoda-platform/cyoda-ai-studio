@@ -1,0 +1,113 @@
+{
+  "eval_set_id": "qa-concepts-001",
+  "name": "QA Agent - Cyoda Concepts",
+  "description": "Test QA agent's ability to explain Cyoda concepts",
+  "eval_cases": [
+    {
+      "eval_id": "concept-technical-id",
+      "conversation": [
+        {
+          "invocation_id": "concept-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What is a technical ID in Cyoda?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "A technical ID in Cyoda is a UUID that uniquely identifies an entity instance. It's system-generated and immutable."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "search_cyoda_concepts",
+                "args": {
+                  "query": "technical id"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "concept-entity",
+      "conversation": [
+        {
+          "invocation_id": "concept-002",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Explain what an entity is in Cyoda"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "In Cyoda, an entity is a business object with versioned schema, lifecycle state, and workflow management."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "search_cyoda_concepts",
+                "args": {
+                  "query": "entity"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "concept-workflow",
+      "conversation": [
+        {
+          "invocation_id": "concept-003",
+          "user_content": {
+            "parts": [
+              {
+                "text": "How do workflows work in Cyoda?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Workflows in Cyoda define entity lifecycle states and transitions. They're JSON-based and manage state changes through manual transitions."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "search_cyoda_concepts",
+                "args": {
+                  "query": "workflow"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+

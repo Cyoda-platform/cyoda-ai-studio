@@ -1,0 +1,43 @@
+{
+  "eval_set_id": "canvas-entity-immediate-save-001",
+  "name": "Canvas Agent - Entity Creation Immediate Save",
+  "description": "Test canvas agent's ability to create and save entities immediately without preview/confirmation steps",
+  "eval_cases": [
+    {
+      "eval_id": "entity-immediate-save-001",
+      "conversation": [
+        {
+          "invocation_id": "entity-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Add an Order entity with fields: id, customer_id, status, total"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I've created and saved the Order entity with all the requested fields. The entity is now available on the canvas."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "validate_entity_schema",
+                "args": {
+                  "entity_json": "{\"name\": \"Order\", \"fields\": [{\"name\": \"id\", \"type\": \"string\"}, {\"name\": \"customer_id\", \"type\": \"string\"}, {\"name\": \"status\", \"type\": \"string\"}, {\"name\": \"total\", \"type\": \"number\"}]}"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ]
+    }
+  ]
+}
+
