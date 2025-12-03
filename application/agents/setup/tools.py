@@ -489,7 +489,7 @@ async def ui_function_issue_technical_user() -> str:
             "type": "ui_function",
             "function": "ui_function_issue_technical_user",
             "method": "POST",
-            "path": "/api/users",
+            "path": "/api/clients",
             "response_format": "json"
         }
 

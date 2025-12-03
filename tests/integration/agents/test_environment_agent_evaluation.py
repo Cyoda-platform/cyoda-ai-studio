@@ -69,7 +69,7 @@ class TestEnvironmentAgentToolOutput:
         assert ui_func["type"] == "ui_function", "Missing or incorrect 'type' field"
         assert ui_func["function"] == "ui_function_issue_technical_user", "Missing or incorrect 'function' field"
         assert ui_func["method"] == "POST", "Missing or incorrect 'method' field"
-        assert ui_func["path"] == "/api/users", "Missing or incorrect 'path' field"
+        assert ui_func["path"] == "/api/clients", "Missing or incorrect 'path' field"
         assert ui_func["response_format"] == "json", "Missing or incorrect 'response_format' field"
 
         print(f"\n✅ Tool stores UI function in context (to be added by route handler):")
