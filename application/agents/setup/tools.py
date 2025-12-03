@@ -211,7 +211,8 @@ async def get_env_deploy_status(build_id: str) -> str:
     Check the deployment status for a given build ID.
 
     Makes an HTTP request to the Cyoda deployment status endpoint to check
-    if the environment deployment is complete.
+    if the environment deployment is complete. Authenticates first using
+    CYODA_CLIENT_ID and CYODA_CLIENT_SECRET.
 
     Args:
         build_id: The build identifier to check status for
@@ -222,23 +223,61 @@ async def get_env_deploy_status(build_id: str) -> str:
     try:
         import httpx
 
-        # Get the deployment status endpoint from environment
+        # Get required environment variables
         cloud_manager_host = os.getenv('CLOUD_MANAGER_HOST')
+        client_host = os.getenv('CLIENT_HOST')
+        client_id = os.getenv('CYODA_CLIENT_ID')
+        client_secret = os.getenv('CYODA_CLIENT_SECRET')
+
         if not cloud_manager_host:
             return "Error: CLOUD_MANAGER_HOST environment variable not configured"
 
+        if not client_host:
+            return "Error: CLIENT_HOST environment variable not configured"
+
+        if not client_id or not client_secret:
+            return "Error: CYODA_CLIENT_ID and CYODA_CLIENT_SECRET environment variables must be configured"
+
         # Determine protocol based on host
         protocol = "http" if "localhost" in cloud_manager_host else "https"
+
+        # Construct authentication URL
+        auth_url = f"{protocol}://cloud-manager-cyoda.{client_host}/api/auth/login"
+
+        # Construct deployment status URL
         status_url = os.getenv(
             'DEPLOY_CYODA_ENV_STATUS',
             f"{protocol}://{cloud_manager_host}/deploy/cyoda-env/status"
         )
 
-        # Make HTTP request to check deployment status
-        logger.info(f"Checking deployment status for build_id: {build_id}")
+        # Authenticate and get token
+        logger.info(f"Authenticating with cloud manager at {auth_url}")
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(f"{status_url}?build_id={build_id}")
+            # Step 1: Login to get authentication token
+            auth_response = await client.post(
+                auth_url,
+                json={
+                    "username": client_id,
+                    "password": client_secret
+                }
+            )
+            auth_response.raise_for_status()
+
+            auth_data = auth_response.json()
+            token = auth_data.get('token') or auth_data.get('access_token')
+
+            if not token:
+                return "Error: No token returned from authentication endpoint"
+
+            logger.info(f"Authentication successful, checking deployment status for build_id: {build_id}")
+
+            # Step 2: Make authenticated request to check deployment status
+            headers = {"Authorization": f"Bearer {token}"}
+            response = await client.get(
+                f"{status_url}?build_id={build_id}",
+                headers=headers
+            )
             response.raise_for_status()
 
             data = response.json()

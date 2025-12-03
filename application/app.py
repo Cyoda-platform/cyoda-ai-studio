@@ -31,7 +31,7 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
-from application.routes import chat_bp, labels_config_bp, tasks_bp, token_bp
+from application.routes import chat_bp, labels_config_bp, logs_bp, metrics_bp, tasks_bp, token_bp
 from application.routes.repository_routes import repository_bp
 
 # Configure root logging to both stdout and a file for debugging/triage.
@@ -62,15 +62,19 @@ adk_logger.setLevel(logging.DEBUG)
 
 # Enable debug logging for OpenAI SDK if DEBUG_OPENAI is set
 if os.getenv("DEBUG_OPENAI", "false").lower() == "true":
-    from agents import enable_verbose_stdout_logging
-    enable_verbose_stdout_logging()
-    logger = logging.getLogger(__name__)
-    logger.info("🔍 OpenAI SDK debug mode enabled")
+    try:
+        from agents import enable_verbose_stdout_logging
+        enable_verbose_stdout_logging()
+        logger = logging.getLogger(__name__)
+        logger.info("🔍 OpenAI SDK debug mode enabled")
 
-    # Also enable tracing logger
-    tracing_logger = logging.getLogger("openai.agents.tracing")
-    tracing_logger.setLevel(logging.DEBUG)
-    tracing_logger.addHandler(logging.StreamHandler(sys.stdout))
+        # Also enable tracing logger
+        tracing_logger = logging.getLogger("openai.agents.tracing")
+        tracing_logger.setLevel(logging.DEBUG)
+        tracing_logger.addHandler(logging.StreamHandler(sys.stdout))
+    except ImportError:
+        logger = logging.getLogger(__name__)
+        logger.warning("DEBUG_OPENAI is set but OpenAI agents SDK is not installed")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -143,6 +147,8 @@ app.register_blueprint(chat_bp, url_prefix="/api/v1/chats")
 app.register_blueprint(token_bp, url_prefix="/api/v1")
 app.register_blueprint(labels_config_bp, url_prefix="/api/v1/labels_config")
 app.register_blueprint(tasks_bp, url_prefix="/api/v1/tasks")
+app.register_blueprint(logs_bp)  # URL prefix already set in blueprint
+app.register_blueprint(metrics_bp)  # URL prefix already set in blueprint
 app.register_blueprint(repository_bp)  # URL prefix already set in blueprint
 
 
