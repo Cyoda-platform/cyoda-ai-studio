@@ -15,6 +15,218 @@ from services.services import get_entity_service
 logger = logging.getLogger(__name__)
 
 
+async def _get_cloud_manager_auth_token() -> str:
+    """Get authentication token for cloud manager API.
+
+    Returns:
+        The access token for cloud manager API
+
+    Raises:
+        Exception: If authentication fails or credentials are not configured
+    """
+    import base64
+    import httpx
+
+    # Get cloud manager access token
+    cloud_manager_api_key_encoded = os.getenv("CLOUD_MANAGER_API_KEY")
+    cloud_manager_api_secret_encoded = os.getenv("CLOUD_MANAGER_API_SECRET")
+
+    if not cloud_manager_api_key_encoded or not cloud_manager_api_secret_encoded:
+        raise Exception("Cloud manager credentials not configured")
+
+    # Decode base64 credentials
+    cloud_manager_api_key = base64.b64decode(
+        cloud_manager_api_key_encoded
+    ).decode("utf-8")
+    cloud_manager_api_secret = base64.b64decode(
+        cloud_manager_api_secret_encoded
+    ).decode("utf-8")
+
+    # Determine protocol
+    cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+    protocol = "http" if cloud_manager_host and "localhost" in cloud_manager_host else "https"
+
+    # Authenticate with cloud manager
+    auth_url = f"{protocol}://cloud-manager-cyoda.kube3.cyoda.org/api/auth/login"
+    auth_payload = {
+        "username": cloud_manager_api_key,
+        "password": cloud_manager_api_secret,
+    }
+    auth_headers = {
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/json",
+    }
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        auth_response = await client.post(
+            auth_url, json=auth_payload, headers=auth_headers
+        )
+        auth_response.raise_for_status()
+        auth_data = auth_response.json()
+        access_token = auth_data.get("token")
+
+        if not access_token:
+            raise Exception("Failed to authenticate with cloud manager")
+
+        return access_token
+
+
+async def _handle_deployment_success(
+    tool_context: ToolContext,
+    build_id: str,
+    namespace: str,
+    deployment_type: str,
+    task_name: str,
+    task_description: str,
+    env_url: Optional[str] = None,
+    additional_metadata: Optional[dict[str, Any]] = None,
+) -> tuple[Optional[str], Optional[dict[str, Any]]]:
+    """Handle common post-deployment logic: create BackgroundTask, start monitoring, create hooks.
+
+    Args:
+        tool_context: The ADK tool context
+        build_id: The deployment build ID
+        namespace: The deployment namespace
+        deployment_type: Type of deployment (e.g., "environment_deployment", "user_application_deployment")
+        task_name: Name for the background task
+        task_description: Description for the background task
+        env_url: Optional environment URL
+        additional_metadata: Optional additional metadata to include in task
+
+    Returns:
+        Tuple of (task_id, hook_dict) where hook_dict is the combined hook to be set in tool_context
+    """
+    task_id = None
+    hook = None
+    conversation_id = tool_context.state.get("conversation_id")
+    user_id = tool_context.state.get("user_id", "guest")
+
+    # Construct environment URL if not provided
+    if not env_url and namespace:
+        client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
+        env_url = f"https://{namespace}.{client_host}"
+
+    # Prepare metadata
+    metadata = {
+        "build_id": build_id,
+        "namespace": namespace,
+        "env_url": env_url,
+    }
+    if additional_metadata:
+        metadata.update(additional_metadata)
+
+    # Create BackgroundTask entity to track deployment progress
+    if conversation_id:
+        try:
+            from services.services import get_task_service
+
+            task_service = get_task_service()
+
+            logger.info(f"🔧 Creating BackgroundTask with user_id={user_id}, conversation_id={conversation_id}")
+
+            # Create background task
+            background_task = await task_service.create_task(
+                user_id=user_id,
+                task_type=deployment_type,
+                name=task_name,
+                description=task_description,
+                conversation_id=conversation_id,
+                build_id=build_id,
+                namespace=namespace,
+                env_url=env_url,
+            )
+
+            task_id = background_task.technical_id
+            logger.info(f"✅ Created BackgroundTask {task_id} for {deployment_type}")
+
+            # Update task to in_progress status
+            await task_service.update_task_status(
+                task_id=task_id,
+                status="in_progress",
+                message=f"Deployment started: {namespace}",
+                progress=10,
+                metadata=metadata,
+            )
+            logger.info(f"✅ Updated BackgroundTask {task_id} to in_progress")
+
+            # Store task_id in context for monitoring
+            tool_context.state["deployment_task_id"] = task_id
+
+            # Add task to conversation's background_task_ids
+            from application.agents.shared.repository_tools import _add_task_to_conversation
+
+            logger.info(f"🔧 Adding task {task_id} to conversation {conversation_id}")
+            await _add_task_to_conversation(conversation_id, task_id)
+            logger.info(f"✅ Added task {task_id} to conversation {conversation_id}")
+
+        except Exception as e:
+            logger.error(f"❌ Failed to create BackgroundTask for {deployment_type}: {e}", exc_info=True)
+            logger.error(f"❌ user_id={user_id}, conversation_id={conversation_id}, namespace={namespace}")
+            # Continue anyway - task tracking is not critical for deployment execution
+    else:
+        logger.warning(f"⚠️ No conversation_id in tool_context.state - cannot create BackgroundTask")
+
+    # Store deployment info in session state
+    tool_context.state["build_id"] = build_id
+    tool_context.state["build_namespace"] = namespace
+    tool_context.state["deployment_type"] = deployment_type
+    tool_context.state["deployment_started"] = True
+    tool_context.state["deployment_build_id"] = build_id
+    tool_context.state["deployment_namespace"] = namespace
+
+    # Start monitoring deployment progress in background
+    if task_id:
+        import asyncio
+        asyncio.create_task(
+            _monitor_deployment_progress(
+                build_id=build_id,
+                task_id=task_id,
+                tool_context=tool_context,
+            )
+        )
+        logger.info(f"🔍 Started monitoring task for deployment {build_id}")
+
+    # Create hooks
+    if conversation_id and task_id:
+        from application.agents.shared.hook_utils import (
+            create_cloud_window_hook,
+            create_background_task_hook,
+            create_combined_hook,
+        )
+
+        # Create background task hook
+        task_hook = create_background_task_hook(
+            task_id=task_id,
+            task_type=deployment_type,
+            task_name=task_name,
+            task_description=task_description,
+            conversation_id=conversation_id,
+            metadata=metadata,
+        )
+
+        # If we have env_url, combine with cloud window hook
+        if env_url:
+            cloud_hook = create_cloud_window_hook(
+                conversation_id=conversation_id,
+                environment_url=env_url,
+                environment_status="deploying",
+                message=f"Deployment started! Track progress in the Cloud panel.",
+            )
+            # Combine both hooks
+            hook = create_combined_hook(
+                code_changes_hook=cloud_hook,  # Reuse code_changes slot for cloud hook
+                background_task_hook=task_hook,
+            )
+        else:
+            # Just background task hook
+            hook = task_hook
+
+        # Store hook in context
+        tool_context.state["last_tool_hook"] = hook
+
+    return task_id, hook
+
+
 async def check_environment_exists(tool_context: ToolContext) -> str:
     """Check if a Cyoda environment exists for the current user.
 
@@ -194,45 +406,14 @@ async def deploy_cyoda_environment(
             f"Deploying Cyoda environment for user: {user_id}, chat_id: {chat_id}"
         )
 
-        # Get cloud manager access token (temporary workaround)
-        cloud_manager_api_key_encoded = os.getenv("CLOUD_MANAGER_API_KEY")
-        cloud_manager_api_secret_encoded = os.getenv("CLOUD_MANAGER_API_SECRET")
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return f"Error: Failed to authenticate with cloud manager: {str(e)}"
 
-        if not cloud_manager_api_key_encoded or not cloud_manager_api_secret_encoded:
-            return "Error: Cloud manager credentials not configured. Please contact your administrator."
-
-        # Decode base64 credentials
-        cloud_manager_api_key = base64.b64decode(
-            cloud_manager_api_key_encoded
-        ).decode("utf-8")
-        cloud_manager_api_secret = base64.b64decode(
-            cloud_manager_api_secret_encoded
-        ).decode("utf-8")
-
-        # Authenticate with cloud manager (using separate auth subdomain)
-        auth_url = f"{protocol}://cloud-manager-cyoda.kube3.cyoda.org/api/auth/login"
-        auth_payload = {
-            "username": cloud_manager_api_key,
-            "password": cloud_manager_api_secret,
-        }
-        auth_headers = {
-            "X-Requested-With": "XMLHttpRequest",
-            "Content-Type": "application/json",
-        }
-
+        # Make deployment request with authentication
         async with httpx.AsyncClient(timeout=300.0) as client:  # 5 minutes for environment check
-            # Get cloud manager token
-            auth_response = await client.post(
-                auth_url, json=auth_payload, headers=auth_headers
-            )
-            auth_response.raise_for_status()
-            auth_data = auth_response.json()
-            access_token = auth_data.get("token")
-
-            if not access_token:
-                return "Error: Failed to authenticate with cloud manager. Please contact your administrator."
-
-            # Make deployment request with authentication
             headers = {"Authorization": f"Bearer {access_token}"}
             response = await client.post(deploy_url, json=payload, headers=headers)
             response.raise_for_status()
@@ -244,81 +425,24 @@ async def deploy_cyoda_environment(
             if not deployment_build_id or not namespace:
                 return "Error: Deployment request succeeded but missing build information. Please try again."
 
-            # Construct environment URL
-            client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
-            env_url = f"https://{namespace}.{client_host}"
-
             logger.info(
                 f"Environment deployment started: build_id={deployment_build_id}, namespace={namespace}"
             )
 
-            # Create BackgroundTask entity to track deployment progress
-            task_id = None
-            conversation_id = tool_context.state.get("conversation_id")
-
-            if conversation_id:
-                try:
-                    from services.services import get_task_service
-
-                    task_service = get_task_service()
-
-                    logger.info(f"🔧 Creating BackgroundTask with user_id={user_id}, conversation_id={conversation_id}")
-
-                    # Create background task with correct parameters
-                    background_task = await task_service.create_task(
-                        user_id=user_id,
-                        task_type="environment_deployment",
-                        name=f"Deploy Cyoda environment: {namespace}",
-                        description=f"Deploying Cyoda environment to namespace {namespace}",
-                        conversation_id=conversation_id,
-                        build_id=deployment_build_id,
-                        namespace=namespace,
-                        env_url=env_url,
-                    )
-
-                    task_id = background_task.technical_id
-                    logger.info(f"✅ Created BackgroundTask {task_id} for environment deployment")
-
-                    # Update task to in_progress status
-                    await task_service.update_task_status(
-                        task_id=task_id,
-                        status="in_progress",
-                        message=f"Environment deployment started: {namespace}",
-                        progress=10,
-                        metadata={
-                            "build_id": deployment_build_id,
-                            "namespace": namespace,
-                            "env_url": env_url,
-                        },
-                    )
-                    logger.info(f"✅ Updated BackgroundTask {task_id} to in_progress")
-
-                    # Store task_id in context for monitoring
-                    tool_context.state["deployment_task_id"] = task_id
-
-                    # Add task to conversation's background_task_ids
-                    from application.agents.shared.repository_tools import _add_task_to_conversation
-
-                    logger.info(f"🔧 Adding task {task_id} to conversation {conversation_id}")
-                    await _add_task_to_conversation(conversation_id, task_id)
-                    logger.info(f"✅ Added task {task_id} to conversation {conversation_id}")
-
-                except Exception as e:
-                    logger.error(f"❌ Failed to create BackgroundTask for deployment: {e}", exc_info=True)
-                    logger.error(f"❌ user_id={user_id}, conversation_id={conversation_id}, namespace={namespace}")
-                    # Continue anyway - task tracking is not critical for deployment execution
-            else:
-                logger.warning(f"⚠️ No conversation_id in tool_context.state - cannot create BackgroundTask")
-
-            # Store deployment info in session state
-            tool_context.state["build_id"] = deployment_build_id
-            tool_context.state["build_namespace"] = namespace
-            tool_context.state["deployment_type"] = "cyoda_environment"
-            tool_context.state["deployment_started"] = True
-            tool_context.state["deployment_build_id"] = deployment_build_id
-            tool_context.state["deployment_namespace"] = namespace
+            # Handle deployment success: create BackgroundTask, start monitoring, create hooks
+            task_id, hook = await _handle_deployment_success(
+                tool_context=tool_context,
+                build_id=deployment_build_id,
+                namespace=namespace,
+                deployment_type="environment_deployment",
+                task_name=f"Deploy Cyoda environment: {namespace}",
+                task_description=f"Deploying Cyoda environment to namespace {namespace}",
+                env_url=None,  # Will be constructed from namespace
+                additional_metadata=None,
+            )
 
             # Also store build_id in Conversation's workflow_cache for persistence
+            conversation_id = tool_context.state.get("conversation_id")
             if conversation_id:
                 try:
                     from services.services import get_entity_service
@@ -353,58 +477,6 @@ async def deploy_cyoda_environment(
                     logger.warning(f"⚠️ Failed to update conversation workflow_cache with build_id: {e}")
                     # Continue anyway - this is not critical for deployment
 
-            # Start monitoring deployment progress in background
-            if task_id:
-                import asyncio
-                asyncio.create_task(
-                    _monitor_deployment_progress(
-                        build_id=deployment_build_id,
-                        task_id=task_id,
-                        tool_context=tool_context,
-                    )
-                )
-                logger.info(f"🔍 Started monitoring task for deployment {deployment_build_id}")
-
-            # Create cloud window hook to open Environments panel
-            if conversation_id:
-                from application.agents.shared.hook_utils import (
-                    create_cloud_window_hook,
-                    create_background_task_hook,
-                    create_combined_hook,
-                )
-
-                # Create cloud window hook
-                cloud_hook = create_cloud_window_hook(
-                    conversation_id=conversation_id,
-                    environment_url=env_url,
-                    environment_status="deploying",
-                    message="Environment deployment started! Track progress in the Cloud panel.",
-                )
-
-                # If we have a task, combine with background task hook
-                if task_id:
-                    task_hook = create_background_task_hook(
-                        task_id=task_id,
-                        task_type="environment_deployment",
-                        task_name=f"Deploy Cyoda environment: {namespace}",
-                        task_description=f"Deploying Cyoda environment to namespace {namespace}",
-                        conversation_id=conversation_id,
-                        metadata={
-                            "build_id": deployment_build_id,
-                            "namespace": namespace,
-                            "env_url": env_url,
-                        },
-                    )
-                    # Combine both hooks
-                    combined_hook = create_combined_hook(
-                        code_changes_hook=cloud_hook,  # Reuse code_changes slot for cloud hook
-                        background_task_hook=task_hook,
-                    )
-                    tool_context.state["last_tool_hook"] = combined_hook
-                else:
-                    # Just cloud window hook
-                    tool_context.state["last_tool_hook"] = cloud_hook
-
             # Return success with task_id for UI tracking
             result = f"SUCCESS: Environment deployment started (Build ID: {deployment_build_id}, Namespace: {namespace}"
             if task_id:
@@ -428,7 +500,14 @@ async def deploy_cyoda_environment(
 
 
 async def deploy_user_application(
-    programming_language: str, repository_url: str, branch: str, is_public: bool = True
+    tool_context: ToolContext,
+    repository_url: str,
+    branch_name: str,
+    cyoda_client_id: str,
+    cyoda_client_secret: str,
+    user_name: str,
+    is_public: bool = True,
+    installation_id: Optional[str] = None,
 ) -> str:
     """Deploy a user application to their Cyoda environment.
 
@@ -436,21 +515,20 @@ async def deploy_user_application(
     Cyoda environment. Supports both Python and Java applications.
 
     Args:
-      programming_language: Either "PYTHON" or "JAVA"
+      tool_context: The ADK tool context
       repository_url: Git repository URL containing the application code
-      branch: Git branch to deploy (e.g., "main", "develop")
+      branch_name: Git branch to deploy (e.g., "main", "develop", or branch UUID)
+      cyoda_client_id: Cyoda client ID for authentication
+      cyoda_client_secret: Cyoda client secret for authentication
+      user_name: Username for the deployment
       is_public: Whether the repository is public (default: True)
+      installation_id: GitHub installation ID for public repos (optional)
 
     Returns:
       Success message with deployment details, or error message
     """
     try:
         import httpx
-
-        # Validate programming language
-        programming_language = programming_language.upper()
-        if programming_language not in ["PYTHON", "JAVA"]:
-            return f"Error: Unsupported programming language '{programming_language}'. Supported languages: PYTHON, JAVA"
 
         # Get cloud manager configuration
         cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
@@ -463,57 +541,86 @@ async def deploy_user_application(
             "DEPLOY_USER_APP", f"{protocol}://{cloud_manager_host}/deploy/user-app"
         )
 
-        # Prepare deployment payload
+        # Get chat_id from session state (conversation_id)
+        chat_id = tool_context.state.get("conversation_id")
+        if not chat_id:
+            return "Error: Unable to determine conversation ID. Please try again."
+
+        # Prepare deployment payload matching the working example format
         payload = {
-            "programming_language": programming_language,
-            "repository_url": repository_url,
-            "branch": branch,
+            "branch_name": branch_name,
+            "chat_id": chat_id,
+            "cyoda_client_id": cyoda_client_id,
+            "cyoda_client_secret": cyoda_client_secret,
             "is_public": str(is_public).lower(),
+            "repository_url": repository_url,
+            "user_name": user_name,
         }
 
-        # Add installation ID for public repos
-        if is_public:
-            installation_id = os.getenv("GITHUB_PUBLIC_REPO_INSTALLATION_ID")
-            if installation_id:
-                payload["installation_id"] = installation_id
+        # Add installation ID if provided (for public repos)
+        if installation_id:
+            payload["installation_id"] = installation_id
+        elif is_public:
+            # Try to get from environment if not provided
+            env_installation_id = os.getenv("GITHUB_PUBLIC_REPO_INSTALLATION_ID")
+            if env_installation_id:
+                payload["installation_id"] = env_installation_id
 
         logger.info(
-            f"Deploying {programming_language} application from {repository_url}@{branch}"
+            f"Deploying user application from {repository_url}@{branch_name} for user {user_name}"
         )
 
-        # Make deployment request
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return f"Error: Failed to authenticate with cloud manager: {str(e)}"
+
+        # Make deployment request with authentication
         async with httpx.AsyncClient(timeout=300.0) as client:  # 5 minutes for deployment
-            response = await client.post(deploy_url, json=payload)
+            headers = {"Authorization": f"Bearer {access_token}"}
+            response = await client.post(deploy_url, json=payload, headers=headers)
             response.raise_for_status()
 
             data = response.json()
             build_id = data.get("build_id")
+            namespace = data.get("build_namespace") or data.get("namespace")
 
             if not build_id:
                 return "Error: Deployment request succeeded but missing build ID. Please try again."
 
-            logger.info(f"Application deployment started: build_id={build_id}")
+            logger.info(f"User application deployment started: build_id={build_id}")
 
-            return f"""✓ Application deployment started successfully!
+            # Handle deployment success: create BackgroundTask, start monitoring, create hooks
+            task_id, hook = await _handle_deployment_success(
+                tool_context=tool_context,
+                build_id=build_id,
+                namespace=namespace,
+                deployment_type="user_application_deployment",
+                task_name=f"Deploy application: {repository_url}",
+                task_description=f"Deploying user application from {repository_url}@{branch_name}",
+                env_url=None,  # Will be constructed from namespace
+                additional_metadata={
+                    "repository_url": repository_url,
+                    "branch_name": branch_name,
+                },
+            )
 
-**Build ID:** {build_id}
-**Language:** {programming_language}
-**Repository:** {repository_url}
-**Branch:** {branch}
+            # Return success with task_id for UI tracking
+            result = f"✓ Application deployment started successfully!\n\n**Build ID:** {build_id}\n**Repository:** {repository_url}\n**Branch:** {branch_name}\n**User:** {user_name}"
+            if task_id:
+                result += f"\n**Task ID:** {task_id}"
+            if namespace:
+                result += f"\n**Namespace:** {namespace}"
 
-Your application is being built and deployed. This typically takes 3-5 minutes.
+            result += "\n\nYour application is being built and deployed. This typically takes 3-5 minutes.\n\nI'll keep you updated on the progress!"
 
-You can check the deployment status by asking:
-- "What's my deployment status?"
-- "Check deployment status for build {build_id}"
-- "Show me the build logs for {build_id}"
-
-I'll keep you updated on the progress!"""
+            return result
 
     except httpx.HTTPStatusError as e:
         error_msg = f"Deployment request failed with status {e.response.status_code}"
         logger.error(f"{error_msg}: {e.response.text}")
-        return f"Error: {error_msg}. Please verify your repository URL and try again."
+        return f"Error: {error_msg}. Please verify your repository URL and credentials and try again."
     except httpx.HTTPError as e:
         error_msg = f"Network error during deployment request: {str(e)}"
         logger.error(error_msg)
@@ -541,8 +648,6 @@ async def get_deployment_status(
       Formatted deployment status information, or error message
     """
     try:
-        import base64
-
         import httpx
 
         # Get cloud manager configuration
@@ -559,47 +664,16 @@ async def get_deployment_status(
 
         logger.info(f"Checking deployment status for build_id: {build_id}")
 
-        # Get cloud manager access token (temporary workaround)
-        cloud_manager_api_key_encoded = os.getenv("CLOUD_MANAGER_API_KEY")
-        cloud_manager_api_secret_encoded = os.getenv("CLOUD_MANAGER_API_SECRET")
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return f"Error: Failed to authenticate with cloud manager: {str(e)}"
 
-        if not cloud_manager_api_key_encoded or not cloud_manager_api_secret_encoded:
-            return "Error: Cloud manager credentials not configured."
-
-        # Decode base64 credentials
-        cloud_manager_api_key = base64.b64decode(
-            cloud_manager_api_key_encoded
-        ).decode("utf-8")
-        cloud_manager_api_secret = base64.b64decode(
-            cloud_manager_api_secret_encoded
-        ).decode("utf-8")
-
-        # Authenticate with cloud manager
-        auth_url = f"{protocol}://cloud-manager-cyoda.kube3.cyoda.org/api/auth/login"
-        auth_payload = {
-            "username": cloud_manager_api_key,
-            "password": cloud_manager_api_secret,
-        }
-        auth_headers = {
-            "X-Requested-With": "XMLHttpRequest",
-            "Content-Type": "application/json",
-        }
-
-        with httpx.Client(timeout=30.0) as client:
-            # Get cloud manager token
-            auth_response = client.post(
-                auth_url, json=auth_payload, headers=auth_headers
-            )
-            auth_response.raise_for_status()
-            auth_data = auth_response.json()
-            access_token = auth_data.get("token")
-
-            if not access_token:
-                return "Error: Failed to authenticate with cloud manager."
-
-            # Make status request with authentication
+        # Make status request with authentication
+        async with httpx.AsyncClient(timeout=30.0) as client:
             headers = {"Authorization": f"Bearer {access_token}"}
-            response = client.get(f"{status_url}?build_id={build_id}", headers=headers)
+            response = await client.get(f"{status_url}?build_id={build_id}", headers=headers)
             response.raise_for_status()
 
             data = response.json()

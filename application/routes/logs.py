@@ -83,18 +83,13 @@ async def generate_api_key() -> tuple[dict, int]:
 
         # Define role descriptors for read-only access to org-specific logs
         role_descriptors = {
-            "logs_reader": {
+            f"logs_reader_{org_id}": {
                 "cluster": [],
                 "indices": [
                     {
-                        "names": [f"logs-{org_id}*", "logs*"],
+                        "names": [f"logs-client-{org_id}*", f"logs-client-app-{org_id}*"],
                         "privileges": ["read", "view_index_metadata"],
-                        "allow_restricted_indices": False,
-                        "query": {
-                            "term": {
-                                "org_id": org_id
-                            }
-                        }
+                        "allow_restricted_indices": False
                     }
                 ],
                 "run_as": []
@@ -168,6 +163,8 @@ async def search_logs() -> tuple[dict, int]:
 
     Request body:
         {
+            "type": "environment",  # Optional: "environment" or "application" (default: "environment")
+            "id": "develop",  # Optional: environment id or application id (default: "develop" for environment, "start" for application)
             "query": {
                 "match_all": {}
             },
@@ -201,34 +198,28 @@ async def search_logs() -> tuple[dict, int]:
         if not data:
             data = {"query": {"match_all": {}}, "size": 50}
 
-        # Ensure we have a query
-        if "query" not in data:
-            data["query"] = {"match_all": {}}
+        # Get type and id parameters with defaults
+        deployment_type = data.get('type', 'environment')
 
-        # Add org_id filter to ensure users only see their logs
-        if "bool" not in data["query"]:
-            data["query"] = {
-                "bool": {
-                    "must": [data["query"]],
-                    "filter": [
-                        {"term": {"org_id": org_id}}
-                    ]
-                }
-            }
-        elif "filter" not in data["query"]["bool"]:
-            data["query"]["bool"]["filter"] = [{"term": {"org_id": org_id}}]
-        else:
-            data["query"]["bool"]["filter"].append({"term": {"org_id": org_id}})
+        # Default id based on type
+        if deployment_type == 'application':
+            deployment_id = data.get('id', 'start')
+        else:  # environment
+            deployment_id = data.get('id', 'develop')
 
-        # Default size and sort
-        if "size" not in data:
-            data["size"] = 50
-        if "sort" not in data:
-            data["sort"] = [{"@timestamp": {"order": "desc"}}]
+        # Construct index pattern based on type and id
+        if deployment_type == 'environment':
+            index_pattern = f"logs-client-{org_id}*"
+        else:  # application
+            index_pattern = f"logs-client-app-{org_id}*"
 
-        # Search logs
-        index_pattern = f"logs-{org_id}*"
-
+        logger.info(
+            f"Searching logs for user {user_id} (org_id: {org_id}, type: {deployment_type}, id: {deployment_id}, index: {index_pattern})")
+        query = {
+            "query": data.get("query", {"match_all": {}}),
+            "size": data.get("size", 50),
+            "sort": data.get("sort", [{"@timestamp": {"order": "desc"}}])
+        }
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 f"https://{elk_config['host']}/{index_pattern}/_search",
@@ -236,7 +227,7 @@ async def search_logs() -> tuple[dict, int]:
                     "Authorization": f"ApiKey {api_key}",
                     "Content-Type": "application/json"
                 },
-                json=data
+                json=query
             )
 
             if response.status_code not in [200, 201]:
@@ -248,7 +239,8 @@ async def search_logs() -> tuple[dict, int]:
 
             result = response.json()
 
-            logger.info(f"Log search successful for user {user_id} (org: {org_id}), found {result.get('hits', {}).get('total', {}).get('value', 0)} hits")
+            logger.info(
+                f"Log search successful for user {user_id} (org: {org_id}), found {result.get('hits', {}).get('total', {}).get('value', 0)} hits")
 
             return jsonify(result), 200
 

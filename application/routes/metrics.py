@@ -210,17 +210,19 @@ async def generate_grafana_token() -> tuple[dict, int]:
 @rate_limit(30, timedelta(minutes=1), key_function=_rate_limit_key)
 async def query_metrics() -> tuple[dict, int]:
     """
-    Query Prometheus metrics with automatic namespace filtering.
+    Query Prometheus metrics for the user's namespace.
 
-    This endpoint acts as a proxy to Prometheus, automatically adding
-    namespace filters to ensure users only see metrics from their namespace.
+    The {namespace} placeholder in queries will be replaced with the appropriate namespace
+    based on type and id parameters.
 
     Request headers:
         Authorization: Bearer <jwt_token>
 
     Request body:
         {
-            "query": "up",
+            "query": "up{namespace=\"{namespace}\"}",  # Required - use {namespace} placeholder
+            "type": "environment",  # Optional: "environment" or "application" (default: "environment")
+            "id": "develop",  # Optional: environment id or application id (default: "develop" for environment, "start" for application)
             "time": "2025-12-02T12:00:00Z",  # Optional
             "timeout": "30s"  # Optional
         }
@@ -235,39 +237,42 @@ async def query_metrics() -> tuple[dict, int]:
         # Get user info
         user_id = request.user_id
         org_id = getattr(request, 'org_id', user_id.lower())
-        namespace = f"client-{org_id}"
-
         prometheus_config = _get_prometheus_config()
 
-        # Get query from request body
-        data = await request.get_json()
+        # Get query parameters from request body
+        data = await request.get_json() if await request.get_data() else {}
+
         if not data or 'query' not in data:
             return jsonify({"error": "query parameter required"}), 400
 
         query = data['query']
 
-        # Add namespace filter to query
-        # For most Kubernetes metrics, namespace label exists
-        if 'namespace=' not in query and 'namespace!=' not in query:
-            # Wrap query with namespace filter
-            if query.strip().startswith('{'):
-                # Query is a selector, add namespace to it
-                filtered_query = query.replace('{', f'{{namespace="{namespace}",', 1)
-            else:
-                # Query is a metric name, add selector
-                filtered_query = f'{query}{{namespace="{namespace}"}}'
-        else:
-            filtered_query = query
+        # Get type and id parameters with defaults
+        deployment_type = data.get('type', 'environment')
 
-        logger.info(f"Querying Prometheus for user {user_id}, namespace: {namespace}")
-        logger.debug(f"Original query: {query}")
-        logger.debug(f"Filtered query: {filtered_query}")
+        # Default id based on type
+        if deployment_type == 'application':
+            deployment_id = data.get('id', 'start')
+        else:  # environment
+            deployment_id = data.get('id', 'develop')
+
+        # Construct namespace based on type and id
+        if deployment_type == 'environment':
+            namespace = f"client-{org_id}"
+        else:  # application
+            namespace = f"client-{org_id}-{deployment_id}"
+
+        # Replace {namespace} placeholder in query
+        query = query.replace("{namespace}", namespace)
+
+        logger.info(f"Querying Prometheus for user {user_id} (org_id: {org_id}, type: {deployment_type}, id: {deployment_id}, namespace: {namespace})")
+        logger.info(f"Query: {query}")
 
         # Prepare query parameters
-        params = {"query": filtered_query}
-        if 'time' in data:
+        params = {"query": query}
+        if data and 'time' in data:
             params['time'] = data['time']
-        if 'timeout' in data:
+        if data and 'timeout' in data:
             params['timeout'] = data['timeout']
 
         # Create auth header if credentials provided
@@ -279,12 +284,18 @@ async def query_metrics() -> tuple[dict, int]:
             headers["Authorization"] = f"Basic {auth_header}"
 
         # Query Prometheus
+        prom_url = f"https://{prometheus_config['host']}/api/v1/query"
+        logger.info(f"Sending to Prometheus: {prom_url}")
+        logger.info(f"Query params: {params}")
+
         async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
             response = await client.post(
-                f"https://{prometheus_config['host']}/api/v1/query",
+                prom_url,
                 headers=headers,
                 data=params
             )
+
+            logger.info(f"Prometheus response status: {response.status_code}")
 
             if response.status_code not in [200, 201]:
                 logger.error(f"Prometheus query failed: {response.status_code} - {response.text}")
@@ -294,7 +305,12 @@ async def query_metrics() -> tuple[dict, int]:
                 }), response.status_code
 
             result = response.json()
-            logger.info(f"Prometheus query successful for user {user_id}")
+            result_count = len(result.get('data', {}).get('result', []))
+            logger.info(f"Prometheus query successful for user {user_id}, returned {result_count} results")
+
+            # Log warning if no results found
+            if result_count == 0:
+                logger.warning(f"Query returned no results. Query: {query}")
 
             return jsonify(result), 200
 
