@@ -16,6 +16,8 @@ from typing import Any, Optional
 from agents import Agent, Runner
 from openai import AsyncOpenAI
 
+from application.config.streaming_config import streaming_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -220,8 +222,8 @@ class OpenAIAgentsService:
             else:
                 full_prompt = user_message
 
-            # Run the agent
-            result = await Runner.run(agent, full_prompt)
+            # Run the agent with max_turns to prevent infinite loops
+            result = await Runner.run(agent, full_prompt, max_turns=streaming_config.MAX_AGENT_TURNS)
 
             logger.debug(f"Agent execution completed: {agent.name}")
             return result.final_output or ""

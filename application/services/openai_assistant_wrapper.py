@@ -15,6 +15,7 @@ _openai_agents = importlib.import_module("agents")
 Agent = _openai_agents.Agent
 Runner = _openai_agents.Runner
 
+from application.config.streaming_config import streaming_config
 from application.entity.conversation import Conversation
 from application.services.openai_agents_service import OpenAIAgentsService
 from common.service.service import EntityServiceError
@@ -85,9 +86,9 @@ class OpenAIAssistantWrapper:
                 "user_id": user_id,
             }
 
-            # Run the agent
+            # Run the agent with max_turns to prevent infinite loops
             logger.debug(f"Running agent: {self.agent.name}")
-            result = await Runner.run(self.agent, full_prompt, context=context)
+            result = await Runner.run(self.agent, full_prompt, context=context, max_turns=streaming_config.MAX_AGENT_TURNS)
 
             # Extract response
             response_text = result.final_output or ""
@@ -156,7 +157,8 @@ class OpenAIAssistantWrapper:
 
             # Run agent with streaming to get real-time events
             # Note: run_streamed() returns RunResultStreaming directly, not an awaitable
-            result = Runner.run_streamed(self.agent, full_prompt, context=context)
+            # Add max_turns to prevent infinite loops
+            result = Runner.run_streamed(self.agent, full_prompt, context=context, max_turns=streaming_config.MAX_AGENT_TURNS)
 
             accumulated_content = ""
 

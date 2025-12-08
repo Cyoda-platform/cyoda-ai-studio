@@ -423,15 +423,22 @@ class CyodaAssistantWrapper:
                     f"Failed to create session: {create_error}"
                 ) from create_error
 
-        # Use Runner to execute the agent
+        # Use Runner to execute the agent with max_llm_calls to prevent infinite loops
         logger.info(f"Calling runner.run_async for session {session_id}")
         response_text = ""
         try:
             from google.genai import types
+            from google.adk.runners import RunConfig
+            from application.config.streaming_config import streaming_config
+
+            # Create run config with max_llm_calls limit
+            run_config = RunConfig(max_llm_calls=streaming_config.MAX_AGENT_TURNS)
+
             async for event in self.runner.run_async(
                 user_id=user_id,
                 session_id=session_id,
                 new_message=types.Content(parts=[types.Part(text=user_message)]),
+                run_config=run_config,
             ):
                 # Extract text from events
                 if hasattr(event, "content") and event.content:

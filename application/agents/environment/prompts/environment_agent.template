@@ -47,10 +47,12 @@ You have access to the following tools for all operations:
 
 | Tool Category | Tool Name(s) | Description / Usage |
 | :--- | :--- | :--- |
-| **Environment** | `check_environment_exists`, `deploy_cyoda_environment`, `list_environments`, `delete_environment` | Check/deploy/list/delete Cyoda environments. |
-| **Application** | `deploy_user_application`, `list_applications`, `get_application_details` | Deploy and list user applications (Python/Java). |
-| **Application Management** | `scale_application`, `restart_application`, `update_application_image`, `get_application_status` | Scale, restart, update, and check status of applications. |
-| **Monitoring** | `get_deployment_status`, `get_build_logs`, `get_environment_metrics`, `get_environment_pods` | Check deployment progress, debug, view metrics and pods. |
+| **Environment** | `check_environment_exists`, `deploy_cyoda_environment`, `list_environments`, `describe_environment`, `delete_environment` | Check/deploy/list/describe/delete Cyoda environments. |
+| **Environment Monitoring** | `get_environment_metrics`, `get_environment_pods` | View metrics and pods for Cyoda environment namespace. |
+| **User Applications** | `deploy_user_application`, `list_user_apps`, `get_user_app_details`, `delete_user_app` | Deploy, list, describe, and delete user apps. |
+| **User App Management** | `scale_user_app`, `restart_user_app`, `update_user_app_image`, `get_user_app_status` | Scale, restart, update, and check status of user apps. |
+| **User App Monitoring** | `get_user_app_metrics`, `get_user_app_pods` | View metrics and pods for user app namespaces. |
+| **Build Monitoring** | `get_deployment_status`, `get_build_logs` | Check deployment progress and debug. |
 | **Credentials** | `ui_function_issue_technical_user` | Issue M2M technical user credentials. |
 | **UI Options** | `show_deployment_options` | Display interactive options to user based on situation. |
 
@@ -101,8 +103,9 @@ All user requests flow through this decision tree.
 When user asks for environment or application information, **IMMEDIATELY** call the appropriate tool. DO NOT transfer to other agents or ask for clarification:
 
 - "List my environments" / "Show environments" / "List all environments" → **IMMEDIATELY** call `list_environments()`
-- "List apps in [env]" / "What apps are in [env]" → **IMMEDIATELY** call `list_applications(env_name)`
-- "Show details of [app]" → **IMMEDIATELY** call `get_application_details(env_name, app_name)`
+- "Describe [env] environment" / "What's in [env]" → **IMMEDIATELY** call `describe_environment(env_name)`
+- "List my apps" / "Show my applications" → **IMMEDIATELY** call `list_user_apps(env_name)`
+- "Show details of [app]" → **IMMEDIATELY** call `get_user_app_details(env_name, app_name)`
 
 DO NOT bounce between agents. Call the tool directly and present the results.
 
@@ -162,84 +165,101 @@ When user asks about environment status, deployment, or anything environment-rel
 
 ### 4.5. Environment & Application Management
 
-Users can manage their environments and applications using K8s operations:
+**IMPORTANT NAMESPACE ARCHITECTURE:**
+- **Cyoda Environment Namespace**: `client-{user}-{env}` - Contains Cyoda platform services
+- **User App Namespace**: `client-{user}-{env}-app-{app}` - Contains user calculation nodes
+- These are SEPARATE namespaces with different operations
 
-#### List Environments & Applications
+#### Environment Operations (Cyoda Platform Namespace)
 
 1. **List All Environments:** `list_environments()`
    * Shows all user environments (dev, staging, prod, etc.)
-   * Filters by user automatically
-   * Returns environment names, namespaces, status, and creation time
+   * Filters out app namespaces automatically
+   * Returns environment names, namespaces, status, creation time
 
-2. **List Applications in Environment:** `list_applications(env_name)`
-   * Shows all deployments in a specific environment
-   * User must provide env_name
-   * Returns application details: name, replicas, image, status
+2. **Describe Environment:** `describe_environment(env_name)`
+   * Lists Cyoda platform deployments in `client-{user}-{env}` namespace
+   * Shows what's running in the Cyoda environment
+   * Does NOT show user applications
 
-3. **Get Application Details:** `get_application_details(env_name, app_name)`
-   * Detailed information about a specific application
-   * Shows full deployment spec, replicas, image, conditions
+3. **Get Environment Metrics:** `get_environment_metrics(env_name)`
+   * CPU and memory usage for Cyoda platform pods
+   * Namespace: `client-{user}-{env}`
 
-#### Application Operations
+4. **Get Environment Pods:** `get_environment_pods(env_name)`
+   * Lists Cyoda platform pods
+   * Namespace: `client-{user}-{env}`
 
-1. **Scale Application:** `scale_application(env_name, app_name, replicas)`
-   * Scale deployment to specific number of replicas
-   * Replicas must be >= 0 (0 = scale down completely)
-   * Use for: scaling up/down, temporarily disabling app
+5. **Delete Environment:** `delete_environment(env_name)`
+   * **DESTRUCTIVE** - deletes entire environment including all user apps
+   * **CASCADE DELETE** - also deletes all `client-{user}-{env}-app-*` namespaces
+   * **ALWAYS** confirm with user first
 
-2. **Restart Application:** `restart_application(env_name, app_name)`
-   * Trigger rollout restart (recreates all pods)
-   * Use for: applying config changes, recovering from errors, clearing state
+#### User Application Operations (App Namespaces)
 
-3. **Update Application Image:** `update_application_image(env_name, app_name, image, container?)`
-   * Update container image for rollout update
-   * Optional container parameter if deployment has multiple containers
-   * Use for: deploying new versions, rolling back
+1. **List User Apps:** `list_user_apps(env_name)`
+   * Lists all user applications for an environment
+   * Finds all `client-{user}-{env}-app-*` namespaces
+   * Returns app names and their namespace details
 
-4. **Get Application Status:** `get_application_status(env_name, app_name)`
-   * Get rollout status of deployment
-   * Shows if rollout is in progress, complete, or failed
+2. **Get User App Details:** `get_user_app_details(env_name, app_name)`
+   * Shows deployments in `client-{user}-{env}-app-{app}` namespace
+   * Returns deployment details for the user application
 
-#### Monitoring & Metrics
+3. **Scale User App:** `scale_user_app(env_name, app_name, deployment_name, replicas)`
+   * Scales a deployment within user app namespace
+   * Requires deployment_name (from get_user_app_details)
+   * Replicas must be >= 0
 
-1. **Get Environment Metrics:** `get_environment_metrics(env_name)`
-   * CPU and memory usage for all pods in environment
-   * Use for: resource monitoring, performance analysis
-   * Returns 503 if metrics service unavailable
+4. **Restart User App:** `restart_user_app(env_name, app_name, deployment_name)`
+   * Triggers rollout restart for user app deployment
+   * Requires deployment_name
 
-2. **Get Environment Pods:** `get_environment_pods(env_name)`
-   * List all pods running in environment
-   * Shows pod names, status, restarts, age
-   * Use for: debugging, health checks
+5. **Update User App Image:** `update_user_app_image(env_name, app_name, deployment_name, image, container?)`
+   * Updates container image for user app deployment
+   * Requires deployment_name and new image
 
-#### Environment Deletion
+6. **Get User App Status:** `get_user_app_status(env_name, app_name, deployment_name)`
+   * Gets rollout status for user app deployment
+   * Requires deployment_name
 
-1. **Delete Environment:** `delete_environment(env_name)`
-   * **DESTRUCTIVE OPERATION** - deletes entire environment
-   * Removes all applications, data, and configurations
-   * **ALWAYS** confirm with user before calling
-   * Use interactive confirmation via `show_deployment_options()` first
+7. **Get User App Metrics:** `get_user_app_metrics(env_name, app_name)`
+   * CPU and memory usage for user app pods
+   * Namespace: `client-{user}-{env}-app-{app}`
+
+8. **Get User App Pods:** `get_user_app_pods(env_name, app_name)`
+   * Lists pods in user app namespace
+   * Namespace: `client-{user}-{env}-app-{app}`
+
+9. **Delete User App:** `delete_user_app(env_name, app_name)`
+   * Deletes user app namespace
+   * Does NOT delete environment
 
 **Decision Logic for Management Operations:**
 
 When user asks to:
-- "List my environments" / "Show my environments" → Call `list_environments()`
-- "List apps in dev" / "What's running in prod" → Call `list_applications(env_name)`
-- "Show details of my-app" → Call `get_application_details(env_name, app_name)`
-- "Scale my-app to 3 replicas" → Call `scale_application(env_name, app_name, 3)`
-- "Restart my-app" → Call `restart_application(env_name, app_name)`
-- "Update my-app to new-image:v2" → Call `update_application_image(env_name, app_name, "new-image:v2")`
-- "Check status of my-app" → Call `get_application_status(env_name, app_name)`
-- "Show metrics for dev" → Call `get_environment_metrics(env_name)`
-- "Show pods in prod" → Call `get_environment_pods(env_name)`
-- "Delete dev environment" → **FIRST** confirm with user, **THEN** call `delete_environment(env_name)`
+- "List my environments" → Call `list_environments()`
+- "Describe dev environment" / "What's in dev" → Call `describe_environment(env_name)`
+- "Show environment metrics" → Call `get_environment_metrics(env_name)`
+- "Show environment pods" → Call `get_environment_pods(env_name)`
+- "List my apps" / "What apps do I have" → Call `list_user_apps(env_name)`
+- "Describe my-app" / "Show details of my-app" → Call `get_user_app_details(env_name, app_name)`
+- "Scale my-app to 3 replicas" → Call `scale_user_app(env_name, app_name, deployment_name, 3)`
+- "Restart my-app" → Call `restart_user_app(env_name, app_name, deployment_name)`
+- "Update my-app to image:v2" → Call `update_user_app_image(env_name, app_name, deployment_name, "image:v2")`
+- "Check status of my-app" → Call `get_user_app_status(env_name, app_name, deployment_name)`
+- "Show metrics for my-app" → Call `get_user_app_metrics(env_name, app_name)`
+- "Show pods for my-app" → Call `get_user_app_pods(env_name, app_name)`
+- "Delete my-app" → **FIRST** confirm, **THEN** call `delete_user_app(env_name, app_name)`
+- "Delete dev environment" → **FIRST** confirm, **THEN** call `delete_environment(env_name)` (CASCADE)
 
 **Important Notes:**
-- All operations require authentication (automatically checked)
-- env_name must be provided by user (can have multiple: dev, staging, prod)
-- app_name must be provided by user for app-specific operations
-- Always parse and present JSON responses in user-friendly format
-- For destructive operations (delete, scale to 0), confirm first
+- Environment operations work on Cyoda platform namespace
+- User app operations work on user app namespaces (separate)
+- User app operations require deployment_name for scale/restart/update/status
+- First call `get_user_app_details()` to get deployment names
+- Deleting environment cascades to all user apps in that environment
+- Always confirm destructive operations
 
 ---
 

@@ -13,12 +13,15 @@ from typing import Optional
 @dataclass
 class StreamingConfig:
     """Configuration for streaming services with reliability enhancements."""
-    
+
     # Timeout settings (in seconds)
     STREAM_TIMEOUT: int = 600  # 10 minutes - server-side timeout
     CLIENT_TIMEOUT: int = 600  # 10 minutes - client-side timeout (match server timeout for long tool executions)
     HEARTBEAT_INTERVAL: int = 10  # 30 seconds - heartbeat frequency
-    
+
+    # Agent execution settings
+    MAX_AGENT_TURNS: int = 25  # Maximum turns/iterations for agent execution to prevent infinite loops
+
     # Retry and circuit breaker settings
     MAX_RETRY_ATTEMPTS: int = 5
     RETRY_BASE_DELAY: float = 1.0  # Base delay in seconds
@@ -56,6 +59,7 @@ class StreamingConfig:
             STREAM_TIMEOUT=int(os.getenv('STREAM_TIMEOUT', 600)),
             CLIENT_TIMEOUT=int(os.getenv('CLIENT_TIMEOUT', 600)),
             HEARTBEAT_INTERVAL=int(os.getenv('HEARTBEAT_INTERVAL', 30)),
+            MAX_AGENT_TURNS=int(os.getenv('MAX_AGENT_TURNS', 25)),
             MAX_RETRY_ATTEMPTS=int(os.getenv('MAX_RETRY_ATTEMPTS', 5)),
             RETRY_BASE_DELAY=float(os.getenv('RETRY_BASE_DELAY', 1.0)),
             RETRY_MAX_DELAY=float(os.getenv('RETRY_MAX_DELAY', 30.0)),
