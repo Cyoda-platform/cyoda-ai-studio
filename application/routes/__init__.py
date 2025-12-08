@@ -10,5 +10,6 @@ from application.routes.logs import logs_bp
 from application.routes.metrics import metrics_bp
 from application.routes.tasks import tasks_bp
 from application.routes.token import token_bp
+from application.routes.agent_routes import agent_bp
 
-__all__ = ["chat_bp", "labels_config_bp", "logs_bp", "metrics_bp", "tasks_bp", "token_bp"]
+__all__ = ["chat_bp", "labels_config_bp", "logs_bp", "metrics_bp", "tasks_bp", "token_bp", "agent_bp"]

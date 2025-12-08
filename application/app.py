@@ -33,6 +33,7 @@ from services.services import get_grpc_client, initialize_services
 # Import blueprints for different route groups
 from application.routes import chat_bp, labels_config_bp, logs_bp, metrics_bp, tasks_bp, token_bp
 from application.routes.repository_routes import repository_bp
+from application.routes.agent_routes import agent_bp
 
 # Configure root logging to both stdout and a file for debugging/triage.
 # Default file is app-log.log in the current working directory; override with APP_LOG_FILE.
@@ -150,6 +151,7 @@ app.register_blueprint(tasks_bp, url_prefix="/api/v1/tasks")
 app.register_blueprint(logs_bp)  # URL prefix already set in blueprint
 app.register_blueprint(metrics_bp)  # URL prefix already set in blueprint
 app.register_blueprint(repository_bp)  # URL prefix already set in blueprint
+app.register_blueprint(agent_bp)  # URL prefix already set in blueprint
 
 
 @app.route("/favicon.ico")
