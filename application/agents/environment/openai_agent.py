@@ -20,6 +20,16 @@ from application.agents.environment.tools import (
     get_build_logs,
     ui_function_issue_technical_user,
     show_deployment_options,
+    list_environments,
+    list_applications,
+    get_application_details,
+    scale_application,
+    restart_application,
+    update_application_image,
+    get_application_status,
+    get_environment_metrics,
+    get_environment_pods,
+    delete_environment,
 )
 
 
@@ -42,6 +52,16 @@ def create_openai_environment_agent() -> Agent:
         get_build_logs,
         ui_function_issue_technical_user,
         show_deployment_options,
+        list_environments,
+        list_applications,
+        get_application_details,
+        scale_application,
+        restart_application,
+        update_application_image,
+        get_application_status,
+        get_environment_metrics,
+        get_environment_pods,
+        delete_environment,
     ]
     openai_tools = adapt_adk_tools_list(adk_tools)
 

@@ -1238,45 +1238,12 @@ async def stream_chat_message(technical_id: str) -> Response:
                                 fresh_conversation.adk_session_id = adk_session_id_result
                                 logger.info(f"🔑 Updated ADK session ID: {adk_session_id_result}")
 
-                            # Add UI functions if any
+                            # DO NOT persist UI functions to conversation.messages
+                            # UI functions are ephemeral - they should only be sent in the SSE done event
+                            # and then discarded. They are NOT part of the conversation history.
+                            # The frontend receives them in the done event and executes them immediately.
                             if ui_functions_result:
-                                for ui_func in ui_functions_result:
-                                    # Ensure ui_func is a dict, not a string
-                                    if isinstance(ui_func, str):
-                                        try:
-                                            ui_func = json.loads(ui_func)
-                                        except json.JSONDecodeError:
-                                            logger.error(f"Failed to parse ui_func string: {ui_func}")
-                                            continue
-
-                                    # Create properly formatted message entry
-                                    message_entry = {
-                                        "type": "ui_function",
-                                        "message": ui_func,  # Store as dict, not JSON string
-                                        "ui_function": ui_func,  # Store as dict, not JSON string
-                                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                                        "approve": False,
-                                        "consumed": True,
-                                        "technical_id": str(uuid.uuid4()),
-                                        "user_id": fresh_conversation.user_id or "default",
-                                        "file_blob_ids": None,
-                                        "publish": True,
-                                        "failed": False,
-                                        "error": None,
-                                        "error_code": "None",
-                                        "current_state": None,
-                                        "current_transition": None,
-                                        "workflow_name": None,
-                                        "metadata": None,
-                                        "last_modified": int(
-                                            datetime.now(timezone.utc).timestamp() * 1000
-                                        ),
-                                        "last_modified_at": datetime.now(timezone.utc).strftime(
-                                            "%Y-%m-%d %H:%M:%S"
-                                        ),
-                                    }
-                                    fresh_conversation.messages.append(message_entry)
-                                logger.info(f"🎨 Added {len(ui_functions_result)} UI functions")
+                                logger.info(f"🎨 Skipping persistence of {len(ui_functions_result)} UI functions (ephemeral only)")
 
                             # Update repository info from tool_context.state (set by build agent)
                             # This is the ONLY place where conversation entity is updated with repository info

@@ -158,7 +158,7 @@ Would you like me to create a machine user for your application? This will give 
   I've initiated the credential creation process. Please check your UI to complete this operation.
 
   ```json
-  {{"type": "ui_function", "function": "ui_function_issue_technical_user", "method": "POST", "path": "/api/users", "response_format": "json"}}
+  {{"type": "ui_function", "function": "ui_function_issue_technical_user", "method": "POST", "path": "/api/users", "response_format": "json", "env_url": $env_url}}
   ```
 
   Once you've generated the CYODA_CLIENT_ID and CYODA_CLIENT_SECRET, please confirm so we can move on to the next step!

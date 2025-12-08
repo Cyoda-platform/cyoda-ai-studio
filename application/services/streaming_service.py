@@ -342,6 +342,10 @@ class StreamingService:
             # This persists across loop iterations so we can use it in the finally block
             tool_hooks_from_stream = []
 
+            # Track UI functions collected during this stream only (not from previous streams)
+            # This prevents leakage of stale ui_functions from previous streams
+            ui_functions_from_stream = []
+
             logger.info(
                 f"🚀 Starting ADK Runner with session_id={adk_runner_session_id} (technical_id={session_technical_id})"
             )
@@ -522,6 +526,20 @@ class StreamingService:
                                     # First, check if hook is already in session state (set by the tool)
                                     if session and "last_tool_hook" in session.state:
                                         tool_hook = session.state.get("last_tool_hook")
+
+                                    # Check if ui_functions were added to session state by the tool
+                                    # Extract them during the stream to avoid reading stale data later
+                                    logger.info(f"🔍 Checking for ui_functions in session state. session exists: {session is not None}, session.state keys: {list(session.state.keys()) if session else 'N/A'}")
+                                    if session and "ui_functions" in session.state:
+                                        current_ui_functions = session.state.get("ui_functions", [])
+                                        logger.info(f"📋 Found {len(current_ui_functions)} ui_functions in session state")
+                                        # Only add new ui_functions that we haven't seen yet
+                                        for ui_func in current_ui_functions:
+                                            if ui_func not in ui_functions_from_stream:
+                                                ui_functions_from_stream.append(ui_func)
+                                                logger.info(f"📋 Collected ui_function from stream: {ui_func.get('function', 'unknown')}")
+                                    else:
+                                        logger.info(f"🔍 No ui_functions found in session state for tool {tool_name}")
 
                                     # Also try to extract from tool response JSON if present
                                     if tool_response and "result" in tool_response:
@@ -791,7 +809,12 @@ class StreamingService:
                             logger.info(f"🎣 Merging {len(pending_delta)} pending state changes for hooks")
                             final_session_state.update(pending_delta)
 
-                    ui_functions = final_session_state.get("ui_functions", [])
+                    # Use ui_functions collected during this stream ONLY (not from session state)
+                    # This prevents leakage of stale ui_functions from previous streams
+                    # Same pattern as hooks - only use what was collected during THIS stream
+                    ui_functions = ui_functions_from_stream if ui_functions_from_stream else []
+                    if ui_functions:
+                        logger.info(f"📋 Using {len(ui_functions)} ui_functions from stream (not from session state)")
 
                     # Extract repository info
                     if (
@@ -901,27 +924,51 @@ class StreamingService:
                 event_id=str(event_counter),
             ).to_sse()
 
-            # Clear the hook from session state after sending it in done event
-            # This ensures the next stream doesn't receive stale hooks from previous runs
+            # Clear the hook and ui_functions from session state after sending them in done event
+            # This ensures the next stream doesn't receive stale hooks/functions from previous runs
             # Streams should be stateless - each stream should start fresh
+            state_cleanup = {}
+
             if session and "last_tool_hook" in session.state:
                 del session.state["last_tool_hook"]
+                state_cleanup["last_tool_hook"] = None
                 logger.info("🧹 Cleared last_tool_hook from session state after done event")
 
-                # Persist the cleared state to database via an event
-                # This ensures the hook doesn't persist to the next stream
+            if session and "ui_functions" in session.state:
+                del session.state["ui_functions"]
+                state_cleanup["ui_functions"] = None
+                logger.info("🧹 Cleared ui_functions from session state after done event")
+
+            # CRITICAL: Also clear from pending_state_delta cache immediately
+            # This prevents the next stream from picking up stale values before flush completes
+            if session_technical_id and hasattr(agent_wrapper.runner.session_service, "_session_cache"):
+                try:
+                    cache = agent_wrapper.runner.session_service._session_cache.get(session_technical_id)
+                    if cache:
+                        if "last_tool_hook" in cache.pending_state_delta:
+                            del cache.pending_state_delta["last_tool_hook"]
+                            logger.info("🧹 Cleared last_tool_hook from pending_state_delta cache")
+                        if "ui_functions" in cache.pending_state_delta:
+                            del cache.pending_state_delta["ui_functions"]
+                            logger.info("🧹 Cleared ui_functions from pending_state_delta cache")
+                except Exception as cache_clear_error:
+                    logger.warning(f"⚠️ Failed to clear from pending_state_delta cache: {cache_clear_error}")
+
+            # Persist the cleared state to database via an event
+            # This ensures hooks and ui_functions don't persist to the next stream
+            if state_cleanup:
                 try:
                     event = Event(
                         invocation_id=f"cleanup-{session_technical_id}",
                         author="system",
-                        actions=EventActions(state_delta={"last_tool_hook": None}),
+                        actions=EventActions(state_delta=state_cleanup),
                     )
                     await agent_wrapper.runner.session_service.append_event(
                         session=session, event=event
                     )
-                    logger.info("✅ Persisted hook cleanup to session via event")
+                    logger.info(f"✅ Persisted state cleanup to session via event: {list(state_cleanup.keys())}")
                 except Exception as cleanup_error:
-                    logger.warning(f"⚠️ Failed to persist hook cleanup: {cleanup_error}")
+                    logger.warning(f"⚠️ Failed to persist state cleanup: {cleanup_error}")
 
             # PERFORMANCE OPTIMIZATION: Flush all pending events in a single batch
             # This is the key optimization - instead of persisting each event individually

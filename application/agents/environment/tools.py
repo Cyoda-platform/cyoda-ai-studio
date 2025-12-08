@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from typing import Any, Optional
 
 from google.adk.tools.tool_context import ToolContext
@@ -72,14 +73,14 @@ async def _get_cloud_manager_auth_token() -> str:
 
 
 async def _handle_deployment_success(
-    tool_context: ToolContext,
-    build_id: str,
-    namespace: str,
-    deployment_type: str,
-    task_name: str,
-    task_description: str,
-    env_url: Optional[str] = None,
-    additional_metadata: Optional[dict[str, Any]] = None,
+        tool_context: ToolContext,
+        build_id: str,
+        namespace: str,
+        deployment_type: str,
+        task_name: str,
+        task_description: str,
+        env_url: Optional[str] = None,
+        additional_metadata: Optional[dict[str, Any]] = None,
 ) -> tuple[Optional[str], Optional[dict[str, Any]]]:
     """Handle common post-deployment logic: create BackgroundTask, start monitoring, create hooks.
 
@@ -227,7 +228,7 @@ async def _handle_deployment_success(
     return task_id, hook
 
 
-async def check_environment_exists(tool_context: ToolContext) -> str:
+async def check_environment_exists(tool_context: ToolContext, env_name: Optional[str] = None) -> str:
     """Check if a Cyoda environment exists for the current user.
 
     Attempts to access the user's environment URL to determine if it's deployed.
@@ -235,8 +236,14 @@ async def check_environment_exists(tool_context: ToolContext) -> str:
 
     Creates a cloud_window hook to open the Cloud/Environments panel in the UI.
 
+    IMPORTANT: You MUST ask the user for env_name before calling this function. DO NOT assume or infer the environment name.
+    The user might have multiple environments (dev, staging, prod, etc.), so you must explicitly ask them which environment to check.
+
     Args:
         tool_context: The ADK tool context
+        env_name: Environment name to check. REQUIRED - must be provided by the user.
+                  If not provided, this function will return an error asking you to prompt the user.
+                  Example prompt: "Which environment would you like to check? For example: 'dev', 'prod', 'staging', etc."
 
     Returns:
         JSON string with environment status and hook:
@@ -255,6 +262,9 @@ async def check_environment_exists(tool_context: ToolContext) -> str:
         user_id = tool_context.state.get("user_id", "guest")
         conversation_id = tool_context.state.get("conversation_id")
 
+        if not env_name:
+            return "ERROR: env_name parameter is required but was not provided. You MUST ask the user which environment to check before calling this function. Ask them: 'Which environment would you like to check? For example: dev, prod, staging, etc.' DO NOT assume or infer the environment name."
+
         if user_id.startswith("guest"):
             result = {
                 "exists": False,
@@ -263,9 +273,10 @@ async def check_environment_exists(tool_context: ToolContext) -> str:
             }
             return json.dumps(result)
 
-        # Construct environment URL
+        # Construct environment URL using the same pattern as deploy functions
         client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
-        url = f"https://client-{user_id.lower()}.{client_host}"
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        url = f"https://{namespace}.{client_host}"
 
         try:
             # Try to access the environment API to check if it's deployed
@@ -344,18 +355,33 @@ async def check_environment_exists(tool_context: ToolContext) -> str:
         })
 
 
+def _get_keyspace(user_name: str):
+    keyspace = re.sub(r"[^a-z0-9_]", "_", user_name.lower())
+    return keyspace
+
+
+def _get_namespace(user_name: str):
+    namespace = re.sub(r"[^a-z0-9-]", "-", user_name.lower())
+    return namespace
+
+
 async def deploy_cyoda_environment(
-    tool_context: ToolContext, build_id: Optional[str] = None, env_name: Optional[str] = None
+        tool_context: ToolContext, env_name: Optional[str] = None, build_id: Optional[str] = None,
 ) -> str:
     """Deploy a new Cyoda environment for the user.
 
     Provisions a complete Cyoda environment including infrastructure,
     databases, and services. Creates a BackgroundTask entity to track deployment progress.
 
+    IMPORTANT: You MUST ask the user for env_name before calling this function. DO NOT assume or infer the environment name.
+    The user might have multiple environments (dev, staging, prod, etc.), so you must explicitly ask them which environment name to use.
+
     Args:
       tool_context: The ADK tool context
+      env_name: Environment name/namespace to use for deployment. REQUIRED - must be provided by the user.
+                If not provided, this function will return an error asking you to prompt the user.
+                Example prompt: "What environment name would you like to use? For example: 'dev', 'prod', 'staging', etc."
       build_id: Optional build ID to associate with this deployment (e.g., from application build)
-      env_name: Optional environment name/namespace to use for deployment
 
     Returns:
       Success message with build ID, task ID, and environment URL, or error message
@@ -374,6 +400,9 @@ async def deploy_cyoda_environment(
         # Check user authentication
         user_id = tool_context.state.get("user_id", "guest")
         logger.info(f"Environment deployment requested by user_id: {user_id}")
+
+        if not env_name:
+            return "ERROR: env_name parameter is required but was not provided. You MUST ask the user for the environment name before calling this function. Ask them: 'What environment name would you like to use? For example: dev, prod, staging, etc.' DO NOT assume or infer the environment name."
 
         if user_id.startswith("guest"):
             logger.warning(f"Deployment rejected for guest user: {user_id}")
@@ -398,9 +427,8 @@ async def deploy_cyoda_environment(
             payload["build_id"] = build_id
             logger.info(f"Including build_id in deployment request: {build_id}")
 
-        if env_name:
-            payload["env_name"] = env_name
-            logger.info(f"Including env_name in deployment request: {env_name}")
+        payload["user_defined_namespace"] = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        payload["user_defined_keyspace"] = f"client_{_get_keyspace(user_id)}_{_get_keyspace(env_name)}"
 
         logger.info(
             f"Deploying Cyoda environment for user: {user_id}, chat_id: {chat_id}"
@@ -456,13 +484,16 @@ async def deploy_cyoda_environment(
                     )
 
                     if conversation_response and conversation_response.data:
-                        conversation_data = conversation_response.data if isinstance(conversation_response.data, dict) else conversation_response.data.model_dump(by_alias=False)
+                        conversation_data = conversation_response.data if isinstance(conversation_response.data,
+                                                                                     dict) else conversation_response.data.model_dump(
+                            by_alias=False)
                         conversation = Conversation(**conversation_data)
 
                         # Update workflow_cache with build_id
                         conversation.workflow_cache["build_id"] = deployment_build_id
                         conversation.workflow_cache["namespace"] = namespace
-                        logger.info(f"📋 Updated workflow_cache with build_id={deployment_build_id}, namespace={namespace}")
+                        logger.info(
+                            f"📋 Updated workflow_cache with build_id={deployment_build_id}, namespace={namespace}")
 
                         # Update conversation
                         entity_dict = conversation.model_dump(by_alias=False)
@@ -472,7 +503,8 @@ async def deploy_cyoda_environment(
                             entity_class=Conversation.ENTITY_NAME,
                             entity_version=str(Conversation.ENTITY_VERSION),
                         )
-                        logger.info(f"✅ Successfully updated conversation {conversation_id} with build_id in workflow_cache")
+                        logger.info(
+                            f"✅ Successfully updated conversation {conversation_id} with build_id in workflow_cache")
                 except Exception as e:
                     logger.warning(f"⚠️ Failed to update conversation workflow_cache with build_id: {e}")
                     # Continue anyway - this is not critical for deployment
@@ -500,19 +532,25 @@ async def deploy_cyoda_environment(
 
 
 async def deploy_user_application(
-    tool_context: ToolContext,
-    repository_url: str,
-    branch_name: str,
-    cyoda_client_id: str,
-    cyoda_client_secret: str,
-    user_name: str,
-    is_public: bool = True,
-    installation_id: Optional[str] = None,
+        tool_context: ToolContext,
+        repository_url: str,
+        branch_name: str,
+        cyoda_client_id: str,
+        cyoda_client_secret: str,
+        user_name: str,
+        env_name: Optional[str] = None,
+        app_name: Optional[str] = None,
+        is_public: bool = True,
+        installation_id: Optional[str] = None,
+
 ) -> str:
     """Deploy a user application to their Cyoda environment.
 
     Builds and deploys the user's application code to their provisioned
     Cyoda environment. Supports both Python and Java applications.
+
+    IMPORTANT: You MUST ask the user for both env_name and app_name before calling this function. DO NOT assume or infer these values.
+    The user might have multiple environments and applications, so you must explicitly ask them.
 
     Args:
       tool_context: The ADK tool context
@@ -521,6 +559,12 @@ async def deploy_user_application(
       cyoda_client_id: Cyoda client ID for authentication
       cyoda_client_secret: Cyoda client secret for authentication
       user_name: Username for the deployment
+      env_name: Environment name to deploy to. REQUIRED - must be provided by the user.
+                If not provided, this function will return an error asking you to prompt the user.
+                Example prompt: "What environment name would you like to deploy to? For example: 'dev', 'prod', 'staging', etc."
+      app_name: Application name for this deployment. REQUIRED - must be provided by the user.
+                If not provided, this function will return an error asking you to prompt the user.
+                Example prompt: "What would you like to name this application? For example: 'my-app', 'payment-api', 'dashboard-v2', etc."
       is_public: Whether the repository is public (default: True)
       installation_id: GitHub installation ID for public repos (optional)
 
@@ -529,6 +573,12 @@ async def deploy_user_application(
     """
     try:
         import httpx
+
+        if not env_name:
+            return "ERROR: env_name parameter is required but was not provided. You MUST ask the user for the environment name before calling this function. Ask them: 'What environment would you like to deploy to? For example: dev, prod, staging, etc.' DO NOT assume or infer the environment name."
+
+        if not app_name:
+            return "ERROR: app_name parameter is required but was not provided. You MUST ask the user for the application name before calling this function. Ask them: 'What would you like to name this application? For example: my-app, payment-api, dashboard-v2, etc.' DO NOT assume or infer the application name."
 
         # Get cloud manager configuration
         cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
@@ -547,6 +597,7 @@ async def deploy_user_application(
             return "Error: Unable to determine conversation ID. Please try again."
 
         # Prepare deployment payload matching the working example format
+        namespace = f"client-{_get_namespace(user_name)}-{_get_namespace(env_name)}"
         payload = {
             "branch_name": branch_name,
             "chat_id": chat_id,
@@ -555,6 +606,8 @@ async def deploy_user_application(
             "is_public": str(is_public).lower(),
             "repository_url": repository_url,
             "user_name": user_name,
+            "app_namespace": f"{namespace}-app-{_get_namespace(app_name)}",
+            "cyoda_namespace": namespace,
         }
 
         # Add installation ID if provided (for public repos)
@@ -632,7 +685,7 @@ async def deploy_user_application(
 
 
 async def get_deployment_status(
-    tool_context: ToolContext, build_id: str, for_monitoring: bool = False
+        tool_context: ToolContext, build_id: str, for_monitoring: bool = False
 ) -> str:
     """Check the deployment status for a specific build.
 
@@ -814,7 +867,7 @@ Showing last {max_lines} lines. For complete logs, check the cloud manager dashb
         return f"Error: {error_msg}"
 
 
-async def ui_function_issue_technical_user(tool_context: ToolContext) -> str:
+async def ui_function_issue_technical_user(tool_context: ToolContext, env_name: Optional[str] = None) -> str:
     """Issue M2M (machine-to-machine) technical user credentials.
 
     This function stores a UI function call instruction in the tool context
@@ -827,33 +880,63 @@ async def ui_function_issue_technical_user(tool_context: ToolContext) -> str:
     Use this tool when the user asks for credentials or needs to authenticate
     their application with the Cyoda environment.
 
+    IMPORTANT: You MUST ask the user for env_name before calling this function. DO NOT assume or infer the environment name.
+    The user might have multiple environments (dev, staging, prod, etc.), so you must explicitly ask them which environment needs credentials.
+
     Args:
         tool_context: The ADK tool context (auto-injected)
+        env_name: Environment name to issue credentials for. REQUIRED - must be provided by the user.
+                  If not provided, this function will return an error asking you to prompt the user.
+                  Example prompt: "Which environment would you like to issue credentials for? For example: 'dev', 'prod', 'staging', etc."
 
     Returns:
         Success message confirming credential issuance was initiated
     """
     try:
-        # Create UI function parameters
+        logger.info(f"🔧 ui_function_issue_technical_user called with env_name={env_name}")
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        logger.info(f"🔧 user_id from context: {user_id}")
+
+        if not env_name:
+            logger.warning("⚠️ env_name not provided to ui_function_issue_technical_user")
+            return "ERROR: env_name parameter is required but was not provided. You MUST ask the user which environment to issue credentials for before calling this function. Ask them: 'Which environment would you like to issue credentials for? For example: dev, prod, staging, etc.' DO NOT assume or infer the environment name."
+
+        if user_id.startswith("guest"):
+            logger.warning(f"⚠️ Guest user attempted to issue credentials: {user_id}")
+            return "Sorry, issuing credentials is only available to logged-in users. Please sign up or log in first."
+
+        # Construct environment URL using the same pattern as other functions
+        client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        env_url = f"{namespace}.{client_host}"
+        logger.info(f"🔧 Constructed env_url: {env_url}")
+
+        # Create UI function parameters with environment URL
         ui_params = {
             "type": "ui_function",
             "function": "ui_function_issue_technical_user",
             "method": "POST",
             "path": "/api/clients",
             "response_format": "json",
+            "env_url": env_url,
         }
 
-        logger.info(f"Storing UI function in tool context: {json.dumps(ui_params)}")
+        logger.info(f"🔧 Storing UI function in tool context for environment {env_url}: {json.dumps(ui_params)}")
 
         # Store UI function in tool context so the agent framework can add it to conversation
         # This prevents race conditions where both the tool and route handler update the conversation
         if "ui_functions" not in tool_context.state:
+            logger.info("🔧 Initializing ui_functions list in tool_context.state")
             tool_context.state["ui_functions"] = []
         tool_context.state["ui_functions"].append(ui_params)
 
-        logger.info(f"✅ UI function stored in context, will be added to conversation after agent response")
+        logger.info(f"✅ UI function stored in context for {env_url}. Total ui_functions in state: {len(tool_context.state['ui_functions'])}")
 
-        return "✅ Credential issuance initiated. The UI will create your M2M technical user credentials (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication."
+        success_msg = f"✅ Credential issuance initiated for environment: {env_url}\n\nThe UI will create your M2M technical user credentials (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication with this environment."
+        logger.info(f"🔧 Returning success message: {success_msg[:100]}...")
+        return success_msg
 
     except Exception as e:
         error_msg = f"Error issuing technical user: {str(e)}"
@@ -862,11 +945,11 @@ async def ui_function_issue_technical_user(tool_context: ToolContext) -> str:
 
 
 async def _monitor_deployment_progress(
-    build_id: str,
-    task_id: str,
-    tool_context: ToolContext,
-    check_interval: int = 30,
-    max_checks: int = 40,
+        build_id: str,
+        task_id: str,
+        tool_context: ToolContext,
+        check_interval: int = 30,
+        max_checks: int = 40,
 ) -> None:
     """
     Monitor environment deployment progress and update BackgroundTask entity.
@@ -1002,9 +1085,9 @@ async def _monitor_deployment_progress(
 
 
 async def show_deployment_options(
-    question: str,
-    options: list[dict[str, str]],
-    tool_context: Optional[ToolContext] = None,
+        question: str,
+        options: list[dict[str, str]],
+        tool_context: Optional[ToolContext] = None,
 ) -> str:
     """Display interactive deployment options to the user.
 
@@ -1073,3 +1156,653 @@ async def show_deployment_options(
     message = f"{question}\n\nPlease select your choice using the options below."
 
     return wrap_response_with_hook(message, hook)
+
+
+# ==================== K8s Management Operations ====================
+
+
+async def list_environments(tool_context: ToolContext) -> str:
+    """List all environments (namespaces) for the current user.
+
+    Retrieves all namespaces from the cluster and filters them to show only
+    those belonging to the current user. Each user can have multiple environments
+    (dev, staging, prod, etc.).
+
+    Args:
+        tool_context: The ADK tool context
+
+    Returns:
+        JSON string with list of environments and their details, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            response = await client.get(api_url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            all_namespaces = data.get("namespaces", [])
+
+            # Filter namespaces for this user (format: client-{user}-{env})
+            user_namespace_prefix = f"client-{_get_namespace(user_id)}-"
+            user_environments = []
+
+            for ns in all_namespaces:
+                ns_name = ns.get("name", "")
+                if ns_name.startswith(user_namespace_prefix):
+                    # Extract environment name
+                    env_name = ns_name.replace(user_namespace_prefix, "")
+                    # Skip app namespaces (they contain "-app-")
+                    if "-app-" not in env_name:
+                        user_environments.append({
+                            "name": env_name,
+                            "namespace": ns_name,
+                            "status": ns.get("status", "Unknown"),
+                            "created_at": ns.get("created_at"),
+                        })
+
+            result = {
+                "environments": user_environments,
+                "count": len(user_environments),
+            }
+
+            logger.info(f"Found {len(user_environments)} environments for user {user_id}")
+            return json.dumps(result)
+
+    except httpx.HTTPStatusError as e:
+        error_msg = f"Failed to list namespaces: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error listing environments: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+async def list_applications(tool_context: ToolContext, env_name: str) -> str:
+    """List all applications (deployments) in a specific environment.
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name to list applications for
+
+    Returns:
+        JSON string with list of applications and their details, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name:
+            return json.dumps({"error": "env_name parameter is required."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        # Construct namespace
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            response = await client.get(api_url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            deployments = data.get("deployments", [])
+
+            result = {
+                "environment": env_name,
+                "namespace": namespace,
+                "applications": deployments,
+                "count": len(deployments),
+            }
+
+            logger.info(f"Found {len(deployments)} applications in {namespace}")
+            return json.dumps(result)
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return json.dumps({"error": f"Environment '{env_name}' not found."})
+        error_msg = f"Failed to list applications: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error listing applications: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+async def get_application_details(tool_context: ToolContext, env_name: str, app_name: str) -> str:
+    """Get detailed information about a specific application deployment.
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name
+        app_name: Application name
+
+    Returns:
+        JSON string with application details, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name or not app_name:
+            return json.dumps({"error": "Both env_name and app_name parameters are required."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        # Construct namespace and deployment name
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{app_name}"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            response = await client.get(api_url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(f"Retrieved details for {app_name} in {namespace}")
+            return json.dumps(data)
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return json.dumps({"error": f"Application '{app_name}' not found in environment '{env_name}'."})
+        error_msg = f"Failed to get application details: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error getting application details: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+async def scale_application(tool_context: ToolContext, env_name: str, app_name: str, replicas: int) -> str:
+    """Scale an application deployment to a specific number of replicas.
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name
+        app_name: Application name
+        replicas: Number of replicas to scale to (must be >= 0)
+
+    Returns:
+        JSON string with scaling result, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name or not app_name:
+            return json.dumps({"error": "Both env_name and app_name parameters are required."})
+
+        if replicas < 0:
+            return json.dumps({"error": "Replicas must be >= 0."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        # Construct namespace
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{app_name}/scale"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            payload = {"replicas": replicas}
+            response = await client.patch(api_url, json=payload, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(f"Scaled {app_name} in {namespace} to {replicas} replicas")
+            return json.dumps(data)
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return json.dumps({"error": f"Application '{app_name}' not found in environment '{env_name}'."})
+        error_msg = f"Failed to scale application: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error scaling application: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+async def restart_application(tool_context: ToolContext, env_name: str, app_name: str) -> str:
+    """Restart an application deployment by triggering a rollout restart.
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name
+        app_name: Application name
+
+    Returns:
+        JSON string with restart result, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name or not app_name:
+            return json.dumps({"error": "Both env_name and app_name parameters are required."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        # Construct namespace
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{app_name}/restart"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            response = await client.post(api_url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(f"Restarted {app_name} in {namespace}")
+            return json.dumps(data)
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return json.dumps({"error": f"Application '{app_name}' not found in environment '{env_name}'."})
+        error_msg = f"Failed to restart application: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error restarting application: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+async def update_application_image(
+        tool_context: ToolContext,
+        env_name: str,
+        app_name: str,
+        image: str,
+        container: Optional[str] = None
+) -> str:
+    """Update the container image of an application deployment (rollout update).
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name
+        app_name: Application name
+        image: New container image (e.g., "myapp:v2.0")
+        container: Optional container name (if deployment has multiple containers)
+
+    Returns:
+        JSON string with update result, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name or not app_name or not image:
+            return json.dumps({"error": "env_name, app_name, and image parameters are required."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        # Construct namespace
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{app_name}/rollout/update"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            payload = {"image": image}
+            if container:
+                payload["container"] = container
+            response = await client.patch(api_url, json=payload, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(f"Updated {app_name} in {namespace} to image {image}")
+            return json.dumps(data)
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return json.dumps({"error": f"Application '{app_name}' not found in environment '{env_name}'."})
+        error_msg = f"Failed to update application image: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error updating application image: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+async def get_application_status(tool_context: ToolContext, env_name: str, app_name: str) -> str:
+    """Get the rollout status of an application deployment.
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name
+        app_name: Application name
+
+    Returns:
+        JSON string with rollout status, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name or not app_name:
+            return json.dumps({"error": "Both env_name and app_name parameters are required."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        # Construct namespace
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{app_name}/rollout/status"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            response = await client.get(api_url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(f"Retrieved rollout status for {app_name} in {namespace}")
+            return json.dumps(data)
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return json.dumps({"error": f"Application '{app_name}' not found in environment '{env_name}'."})
+        error_msg = f"Failed to get application status: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error getting application status: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+async def get_environment_metrics(tool_context: ToolContext, env_name: str) -> str:
+    """Get pod metrics for an environment (CPU and memory usage).
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name
+
+    Returns:
+        JSON string with metrics data, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name:
+            return json.dumps({"error": "env_name parameter is required."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        # Construct namespace
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/metrics"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            params = {"namespace": namespace}
+            response = await client.get(api_url, params=params, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(f"Retrieved metrics for {namespace}")
+            return json.dumps(data)
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return json.dumps({"error": f"Environment '{env_name}' not found."})
+        elif e.response.status_code == 503:
+            return json.dumps({"error": "Metrics service is unavailable. Please try again later."})
+        error_msg = f"Failed to get metrics: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error getting environment metrics: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+async def get_environment_pods(tool_context: ToolContext, env_name: str) -> str:
+    """Get all pods running in an environment.
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name
+
+    Returns:
+        JSON string with pod list, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name:
+            return json.dumps({"error": "env_name parameter is required."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        # Construct namespace
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/pods"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            response = await client.get(api_url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(f"Retrieved pods for {namespace}")
+            return json.dumps(data)
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return json.dumps({"error": f"Environment '{env_name}' not found."})
+        error_msg = f"Failed to get pods: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error getting environment pods: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+async def delete_environment(tool_context: ToolContext, env_name: str) -> str:
+    """Delete an environment (namespace) and all its resources.
+
+    WARNING: This is a destructive operation that will delete the entire environment
+    including all applications, data, and configurations. Use with caution.
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name to delete
+
+    Returns:
+        JSON string with deletion result, or error message
+    """
+    try:
+        import httpx
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name:
+            return json.dumps({"error": "env_name parameter is required."})
+
+        # Get cloud manager configuration
+        cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
+        if not cloud_manager_host:
+            return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
+
+        # Construct namespace
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        protocol = "http" if "localhost" in cloud_manager_host else "https"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}"
+
+        # Get authentication token
+        try:
+            access_token = await _get_cloud_manager_auth_token()
+        except Exception as e:
+            return json.dumps({"error": f"Failed to authenticate with cloud manager: {str(e)}"})
+
+        # Make API request
+        async with httpx.AsyncClient(timeout=60.0) as client:  # Longer timeout for deletion
+            headers = {"Authorization": f"Bearer {access_token}"}
+            response = await client.delete(api_url, headers=headers)
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(f"Deleted environment {namespace}")
+            return json.dumps(data)
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            return json.dumps({"error": f"Environment '{env_name}' not found."})
+        error_msg = f"Failed to delete environment: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg})
+    except Exception as e:
+        error_msg = f"Error deleting environment: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})

@@ -40,16 +40,18 @@ def adapt_adk_tool_to_openai(adk_tool_func: Callable) -> Callable:
 
     # Create wrapper function with same signature (minus tool_context)
     if is_async:
-        async def openai_wrapper(**kwargs: Any) -> str:
+        async def openai_wrapper(context: RunContextWrapper, **kwargs: Any) -> str:
             """Wrapper that adapts OpenAI context to ADK tool."""
             # Call function with appropriate parameters
             if has_tool_context:
-                # Create a mock ToolContext for functions that expect it
-                class MockToolContext:
-                    def __init__(self):
-                        self.state = {}
+                # Create a ToolContext adapter that wraps the RunContext
+                class ToolContextAdapter:
+                    def __init__(self, run_context: RunContextWrapper):
+                        self._run_context = run_context
+                        # Point state to the actual context state (shared across tools)
+                        self.state = run_context.context_variables if hasattr(run_context, 'context_variables') else {}
 
-                result = await adk_tool_func(MockToolContext(), **kwargs)
+                result = await adk_tool_func(ToolContextAdapter(context), **kwargs)
             else:
                 # Function has no tool_context parameter, call with just kwargs
                 result = await adk_tool_func(**kwargs)
@@ -61,16 +63,18 @@ def adapt_adk_tool_to_openai(adk_tool_func: Callable) -> Callable:
             else:
                 return str(result)
     else:
-        def openai_wrapper(**kwargs: Any) -> str:
+        def openai_wrapper(context: RunContextWrapper, **kwargs: Any) -> str:
             """Wrapper that adapts OpenAI context to ADK tool."""
             # Call function with appropriate parameters
             if has_tool_context:
-                # Create a mock ToolContext for functions that expect it
-                class MockToolContext:
-                    def __init__(self):
-                        self.state = {}
+                # Create a ToolContext adapter that wraps the RunContext
+                class ToolContextAdapter:
+                    def __init__(self, run_context: RunContextWrapper):
+                        self._run_context = run_context
+                        # Point state to the actual context state (shared across tools)
+                        self.state = run_context.context_variables if hasattr(run_context, 'context_variables') else {}
 
-                result = adk_tool_func(MockToolContext(), **kwargs)
+                result = adk_tool_func(ToolContextAdapter(context), **kwargs)
             else:
                 # Function has no tool_context parameter, call with just kwargs
                 result = adk_tool_func(**kwargs)

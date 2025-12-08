@@ -473,33 +473,79 @@ async def get_user_info(user_request: str, tool_context: ToolContext) -> str:
         return f"Error getting user info: {error_msg}"
 
 
-async def ui_function_issue_technical_user() -> str:
+async def ui_function_issue_technical_user(tool_context: ToolContext, env_name: Optional[str] = None) -> str:
     """
     Issue M2M (machine-to-machine) technical user credentials.
 
-    This function returns a UI function call instruction that tells the frontend
-    to make an API call to issue technical user credentials (CYODA_CLIENT_ID and
-    CYODA_CLIENT_SECRET) for OAuth2 authentication.
+    This function stores a UI function call instruction in the tool context
+    that tells the frontend to make an API call to issue technical user credentials
+    (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication.
+
+    The UI function JSON will be added to the conversation by the agent framework
+    after the agent completes its response, preventing race conditions.
+
+    Use this tool when the user asks for credentials or needs to authenticate
+    their application with the Cyoda environment.
+
+    IMPORTANT: You MUST ask the user for env_name before calling this function. DO NOT assume or infer the environment name.
+    The user might have multiple environments (dev, staging, prod, etc.), so you must explicitly ask them which environment needs credentials.
+
+    Args:
+        tool_context: The ADK tool context (auto-injected)
+        env_name: Environment name to issue credentials for. REQUIRED - must be provided by the user.
+                  If not provided, this function will return an error asking you to prompt the user.
+                  Example prompt: "Which environment would you like to issue credentials for? For example: 'dev', 'prod', 'staging', etc."
 
     Returns:
-        JSON string with UI function parameters for credential issuance
+        Success message confirming credential issuance was initiated
     """
     try:
+        import re
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+
+        if not env_name:
+            return "ERROR: env_name parameter is required but was not provided. You MUST ask the user which environment to issue credentials for before calling this function. Ask them: 'Which environment would you like to issue credentials for? For example: dev, prod, staging, etc.' DO NOT assume or infer the environment name."
+
+        if user_id.startswith("guest"):
+            return "Sorry, issuing credentials is only available to logged-in users. Please sign up or log in first."
+
+        # Helper function to normalize namespace (same as in environment agent)
+        def _get_namespace(user_name: str):
+            namespace = re.sub(r"[^a-z0-9-]", "-", user_name.lower())
+            return namespace
+
+        # Construct environment URL using the same pattern as environment agent
+        client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        env_url = f"{namespace}.{client_host}"
+
+        # Create UI function parameters with environment URL
         ui_params = {
             "type": "ui_function",
             "function": "ui_function_issue_technical_user",
             "method": "POST",
             "path": "/api/clients",
-            "response_format": "json"
+            "response_format": "json",
+            "env_url": env_url,
         }
 
-        logger.info("Issuing technical user credentials via UI function")
-        return json.dumps(ui_params)
+        logger.info(f"Storing UI function in tool context for environment {env_url}: {json.dumps(ui_params)}")
 
+        # Store UI function in tool context so the agent framework can add it to conversation
+        # This prevents race conditions where both the tool and route handler update the conversation
+        if "ui_functions" not in tool_context.state:
+            tool_context.state["ui_functions"] = []
+        tool_context.state["ui_functions"].append(ui_params)
+
+        logger.info(f"✅ UI function stored in context for {env_url}, will be added to conversation after agent response")
+
+        return f"✅ Credential issuance initiated for environment: {env_url}\n\nThe UI will create your M2M technical user credentials (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication with this environment."
     except Exception as e:
         error_msg = f"Error issuing technical user: {str(e)}"
         logger.exception(error_msg)
-        return json.dumps({"error": error_msg})
+        return error_msg
 
 
 
