@@ -597,7 +597,8 @@ async def deploy_user_application(
             return "Error: Unable to determine conversation ID. Please try again."
 
         # Prepare deployment payload matching the working example format
-        namespace = f"client-{_get_namespace(user_name)}-{_get_namespace(env_name)}"
+        cyoda_namespace = f"client-{_get_namespace(user_name)}-{_get_namespace(env_name)}"
+        app_namespace = f"client-app-{_get_namespace(user_name)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         payload = {
             "branch_name": branch_name,
             "chat_id": chat_id,
@@ -606,8 +607,8 @@ async def deploy_user_application(
             "is_public": str(is_public).lower(),
             "repository_url": repository_url,
             "user_name": user_name,
-            "app_namespace": f"{namespace}-app-{_get_namespace(app_name)}",
-            "cyoda_namespace": namespace,
+            "app_namespace": app_namespace,
+            "cyoda_namespace": cyoda_namespace,
         }
 
         # Add installation ID if provided (for public repos)
@@ -1818,7 +1819,7 @@ async def list_user_apps(tool_context: ToolContext, env_name: str) -> str:
     """List all user applications deployed in a specific environment.
 
     User applications run in separate namespaces with pattern:
-    client-{user}-{env}-app-{appname}
+    client-app-{user}-{env}-{appname}
 
     This function lists all app namespaces for the given environment.
 
@@ -1863,9 +1864,8 @@ async def list_user_apps(tool_context: ToolContext, env_name: str) -> str:
             data = response.json()
             all_namespaces = data.get("namespaces", [])
 
-            # Filter for user app namespaces: client-{user}-{env}-app-*
-            user_namespace_base = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
-            app_namespace_prefix = f"{user_namespace_base}-app-"
+            # Filter for user app namespaces: client-app-{user}-{env}-*
+            app_namespace_prefix = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-"
 
             user_apps = []
             for ns in all_namespaces:
@@ -1926,8 +1926,8 @@ async def get_user_app_details(tool_context: ToolContext, env_name: str, app_nam
         if not cloud_manager_host:
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
-        # Construct app namespace: client-{user}-{env}-app-{app}
-        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}-app-{_get_namespace(app_name)}"
+        # Construct app namespace: client-app-{user}-{env}-{app}
+        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
 
         # Get all deployments in the app namespace
@@ -2023,7 +2023,7 @@ async def scale_user_app(tool_context: ToolContext, env_name: str, app_name: str
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}-app-{_get_namespace(app_name)}"
+        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{deployment_name}/scale"
 
@@ -2085,7 +2085,7 @@ async def restart_user_app(tool_context: ToolContext, env_name: str, app_name: s
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}-app-{_get_namespace(app_name)}"
+        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{deployment_name}/restart"
 
@@ -2155,7 +2155,7 @@ async def update_user_app_image(
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}-app-{_get_namespace(app_name)}"
+        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{deployment_name}/rollout/update"
 
@@ -2219,7 +2219,7 @@ async def get_user_app_status(tool_context: ToolContext, env_name: str, app_name
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}-app-{_get_namespace(app_name)}"
+        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{deployment_name}/rollout/status"
 
@@ -2279,7 +2279,7 @@ async def get_user_app_metrics(tool_context: ToolContext, env_name: str, app_nam
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}-app-{_get_namespace(app_name)}"
+        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/metrics"
 
@@ -2342,7 +2342,7 @@ async def get_user_app_pods(tool_context: ToolContext, env_name: str, app_name: 
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}-app-{_get_namespace(app_name)}"
+        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/pods"
 
@@ -2405,7 +2405,7 @@ async def delete_user_app(tool_context: ToolContext, env_name: str, app_name: st
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}-app-{_get_namespace(app_name)}"
+        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}"
 

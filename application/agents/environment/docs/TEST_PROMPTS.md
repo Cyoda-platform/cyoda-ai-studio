@@ -5,7 +5,7 @@ This document contains test prompts to validate all environment and user applica
 ## Namespace Architecture
 
 - **Cyoda Environment**: `client-{user}-{env}` - Contains Cyoda platform services
-- **User Application**: `client-{user}-{env}-app-{app}` - Contains user calculation nodes
+- **User Application**: `client-app-{user}-{env}-{app}` - Contains user calculation nodes
 
 These are **separate** namespaces with different operations.
 
