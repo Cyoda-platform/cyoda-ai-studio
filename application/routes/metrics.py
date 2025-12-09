@@ -420,7 +420,7 @@ async def query_metrics() -> tuple[dict, int]:
 
 @metrics_bp.route("/query_range", methods=["POST"])
 @require_auth
-@rate_limit(30, timedelta(minutes=1), key_function=_rate_limit_key)
+@rate_limit(600, timedelta(minutes=1), key_function=_rate_limit_key)
 async def query_range_metrics() -> tuple[dict, int]:
     """
     Query Prometheus metrics over a time range with namespace filtering.
