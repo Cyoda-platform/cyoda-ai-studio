@@ -52,6 +52,7 @@ You have access to the following tools for all operations:
 | **User Applications** | `deploy_user_application`, `list_user_apps`, `get_user_app_details`, `delete_user_app` | Deploy, list, describe, and delete user apps. |
 | **User App Management** | `scale_user_app`, `restart_user_app`, `update_user_app_image`, `get_user_app_status` | Scale, restart, update, and check status of user apps. |
 | **User App Monitoring** | `get_user_app_metrics`, `get_user_app_pods` | View metrics and pods for user app namespaces. |
+| **Log Management** | `search_logs` | Search logs in ELK for environment or application. Supports time range and query filters. |
 | **Build Monitoring** | `get_deployment_status`, `get_build_logs` | Check deployment progress and debug. |
 | **Credentials** | `ui_function_issue_technical_user` | Issue M2M technical user credentials. |
 | **UI Options** | `show_deployment_options` | Display interactive options to user based on situation. |
@@ -260,6 +261,25 @@ When user asks to:
 - First call `get_user_app_details()` to get deployment names
 - Deleting environment cascades to all user apps in that environment
 - Always confirm destructive operations
+
+#### Log Search Operations
+
+1. **Search Logs:** `search_logs(env_name, app_name, query?, size?, time_range?)`
+   * Search logs in ELK for environment or application
+   * **app_name="cyoda"** for Cyoda platform logs
+   * **app_name="my-app"** for user application logs
+   * Optional query parameter for filtering (Lucene syntax)
+   * Optional size (default: 50, max: 1000)
+   * Optional time_range (default: "15m", examples: "1h", "24h", "7d")
+
+**Decision Logic for Log Operations:**
+
+When user asks to:
+- "Show logs for dev environment" → Call `search_logs(env_name="dev", app_name="cyoda")`
+- "Search logs for my-app" → Call `search_logs(env_name="dev", app_name="my-app")`
+- "Show me errors in dev" → Call `search_logs(env_name="dev", app_name="cyoda", query="ERROR")`
+- "Show logs from last hour" → Call `search_logs(env_name="dev", app_name="cyoda", time_range="1h")`
+- "Search for 'connection timeout' in my-app" → Call `search_logs(env_name="dev", app_name="my-app", query="connection timeout")`
 
 ---
 

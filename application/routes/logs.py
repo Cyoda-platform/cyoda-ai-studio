@@ -112,7 +112,7 @@ async def generate_api_key() -> tuple[dict, int]:
                 json={
                     "name": api_key_name,
                     "role_descriptors": role_descriptors,
-                    "expiration": "365d"  # 1 year expiration
+                    "expiration": "1h"  # 1 year expiration
                 }
             )
 
@@ -163,8 +163,8 @@ async def search_logs() -> tuple[dict, int]:
 
     Request body:
         {
-            "type": "environment",  # Optional: "environment" or "application" (default: "environment")
-            "id": "develop",  # Optional: environment id or application id (default: "develop" for environment, "start" for application)
+            "env_name": "production",  # Required: environment name
+            "app_name": "cyoda",  # Required: application name
             "query": {
                 "match_all": {}
             },
@@ -196,30 +196,30 @@ async def search_logs() -> tuple[dict, int]:
         # Get search query from request body
         data = await request.get_json()
         if not data:
-            data = {"query": {"match_all": {}}, "size": 50}
+            return jsonify({"error": "Request body required with env_name and app_name"}), 400
 
-        # Get type and id parameters with defaults
-        deployment_type = data.get('type', 'environment')
+        # Get env_name and app_name from request
+        env_name = data.get('env_name')
+        app_name = data.get('app_name')
 
-        # Default id based on type
-        if deployment_type == 'application':
-            deployment_id = data.get('id', 'start')
-        else:  # environment
-            deployment_id = data.get('id', 'develop')
+        if not env_name or not app_name:
+            return jsonify({"error": "env_name and app_name are required"}), 400
 
-        # Construct index pattern based on type and id
-        if deployment_type == 'environment':
-            index_pattern = f"logs-client-{org_id}*"
-        else:  # application
-            index_pattern = f"logs-client-app-{org_id}*"
+        # Construct index pattern for application logs
+        if app_name == "cyoda":
+            index_pattern = f"logs-client-{org_id}-{env_name}*"
+        else:
+            index_pattern = f"logs-client-app-{org_id}-{env_name}-{app_name}*"
 
         logger.info(
-            f"Searching logs for user {user_id} (org_id: {org_id}, type: {deployment_type}, id: {deployment_id}, index: {index_pattern})")
+            f"Searching logs for user {user_id} (org_id: {org_id}, env: {env_name}, app: {app_name}, index: {index_pattern})")
+
         query = {
             "query": data.get("query", {"match_all": {}}),
             "size": data.get("size", 50),
             "sort": data.get("sort", [{"@timestamp": {"order": "desc"}}])
         }
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 f"https://{elk_config['host']}/{index_pattern}/_search",
@@ -240,7 +240,7 @@ async def search_logs() -> tuple[dict, int]:
             result = response.json()
 
             logger.info(
-                f"Log search successful for user {user_id} (org: {org_id}), found {result.get('hits', {}).get('total', {}).get('value', 0)} hits")
+                f"Log search successful for user {user_id} (org: {org_id}, env: {env_name}, app: {app_name}), found {result.get('hits', {}).get('total', {}).get('value', 0)} hits")
 
             return jsonify(result), 200
 

@@ -193,9 +193,79 @@ I want to delete my-app from staging
 
 ---
 
-## 3. Combined Scenarios
+## 3. Log Search Operations
 
-### 3.1 Environment Overview
+### 3.1 Search Environment Logs
+```
+Show logs for dev environment
+Search logs for staging
+Get logs for prod environment
+```
+**Expected Tool**: `search_logs(env_name="dev", app_name="cyoda")`
+**Expected Result**: Last 15 minutes of Cyoda platform logs from dev environment
+
+---
+
+### 3.2 Search User App Logs
+```
+Show logs for my-calculator
+Search logs for payment-service
+Get logs for my-app in staging
+```
+**Expected Tool**: `search_logs(env_name="dev", app_name="my-calculator")`
+**Expected Result**: Last 15 minutes of logs from user app namespace
+
+---
+
+### 3.3 Search with Query Filter
+```
+Show me errors in dev environment
+Search for ERROR in my-calculator logs
+Find connection timeout errors
+Show warning logs in staging
+```
+**Expected Tool**: `search_logs(env_name="dev", app_name="cyoda", query="ERROR")`
+**Expected Result**: Filtered logs matching the search query
+
+---
+
+### 3.4 Search with Time Range
+```
+Show logs from last hour
+Get logs from last 24 hours for dev
+Show me logs from last week
+Search logs from last 30 minutes
+```
+**Expected Tool**: `search_logs(env_name="dev", app_name="cyoda", time_range="1h")`
+**Expected Result**: Logs from specified time range
+
+---
+
+### 3.5 Combined Query and Time Range
+```
+Show ERROR logs from last hour in dev
+Search for 'connection timeout' in last 24 hours
+Find failures in my-app from last 6 hours
+```
+**Expected Tool**: `search_logs(env_name="dev", app_name="cyoda", query="ERROR", time_range="1h")`
+**Expected Result**: Filtered logs from specified time range
+
+---
+
+### 3.6 Custom Log Size
+```
+Show me last 100 log entries
+Get 500 logs from dev environment
+Show me 10 most recent logs
+```
+**Expected Tool**: `search_logs(env_name="dev", app_name="cyoda", size=100)`
+**Expected Result**: Specified number of log entries (max 1000)
+
+---
+
+## 4. Combined Scenarios
+
+### 4.1 Environment Overview
 ```
 Give me a complete overview of my dev environment
 Show me everything in staging - environment and apps
@@ -207,7 +277,7 @@ Show me everything in staging - environment and apps
 
 ---
 
-### 3.2 App Details with Metrics
+### 4.2 App Details with Metrics
 ```
 Show me everything about my-calculator - details, status, and metrics
 Give me full info on payment-service
@@ -220,7 +290,7 @@ Give me full info on payment-service
 
 ---
 
-### 3.3 Scale with Status Check
+### 4.3 Scale with Status Check
 ```
 Scale my-calculator to 5 replicas and check the status
 ```
@@ -232,9 +302,9 @@ Scale my-calculator to 5 replicas and check the status
 
 ---
 
-## 4. Edge Cases & Error Handling
+## 5. Edge Cases & Error Handling
 
-### 4.1 Non-Existent Environment
+### 5.1 Non-Existent Environment
 ```
 Show my test environment
 List apps in nonexistent-env
@@ -243,7 +313,7 @@ List apps in nonexistent-env
 
 ---
 
-### 4.2 Non-Existent App
+### 5.2 Non-Existent App
 ```
 Describe nonexistent-app
 Scale fake-app to 3 replicas
@@ -252,7 +322,7 @@ Scale fake-app to 3 replicas
 
 ---
 
-### 4.3 Missing Parameters
+### 5.3 Missing Parameters
 ```
 Scale my-app
 (without specifying replicas)
@@ -261,7 +331,7 @@ Scale my-app
 
 ---
 
-### 4.4 Invalid Parameters
+### 5.4 Invalid Parameters
 ```
 Scale my-app to -1 replicas
 Scale my-app to 100 replicas
@@ -272,7 +342,7 @@ Scale my-app to 100 replicas
 
 ---
 
-## 5. Test Execution Checklist
+## 6. Test Execution Checklist
 
 Use this checklist to verify all tools work correctly:
 
@@ -294,6 +364,13 @@ Use this checklist to verify all tools work correctly:
 - [ ] `get_user_app_pods()` - Lists app pods
 - [ ] `delete_user_app()` - Deletes app namespace
 
+### Log Management Tools
+- [ ] `search_logs()` - Searches logs for environment
+- [ ] `search_logs()` - Searches logs for user app
+- [ ] `search_logs()` - Filters logs with query
+- [ ] `search_logs()` - Searches with time range
+- [ ] `search_logs()` - Custom log size
+
 ### Agent Behavior
 - [ ] No infinite loops (circuit breaker at 25 turns)
 - [ ] Direct tool calls (no agent bouncing)
@@ -303,7 +380,7 @@ Use this checklist to verify all tools work correctly:
 
 ---
 
-## 6. Expected Agent Behavior
+## 7. Expected Agent Behavior
 
 ### Good Agent Behavior ✅
 - Calls tools directly without bouncing between agents

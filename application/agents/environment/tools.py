@@ -580,6 +580,9 @@ async def deploy_user_application(
         if not app_name:
             return "ERROR: app_name parameter is required but was not provided. You MUST ask the user for the application name before calling this function. Ask them: 'What would you like to name this application? For example: my-app, payment-api, dashboard-v2, etc.' DO NOT assume or infer the application name."
 
+        if app_name.lower() == "cyoda":
+            return "ERROR: app_name parameter cannot be 'cyoda'. Please ask the user to choose a different name for their application."
+
         # Get cloud manager configuration
         cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
         if not cloud_manager_host:
@@ -1658,7 +1661,7 @@ async def get_environment_metrics(tool_context: ToolContext, env_name: str) -> s
         # Construct namespace
         namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
-        api_url = f"{protocol}://{cloud_manager_host}/k8s/metrics"
+        api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/metrics"
 
         # Get authentication token
         try:
@@ -1669,8 +1672,7 @@ async def get_environment_metrics(tool_context: ToolContext, env_name: str) -> s
         # Make API request
         async with httpx.AsyncClient(timeout=30.0) as client:
             headers = {"Authorization": f"Bearer {access_token}"}
-            params = {"namespace": namespace}
-            response = await client.get(api_url, params=params, headers=headers)
+            response = await client.get(api_url, headers=headers)
             response.raise_for_status()
 
             data = response.json()
@@ -2433,5 +2435,174 @@ async def delete_user_app(tool_context: ToolContext, env_name: str, app_name: st
         return json.dumps({"error": error_msg})
     except Exception as e:
         error_msg = f"Error deleting user application: {str(e)}"
+        logger.exception(error_msg)
+        return json.dumps({"error": error_msg})
+
+
+# ==================== Log Management Operations ====================
+
+
+async def search_logs(
+    tool_context: ToolContext,
+    env_name: str,
+    app_name: str,
+    query: Optional[str] = None,
+    size: int = 50,
+    time_range: Optional[str] = "15m"
+) -> str:
+    """Search logs in Elasticsearch for a specific environment and application.
+
+    This function searches logs for the current user's namespaces in ELK.
+    It supports searching both Cyoda environment logs (app_name="cyoda") and
+    user application logs.
+
+    Args:
+        tool_context: The ADK tool context
+        env_name: Environment name (e.g., "dev", "staging", "prod")
+        app_name: Application name (use "cyoda" for Cyoda platform logs)
+        query: Optional search query string (Lucene syntax). If not provided, returns all logs.
+        size: Number of log entries to return (default: 50, max: 1000)
+        time_range: Time range for logs (default: "15m" for last 15 minutes)
+                   Examples: "15m", "1h", "24h", "7d"
+
+    Returns:
+        JSON string with log search results, or error message
+
+    Examples:
+        - Search Cyoda platform logs: search_logs(env_name="dev", app_name="cyoda")
+        - Search user app logs: search_logs(env_name="dev", app_name="my-calculator")
+        - Search with query: search_logs(env_name="dev", app_name="cyoda", query="ERROR")
+        - Custom time range: search_logs(env_name="dev", app_name="cyoda", time_range="1h")
+    """
+    try:
+        import httpx
+        import base64
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return json.dumps({"error": "User is not logged in. Please sign up or log in first."})
+
+        if not env_name or not app_name:
+            return json.dumps({"error": "Both env_name and app_name parameters are required."})
+
+        # Limit size to prevent excessive results
+        size = min(max(1, size), 50)
+
+        # Get ELK configuration
+        elk_host = os.getenv("ELK_HOST")
+        elk_user = os.getenv("ELK_USER")
+        elk_password = os.getenv("ELK_PASSWORD")
+
+        if not all([elk_host, elk_user, elk_password]):
+            return json.dumps({"error": "ELK configuration incomplete. Please configure ELK_HOST, ELK_USER, and ELK_PASSWORD."})
+
+        # Construct index pattern based on namespace architecture
+        org_id = _get_namespace(user_id)
+        env = _get_namespace(env_name)
+
+        if app_name.lower() == "cyoda":
+            # Cyoda environment logs: logs-client-{user}-{env}*
+            index_pattern = f"logs-client-{org_id}-{env}*"
+        else:
+            # User application logs: logs-client-app-{user}-{env}-{app}*
+            app = _get_namespace(app_name)
+            index_pattern = f"logs-client-app-{org_id}-{env}-{app}*"
+
+        # Build Elasticsearch query
+        es_query = {
+            "size": size,
+            "sort": [{"@timestamp": {"order": "desc"}}]
+        }
+
+        # Add time range filter
+        if time_range:
+            es_query["query"] = {
+                "bool": {
+                    "must": [],
+                    "filter": [
+                        {
+                            "range": {
+                                "@timestamp": {
+                                    "gte": f"now-{time_range}",
+                                    "lte": "now"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        else:
+            es_query["query"] = {"bool": {"must": []}}
+
+        # Add user query if provided
+        if query:
+            es_query["query"]["bool"]["must"].append({
+                "query_string": {
+                    "query": query,
+                    "default_operator": "AND"
+                }
+            })
+
+        # If no query and no time range, use match_all
+        if not query and not time_range:
+            es_query["query"] = {"match_all": {}}
+
+        # Create basic auth header for ELK
+        auth_string = f"{elk_user}:{elk_password}"
+        auth_bytes = auth_string.encode('ascii')
+        auth_header = base64.b64encode(auth_bytes).decode('ascii')
+
+        # Make request to Elasticsearch
+        search_url = f"https://{elk_host}/{index_pattern}/_search"
+
+        logger.info(f"Searching logs for user={user_id}, env={env_name}, app={app_name}, index={index_pattern}")
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Basic {auth_header}",
+                "Content-Type": "application/json"
+            }
+            response = await client.post(search_url, headers=headers, json=es_query)
+            response.raise_for_status()
+
+            result = response.json()
+
+            # Extract relevant information from Elasticsearch response
+            hits = result.get("hits", {})
+            total_hits = hits.get("total", {}).get("value", 0)
+            logs = []
+
+            for hit in hits.get("hits", []):
+                source = hit.get("_source", {})
+                logs.append({
+                    "timestamp": source.get("@timestamp"),
+                    "level": source.get("level", "INFO"),
+                    "message": source.get("message", ""),
+                    "pod": source.get("kubernetes", {}).get("pod_name", "unknown"),
+                    "container": source.get("kubernetes", {}).get("container_name", "unknown"),
+                    "namespace": source.get("kubernetes", {}).get("namespace_name", "unknown"),
+                })
+
+            result_summary = {
+                "environment": env_name,
+                "app_name": app_name,
+                "index_pattern": index_pattern,
+                "total_hits": total_hits,
+                "returned": len(logs),
+                "time_range": time_range,
+                "query": query,
+                "logs": logs
+            }
+
+            logger.info(f"Found {total_hits} log entries for {env_name}/{app_name}, returning {len(logs)}")
+            return json.dumps(result_summary)
+
+    except httpx.HTTPStatusError as e:
+        error_msg = f"Failed to search logs: {e.response.status_code}"
+        logger.error(f"{error_msg}: {e.response.text}")
+        return json.dumps({"error": error_msg, "details": e.response.text})
+    except Exception as e:
+        error_msg = f"Error searching logs: {str(e)}"
         logger.exception(error_msg)
         return json.dumps({"error": error_msg})

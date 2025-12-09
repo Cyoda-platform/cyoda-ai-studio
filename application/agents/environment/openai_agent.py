@@ -34,6 +34,7 @@ from application.agents.environment.tools import (
     get_user_app_metrics,
     get_user_app_pods,
     delete_user_app,
+    search_logs,
 )
 
 
@@ -70,6 +71,7 @@ def create_openai_environment_agent() -> Agent:
         get_user_app_metrics,
         get_user_app_pods,
         delete_user_app,
+        search_logs,
     ]
     openai_tools = adapt_adk_tools_list(adk_tools)
 

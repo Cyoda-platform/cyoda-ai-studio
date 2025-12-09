@@ -31,6 +31,7 @@ from .tools import (
     get_user_app_metrics,
     get_user_app_pods,
     delete_user_app,
+    search_logs,
 )
 
 
@@ -66,6 +67,7 @@ root_agent = LlmAgent(
         get_user_app_metrics,
         get_user_app_pods,
         delete_user_app,
+        search_logs,
     ],
     sub_agents=[deployment_monitor],
     after_agent_callback=accumulate_streaming_response,
