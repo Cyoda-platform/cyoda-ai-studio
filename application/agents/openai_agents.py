@@ -21,6 +21,7 @@ from application.agents.guidelines.openai_agent import create_openai_guidelines_
 from application.agents.environment.openai_agent import create_openai_environment_agent
 from application.agents.canvas.openai_agent import create_openai_canvas_agent
 from application.agents.github.openai_agent import create_openai_github_agent
+from application.agents.cyoda_data_agent.openai_agent import create_openai_cyoda_data_agent
 from application.agents.shared.prompts import create_instruction_provider
 
 
@@ -43,6 +44,7 @@ def create_openai_coordinator_agent() -> Agent:
     environment_agent = create_openai_environment_agent()
     canvas_agent = create_openai_canvas_agent()
     github_agent = create_openai_github_agent()
+    cyoda_data_agent = create_openai_cyoda_data_agent()
 
     # Create coordinator instructions
     adk_instruction_provider = create_instruction_provider("coordinator")
@@ -67,6 +69,7 @@ def create_openai_coordinator_agent() -> Agent:
             handoff(environment_agent),
             handoff(canvas_agent),
             handoff(github_agent),
+            handoff(cyoda_data_agent),
         ],
     )
 

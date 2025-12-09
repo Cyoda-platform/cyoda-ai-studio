@@ -8,6 +8,7 @@ import os
 from typing import Any, Union
 
 from application.agents.canvas.agent import root_agent as canvas_agent
+from application.agents.cyoda_data_agent.agent import root_agent as cyoda_data_agent
 from application.agents.environment.agent import root_agent as environment_agent
 from application.agents.environment_mcp.agent import root_agent as environment_mcp_agent
 from application.agents.github.agent import root_agent as github_agent
@@ -80,10 +81,10 @@ def _create_google_adk_assistant(entity_service: Any) -> "CyodaAssistantWrapper"
         description="Cyoda AI Assistant - helps users build and edit event-driven applications naturally",
         instruction=create_instruction_provider("coordinator"),
         tools=[get_user_info],
-        sub_agents=[qa_agent, guidelines_agent, setup_agent, environment_agent, canvas_agent, github_agent],
+        sub_agents=[qa_agent, guidelines_agent, setup_agent, environment_agent, canvas_agent, github_agent, cyoda_data_agent],
     )
 
-    logger.info("✓ Cyoda Assistant created with QA, Guidelines, Setup, Environment, Canvas, and GitHub sub-agents")
+    logger.info("✓ Cyoda Assistant created with QA, Guidelines, Setup, Environment, Canvas, GitHub, and Cyoda Data sub-agents")
     logger.info("✓ Using Google ADK with sub_agents pattern")
 
     # Wrap in Cyoda-specific wrapper

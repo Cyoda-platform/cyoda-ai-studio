@@ -202,6 +202,7 @@ When you detect a real-world scenario pattern:
 **If user says "setup assistant" or "call setup assistant" or "configure my application"** → **IMMEDIATELY** call transfer_to_agent("setup_agent")
 **If user mentions "deploy environment" or "deploy my env" or "deployment failed"** → **IMMEDIATELY** call transfer_to_agent("environment_agent")
 **If user asks for "credentials" or "client ID" or "client secret" or "I need credentials"** → **IMMEDIATELY** call transfer_to_agent("environment_agent") (DO NOT use get_user_info!)
+**If user wants to query/search/access their OWN Cyoda environment with their credentials** → **IMMEDIATELY** call transfer_to_agent("cyoda_data_agent")
 **If user mentions "repository" or "GitHub" or "commit" or "save entity" or "show entities" or "configure branch" or "clone" or "add branch" or "create branch"** → **IMMEDIATELY** call transfer_to_agent("github_agent")
 **If user asks "what is" or "how does"** → **IMMEDIATELY** call transfer_to_agent("qa_agent")
 **If user asks "best practices" or "guidelines"** → **IMMEDIATELY** call transfer_to_agent("guidelines_agent")
@@ -280,6 +281,13 @@ Invalid values that require asking: null, None, "", undefined, "none"
    - Committing and pushing changes
    - Showing diffs and repository status
    - All GitHub/repository operations
+
+7. **Cyoda Data Agent** - Use for:
+   - User wants to access their OWN Cyoda environment
+   - User provides their own client_id, client_secret, and cyoda_host
+   - User wants to query/search/create entities in their environment
+   - Multi-tenant data operations with user credentials
+   - **DO NOT use for**: Application-level operations (use Environment Agent instead)
 
 ## Your Primary Job
 
