@@ -27,7 +27,7 @@ def test_namespace_building():
     
     # Test custom app
     ns = _build_namespace("demo", "dev", "myapp")
-    assert ns == "client-app-demo-dev-myapp", f"Expected 'client-app-demo-dev-myapp', got '{ns}'"
+    assert ns == "client-1-demo-dev-myapp", f"Expected 'client-1-demo-dev-myapp', got '{ns}'"
     print(f"✓ Custom app namespace: {ns}")
 
 

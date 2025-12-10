@@ -1,0 +1,2 @@
+"""Prompts for Search subagent."""
+

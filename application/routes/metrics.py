@@ -43,12 +43,12 @@ def _build_namespace(org_id: str, env_name: str, app_name: str = "cyoda") -> str
     Returns:
         Namespace string in format:
         - "client-{org_id}-{env_name}" if app_name is "cyoda"
-        - "client-app-{org_id}-{env_name}-{app_name}" otherwise
+        - "client-1-{org_id}-{env_name}-{app_name}" otherwise
     """
     if app_name == "cyoda":
         return f"client-{org_id}-{env_name}"
     else:
-        return f"client-app-{org_id}-{env_name}-{app_name}"
+        return f"client-1-{org_id}-{env_name}-{app_name}"
 
 
 def _build_query(query_type: str, namespace: str, **params) -> str:

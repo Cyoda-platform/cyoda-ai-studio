@@ -84,6 +84,9 @@ CLONE_REPO = os.getenv("CLONE_REPO", "false").lower() == "true"
 AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-exp")
 AI_SDK = os.getenv("AI_SDK", "google")  # "google" or "openai"
 
+# Augment Code Model Configuration (for code generation with Augment CLI)
+AUGMENT_MODEL = os.getenv("AUGMENT_MODEL", "haiku4.5")  # Model for augment code generation
+
 # Constants
 CYODA_ENTITY_TYPE_EDGE_MESSAGE = "EDGE_MESSAGE"
 GENERAL_MEMORY_TAG = "general"

@@ -168,7 +168,7 @@ When user asks about environment status, deployment, or anything environment-rel
 
 **IMPORTANT NAMESPACE ARCHITECTURE:**
 - **Cyoda Environment Namespace**: `client-{user}-{env}` - Contains Cyoda platform services
-- **User App Namespace**: `client-app-{user}-{env}-{app}` - Contains user calculation nodes
+- **User App Namespace**: `client-1-{user}-{env}-{app}` - Contains user calculation nodes
 - These are SEPARATE namespaces with different operations
 
 #### Environment Operations (Cyoda Platform Namespace)
@@ -193,18 +193,18 @@ When user asks about environment status, deployment, or anything environment-rel
 
 5. **Delete Environment:** `delete_environment(env_name)`
    * **DESTRUCTIVE** - deletes entire environment including all user apps
-   * **CASCADE DELETE** - also deletes all `client-app-{user}-{env}-*` namespaces
+   * **CASCADE DELETE** - also deletes all `client-1-{user}-{env}-*` namespaces
    * **ALWAYS** confirm with user first
 
 #### User Application Operations (App Namespaces)
 
 1. **List User Apps:** `list_user_apps(env_name)`
    * Lists all user applications for an environment
-   * Finds all `client-app-{user}-{env}-*` namespaces
+   * Finds all `client-1-{user}-{env}-*` namespaces
    * Returns app names and their namespace details
 
 2. **Get User App Details:** `get_user_app_details(env_name, app_name)`
-   * Shows deployments in `client-app-{user}-{env}-{app}` namespace
+   * Shows deployments in `client-1-{user}-{env}-{app}` namespace
    * Returns deployment details for the user application
 
 3. **Scale User App:** `scale_user_app(env_name, app_name, deployment_name, replicas)`
@@ -226,11 +226,11 @@ When user asks about environment status, deployment, or anything environment-rel
 
 7. **Get User App Metrics:** `get_user_app_metrics(env_name, app_name)`
    * CPU and memory usage for user app pods
-   * Namespace: `client-app-{user}-{env}-{app}`
+   * Namespace: `client-1-{user}-{env}-{app}`
 
 8. **Get User App Pods:** `get_user_app_pods(env_name, app_name)`
    * Lists pods in user app namespace
-   * Namespace: `client-app-{user}-{env}-{app}`
+   * Namespace: `client-1-{user}-{env}-{app}`
 
 9. **Delete User App:** `delete_user_app(env_name, app_name)`
    * Deletes user app namespace

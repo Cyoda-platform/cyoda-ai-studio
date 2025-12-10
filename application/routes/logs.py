@@ -87,7 +87,7 @@ async def generate_api_key() -> tuple[dict, int]:
                 "cluster": [],
                 "indices": [
                     {
-                        "names": [f"logs-client-{org_id}*", f"logs-client-app-{org_id}*"],
+                        "names": [f"logs-client-{org_id}*", f"logs-client-1-{org_id}*"],
                         "privileges": ["read", "view_index_metadata"],
                         "allow_restricted_indices": False
                     }
@@ -112,7 +112,7 @@ async def generate_api_key() -> tuple[dict, int]:
                 json={
                     "name": api_key_name,
                     "role_descriptors": role_descriptors,
-                    "expiration": "1h"  # 1 year expiration
+                    "expiration": "1h"
                 }
             )
 
@@ -209,7 +209,7 @@ async def search_logs() -> tuple[dict, int]:
         if app_name == "cyoda":
             index_pattern = f"logs-client-{org_id}-{env_name}*"
         else:
-            index_pattern = f"logs-client-app-{org_id}-{env_name}-{app_name}*"
+            index_pattern = f"logs-client-1-{org_id}-{env_name}-{app_name}*"
 
         logger.info(
             f"Searching logs for user {user_id} (org_id: {org_id}, env: {env_name}, app: {app_name}, index: {index_pattern})")

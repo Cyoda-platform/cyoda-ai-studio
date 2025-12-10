@@ -92,7 +92,7 @@ async def list_user_apps_endpoint() -> tuple[Dict[str, Any], int]:
             "user_applications": [
                 {
                     "app_name": "my-app",
-                    "namespace": "client-app-user-dev-my-app",
+                    "namespace": "client-1-user-dev-my-app",
                     "status": "Active",
                     "created_at": "2025-01-01T00:00:00Z"
                 }

@@ -362,6 +362,7 @@ def _get_keyspace(user_name: str):
 
 def _get_namespace(user_name: str):
     namespace = re.sub(r"[^a-z0-9-]", "-", user_name.lower())
+    # Enforce max 10 characters - truncate if longer
     return namespace
 
 
@@ -380,7 +381,7 @@ async def deploy_cyoda_environment(
       tool_context: The ADK tool context
       env_name: Environment name/namespace to use for deployment. REQUIRED - must be provided by the user.
                 If not provided, this function will return an error asking you to prompt the user.
-                Example prompt: "What environment name would you like to use? For example: 'dev', 'prod', 'staging', etc."
+                Example prompt: "What environment name would you like to use? For example: 'dev', 'prod', 'staging', etc." Max 10 characters. Other characters will be concatenated
       build_id: Optional build ID to associate with this deployment (e.g., from application build)
 
     Returns:
@@ -403,7 +404,7 @@ async def deploy_cyoda_environment(
 
         if not env_name:
             return "ERROR: env_name parameter is required but was not provided. You MUST ask the user for the environment name before calling this function. Ask them: 'What environment name would you like to use? For example: dev, prod, staging, etc.' DO NOT assume or infer the environment name."
-
+        env_name = env_name[:10]  # Truncate to 10 characters
         if user_id.startswith("guest"):
             logger.warning(f"Deployment rejected for guest user: {user_id}")
             return "Sorry, deploying Cyoda environments is only available to logged-in users. Please sign up or log in first."
@@ -428,7 +429,7 @@ async def deploy_cyoda_environment(
             logger.info(f"Including build_id in deployment request: {build_id}")
 
         payload["user_defined_namespace"] = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
-        payload["user_defined_keyspace"] = f"client_{_get_keyspace(user_id)}_{_get_keyspace(env_name)}"
+        payload["user_defined_keyspace"] = f"c_{_get_keyspace(user_id)}_{_get_keyspace(env_name)}"
 
         logger.info(
             f"Deploying Cyoda environment for user: {user_id}, chat_id: {chat_id}"
@@ -537,7 +538,6 @@ async def deploy_user_application(
         branch_name: str,
         cyoda_client_id: str,
         cyoda_client_secret: str,
-        user_name: str,
         env_name: Optional[str] = None,
         app_name: Optional[str] = None,
         is_public: bool = True,
@@ -558,13 +558,12 @@ async def deploy_user_application(
       branch_name: Git branch to deploy (e.g., "main", "develop", or branch UUID)
       cyoda_client_id: Cyoda client ID for authentication
       cyoda_client_secret: Cyoda client secret for authentication
-      user_name: Username for the deployment
       env_name: Environment name to deploy to. REQUIRED - must be provided by the user.
                 If not provided, this function will return an error asking you to prompt the user.
                 Example prompt: "What environment name would you like to deploy to? For example: 'dev', 'prod', 'staging', etc."
       app_name: Application name for this deployment. REQUIRED - must be provided by the user.
                 If not provided, this function will return an error asking you to prompt the user.
-                Example prompt: "What would you like to name this application? For example: 'my-app', 'payment-api', 'dashboard-v2', etc."
+                Example prompt: "What would you like to name this application? For example: 'my-app', 'payment-api', 'dashboard-v2', etc. Max 10 characters. Other characters will be concatenated."
       is_public: Whether the repository is public (default: True)
       installation_id: GitHub installation ID for public repos (optional)
 
@@ -582,7 +581,7 @@ async def deploy_user_application(
 
         if app_name.lower() == "cyoda":
             return "ERROR: app_name parameter cannot be 'cyoda'. Please ask the user to choose a different name for their application."
-
+        app_name = app_name[:10]  # Truncate to 10 characters
         # Get cloud manager configuration
         cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST")
         if not cloud_manager_host:
@@ -598,10 +597,17 @@ async def deploy_user_application(
         chat_id = tool_context.state.get("conversation_id")
         if not chat_id:
             return "Error: Unable to determine conversation ID. Please try again."
+        user_id = tool_context.state.get("user_id", "guest")
+        logger.info(f"Environment deployment requested by user_id: {user_id}")
+        if user_id.startswith("guest"):
+            logger.warning(f"Deployment rejected for guest user: {user_id}")
+            return "Sorry, deploying Cyoda environments is only available to logged-in users. Please sign up or log in first."
 
-        # Prepare deployment payload matching the working example format
-        cyoda_namespace = f"client-{_get_namespace(user_name)}-{_get_namespace(env_name)}"
-        app_namespace = f"client-app-{_get_namespace(user_name)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+# Prepare deployment payload matching the working example format
+        cyoda_namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        app_namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+
+
         payload = {
             "branch_name": branch_name,
             "chat_id": chat_id,
@@ -609,7 +615,7 @@ async def deploy_user_application(
             "cyoda_client_secret": cyoda_client_secret,
             "is_public": str(is_public).lower(),
             "repository_url": repository_url,
-            "user_name": user_name,
+            "user_name": user_id,
             "app_namespace": app_namespace,
             "cyoda_namespace": cyoda_namespace,
         }
@@ -624,7 +630,7 @@ async def deploy_user_application(
                 payload["installation_id"] = env_installation_id
 
         logger.info(
-            f"Deploying user application from {repository_url}@{branch_name} for user {user_name}"
+            f"Deploying user application from {repository_url}@{branch_name} for user {user_id}"
         )
 
         # Get authentication token
@@ -664,7 +670,7 @@ async def deploy_user_application(
             )
 
             # Return success with task_id for UI tracking
-            result = f"✓ Application deployment started successfully!\n\n**Build ID:** {build_id}\n**Repository:** {repository_url}\n**Branch:** {branch_name}\n**User:** {user_name}"
+            result = f"✓ Application deployment started successfully!\n\n**Build ID:** {build_id}\n**Repository:** {repository_url}\n**Branch:** {branch_name}\n**User:** {user_id}"
             if task_id:
                 result += f"\n**Task ID:** {task_id}"
             if namespace:
@@ -1821,7 +1827,7 @@ async def list_user_apps(tool_context: ToolContext, env_name: str) -> str:
     """List all user applications deployed in a specific environment.
 
     User applications run in separate namespaces with pattern:
-    client-app-{user}-{env}-{appname}
+    client-1-{user}-{env}-{appname}
 
     This function lists all app namespaces for the given environment.
 
@@ -1866,8 +1872,8 @@ async def list_user_apps(tool_context: ToolContext, env_name: str) -> str:
             data = response.json()
             all_namespaces = data.get("namespaces", [])
 
-            # Filter for user app namespaces: client-app-{user}-{env}-*
-            app_namespace_prefix = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-"
+            # Filter for user app namespaces: client-1-{user}-{env}-*
+            app_namespace_prefix = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-"
 
             user_apps = []
             for ns in all_namespaces:
@@ -1929,7 +1935,7 @@ async def get_user_app_details(tool_context: ToolContext, env_name: str, app_nam
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace: client-app-{user}-{env}-{app}
-        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+        namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
 
         # Get all deployments in the app namespace
@@ -2025,7 +2031,7 @@ async def scale_user_app(tool_context: ToolContext, env_name: str, app_name: str
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+        namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{deployment_name}/scale"
 
@@ -2087,7 +2093,7 @@ async def restart_user_app(tool_context: ToolContext, env_name: str, app_name: s
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+        namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{deployment_name}/restart"
 
@@ -2157,7 +2163,7 @@ async def update_user_app_image(
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+        namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{deployment_name}/rollout/update"
 
@@ -2221,7 +2227,7 @@ async def get_user_app_status(tool_context: ToolContext, env_name: str, app_name
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+        namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/deployments/{deployment_name}/rollout/status"
 
@@ -2281,7 +2287,7 @@ async def get_user_app_metrics(tool_context: ToolContext, env_name: str, app_nam
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+        namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/metrics"
 
@@ -2344,7 +2350,7 @@ async def get_user_app_pods(tool_context: ToolContext, env_name: str, app_name: 
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+        namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}/pods"
 
@@ -2407,7 +2413,7 @@ async def delete_user_app(tool_context: ToolContext, env_name: str, app_name: st
             return json.dumps({"error": "CLOUD_MANAGER_HOST environment variable not configured."})
 
         # Construct app namespace
-        namespace = f"client-app-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+        namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
         protocol = "http" if "localhost" in cloud_manager_host else "https"
         api_url = f"{protocol}://{cloud_manager_host}/k8s/namespaces/{namespace}"
 
@@ -2505,9 +2511,9 @@ async def search_logs(
             # Cyoda environment logs: logs-client-{user}-{env}*
             index_pattern = f"logs-client-{org_id}-{env}*"
         else:
-            # User application logs: logs-client-app-{user}-{env}-{app}*
+            # User application logs: logs-client-1-{user}-{env}-{app}*
             app = _get_namespace(app_name)
-            index_pattern = f"logs-client-app-{org_id}-{env}-{app}*"
+            index_pattern = f"logs-client-1-{org_id}-{env}-{app}*"
 
         # Build Elasticsearch query
         es_query = {

@@ -1354,8 +1354,8 @@ async def generate_application(
             f"Generating {language} application with Augment CLI in {repository_path}"
         )
 
-        # Get AI model from config
-        from common.config.config import AI_MODEL
+        # Get Augment model from config
+        from common.config.config import AUGMENT_MODEL
 
         # Call Augment CLI script using asyncio (matching old working code)
         # Format: bash <script> <prompt> <model> <workspace_dir> <branch_id>
@@ -1363,13 +1363,13 @@ async def generate_application(
             "bash",
             str(script_path.absolute()),
             full_prompt,
-            AI_MODEL,
+            AUGMENT_MODEL,
             repository_path,
             branch_name,
         ]
 
         logger.info(f"🔧 Executing command: bash {script_path.name} [prompt] [model] [workspace] [branch]")
-        logger.info(f"🎯 Model: {AI_MODEL}")
+        logger.info(f"🎯 Model: {AUGMENT_MODEL}")
         logger.info(f"📁 Workspace: {repository_path}")
         logger.info(f"🌿 Branch: {branch_name}")
 
