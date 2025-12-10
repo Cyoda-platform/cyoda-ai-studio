@@ -12,6 +12,7 @@ Uses Elasticsearch API for log management.
 import base64
 import logging
 import os
+import re
 from datetime import timedelta
 from typing import Any, Dict, Optional
 
@@ -24,6 +25,14 @@ from common.middleware.auth_middleware import require_auth
 logger = logging.getLogger(__name__)
 
 logs_bp = Blueprint("logs", __name__, url_prefix="/api/v1/logs")
+
+
+def _get_namespace(name: str) -> str:
+    """
+    Transform a name into a valid Kubernetes namespace format.
+    Converts to lowercase and replaces non-alphanumeric characters with hyphens.
+    """
+    return re.sub(r"[^a-z0-9-]", "-", name.lower())
 
 
 async def _rate_limit_key() -> str:
@@ -206,17 +215,27 @@ async def search_logs() -> tuple[dict, int]:
             return jsonify({"error": "env_name and app_name are required"}), 400
 
         # Construct index pattern for application logs
+        # Transform names to valid namespace format (lowercase, hyphens only)
+        org_namespace = _get_namespace(org_id)
+        env_namespace = _get_namespace(env_name)
+
         if app_name == "cyoda":
-            index_pattern = f"logs-client-{org_id}-{env_name}*"
+            index_pattern = f"logs-client-{org_namespace}-{env_namespace}*"
         else:
-            index_pattern = f"logs-client-1-{org_id}-{env_name}-{app_name}*"
+            app_namespace = _get_namespace(app_name)
+            index_pattern = f"logs-client-1-{org_namespace}-{env_namespace}-{app_namespace}*"
 
         logger.info(
             f"Searching logs for user {user_id} (org_id: {org_id}, env: {env_name}, app: {app_name}, index: {index_pattern})")
 
+        # Validate and cap size parameter (max 10000 for Elasticsearch)
+        requested_size = data.get("size", 50)
+        max_size = 10000
+        size = min(int(requested_size), max_size) if isinstance(requested_size, (int, str)) else 50
+
         query = {
             "query": data.get("query", {"match_all": {}}),
-            "size": data.get("size", 50),
+            "size": size,
             "sort": data.get("sort", [{"@timestamp": {"order": "desc"}}])
         }
 
@@ -232,9 +251,16 @@ async def search_logs() -> tuple[dict, int]:
 
             if response.status_code not in [200, 201]:
                 logger.error(f"ELK search failed: {response.status_code} - {response.text}")
+                try:
+                    error_details = response.json()
+                    logger.error(f"ELK error details: {error_details}")
+                except:
+                    error_details = response.text
                 return jsonify({
                     "error": "Search failed",
-                    "details": response.text
+                    "details": error_details,
+                    "query": query,
+                    "index_pattern": index_pattern
                 }), response.status_code
 
             result = response.json()

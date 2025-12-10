@@ -114,6 +114,7 @@ async def list_user_apps_endpoint() -> tuple[Dict[str, Any], int]:
         tool_context = SimpleToolContext(state={
             "user_id": request.user_id,
             "conversation_id": request.headers.get("X-Conversation-ID", ""),
+            "auth_token": request.headers.get("Authorization", "").replace("Bearer ", ""),
         })
 
         # Call the tool

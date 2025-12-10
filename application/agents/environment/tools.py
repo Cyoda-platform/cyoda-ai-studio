@@ -72,6 +72,49 @@ async def _get_cloud_manager_auth_token() -> str:
         return access_token
 
 
+async def _check_app_status(user_id: str, env_name: str, app_name: str, auth_token: str) -> str:
+    """Check if an application is accessible by making a request to its environment URL.
+
+    Constructs the app URL from the namespace and checks if it responds with 200 status
+    when called with the current Auth0 token.
+
+    Args:
+        user_id: User ID
+        env_name: Environment name
+        app_name: Application name
+        auth_token: Current Auth0 token from request
+
+    Returns:
+        "Active" if the environment responds with 200, "Inactive" otherwise
+    """
+    try:
+        import httpx
+
+        # Construct the app namespace and URL
+        namespace = f"client-1-{_get_namespace(user_id)}-{_get_namespace(env_name)}-{_get_namespace(app_name)}"
+        client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
+        app_url = f"https://{namespace}.{client_host}/api"
+
+        # Make request with Auth0 token
+        headers = {}
+        if auth_token:
+            headers["Authorization"] = f"Bearer {auth_token}"
+
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(app_url, headers=headers, follow_redirects=False)
+
+            # Check if we got a 200 response
+            if response.status_code == 200:
+                return "Active"
+            else:
+                logger.debug(f"App {app_name} returned status {response.status_code}")
+                return "Inactive"
+
+    except Exception as e:
+        logger.debug(f"Failed to check app status for {app_name}: {str(e)}")
+        return "Inactive"
+
+
 async def _handle_deployment_success(
         tool_context: ToolContext,
         build_id: str,
@@ -1881,10 +1924,19 @@ async def list_user_apps(tool_context: ToolContext, env_name: str) -> str:
                 if ns_name.startswith(app_namespace_prefix):
                     # Extract app name
                     app_name = ns_name.replace(app_namespace_prefix, "")
+
+                    # Determine app status by checking if environment is accessible
+                    app_status = await _check_app_status(
+                        user_id=user_id,
+                        env_name=env_name,
+                        app_name=app_name,
+                        auth_token=tool_context.state.get("auth_token", "")
+                    )
+
                     user_apps.append({
                         "app_name": app_name,
                         "namespace": ns_name,
-                        "status": ns.get("status", "Unknown"),
+                        "status": app_status,
                         "created_at": ns.get("created_at"),
                     })
 
@@ -2454,13 +2506,17 @@ async def search_logs(
     app_name: str,
     query: Optional[str] = None,
     size: int = 50,
-    time_range: Optional[str] = "15m"
+    time_range: Optional[str] = "15m",
+    since_timestamp: Optional[str] = None
 ) -> str:
     """Search logs in Elasticsearch for a specific environment and application.
 
     This function searches logs for the current user's namespaces in ELK.
     It supports searching both Cyoda environment logs (app_name="cyoda") and
     user application logs.
+
+    IMPORTANT: For newly deployed/redeployed applications, use since_timestamp
+    to avoid retrieving logs from previous deployments.
 
     Args:
         tool_context: The ADK tool context
@@ -2470,6 +2526,10 @@ async def search_logs(
         size: Number of log entries to return (default: 50, max: 1000)
         time_range: Time range for logs (default: "15m" for last 15 minutes)
                    Examples: "15m", "1h", "24h", "7d"
+                   NOTE: Ignored if since_timestamp is provided
+        since_timestamp: ISO 8601 timestamp (e.g., "2025-12-10T14:30:00Z")
+                        Get logs ONLY after this timestamp. Use this after deployments
+                        to avoid getting logs from previous deployments.
 
     Returns:
         JSON string with log search results, or error message
@@ -2479,6 +2539,7 @@ async def search_logs(
         - Search user app logs: search_logs(env_name="dev", app_name="my-calculator")
         - Search with query: search_logs(env_name="dev", app_name="cyoda", query="ERROR")
         - Custom time range: search_logs(env_name="dev", app_name="cyoda", time_range="1h")
+        - After deployment: search_logs(env_name="prod", app_name="my-app", since_timestamp="2025-12-10T14:30:00Z")
     """
     try:
         import httpx
@@ -2521,8 +2582,26 @@ async def search_logs(
             "sort": [{"@timestamp": {"order": "desc"}}]
         }
 
-        # Add time range filter
-        if time_range:
+        # Add time range filter (since_timestamp takes precedence over time_range)
+        if since_timestamp:
+            # Use absolute timestamp - get logs ONLY after this time
+            es_query["query"] = {
+                "bool": {
+                    "must": [],
+                    "filter": [
+                        {
+                            "range": {
+                                "@timestamp": {
+                                    "gte": since_timestamp,
+                                    "lte": "now"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        elif time_range:
+            # Use relative time range
             es_query["query"] = {
                 "bool": {
                     "must": [],
@@ -2596,7 +2675,8 @@ async def search_logs(
                 "index_pattern": index_pattern,
                 "total_hits": total_hits,
                 "returned": len(logs),
-                "time_range": time_range,
+                "time_range": time_range if not since_timestamp else None,
+                "since_timestamp": since_timestamp,
                 "query": query,
                 "logs": logs
             }
