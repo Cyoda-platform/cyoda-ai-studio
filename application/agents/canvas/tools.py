@@ -8,6 +8,14 @@ from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
 
+# Make ToolContext available for type hint evaluation by Google ADK
+# This is needed because 'from __future__ import annotations' makes all annotations strings,
+# and typing.get_type_hints() needs to resolve ToolContext in the module's globals
+# Must be done BEFORE any function definitions so it's in the module's namespace
+__all__ = ["ToolContext"]
+
+from application.agents.shared.hook_decorator import creates_hook
+
 logger = logging.getLogger(__name__)
 
 
@@ -132,6 +140,7 @@ async def validate_entity_schema(
         })
 
 
+@creates_hook("code_changes")
 async def create_canvas_refresh_hook(
     conversation_id: Optional[str] = None,
     repository_name: Optional[str] = None,

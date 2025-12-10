@@ -967,6 +967,41 @@ def create_build_and_deploy_hooks(
     return combined
 
 
+def create_issue_technical_user_hook(
+    conversation_id: str,
+    env_url: str,
+) -> Dict[str, Any]:
+    """
+    Create a hook for issuing M2M (machine-to-machine) technical user credentials.
+
+    When this hook is returned, the UI should:
+    1. Display a button to issue technical user credentials
+    2. Make a POST request to /api/clients on the specified environment
+    3. Return CYODA_CLIENT_ID and CYODA_CLIENT_SECRET for OAuth2 authentication
+
+    Args:
+        conversation_id: Conversation technical ID
+        env_url: Environment URL (e.g., 'client-user-env.cyoda.cloud')
+
+    Returns:
+        Hook dictionary with type "ui_function" for issuing credentials
+    """
+    hook = {
+        "type": "ui_function",
+        "function": "issue_technical_user",
+        "method": "POST",
+        "path": "/api/clients",
+        "response_format": "json",
+        "data": {
+            "conversation_id": conversation_id,
+            "env_url": env_url,
+        }
+    }
+
+    logger.info(f"🎣 Created issue_technical_user hook for environment {env_url}")
+    return hook
+
+
 def detect_canvas_resources(changed_files: List[str]) -> Optional[Dict[str, List[str]]]:
     """
     Detect canvas-relevant resources from changed files.

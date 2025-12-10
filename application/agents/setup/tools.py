@@ -11,6 +11,14 @@ from typing import Any, Optional
 
 from google.adk.tools.tool_context import ToolContext
 
+# Make ToolContext available for type hint evaluation by Google ADK
+# This is needed because 'from __future__ import annotations' makes all annotations strings,
+# and typing.get_type_hints() needs to resolve ToolContext in the module's globals
+# Must be done BEFORE any function definitions so it's in the module's namespace
+__all__ = ["ToolContext"]
+
+from application.agents.shared.hook_decorator import creates_hook
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +50,7 @@ async def validate_environment(
     return {var: os.getenv(var) is not None for var in required_vars}
 
 
-async def check_project_structure() -> dict[str, Any]:
+def check_project_structure() -> dict[str, Any]:
     """Check if the current directory has a valid Cyoda project structure.
 
     Verifies the presence of key directories and files for a Cyoda application.
@@ -473,16 +481,15 @@ async def get_user_info(user_request: str, tool_context: ToolContext) -> str:
         return f"Error getting user info: {error_msg}"
 
 
-async def ui_function_issue_technical_user(tool_context: ToolContext, env_name: Optional[str] = None) -> str:
+@creates_hook("issue_technical_user")
+async def issue_technical_user(tool_context: ToolContext, env_name: Optional[str] = None) -> str:
     """
     Issue M2M (machine-to-machine) technical user credentials.
 
-    This function stores a UI function call instruction in the tool context
-    that tells the frontend to make an API call to issue technical user credentials
-    (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication.
+    This function creates a hook that tells the frontend to make an API call to issue
+    technical user credentials (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication.
 
-    The UI function JSON will be added to the conversation by the agent framework
-    after the agent completes its response, preventing race conditions.
+    The hook is returned in the response and the UI renders it as a clickable button.
 
     Use this tool when the user asks for credentials or needs to authenticate
     their application with the Cyoda environment.
@@ -497,13 +504,14 @@ async def ui_function_issue_technical_user(tool_context: ToolContext, env_name: 
                   Example prompt: "Which environment would you like to issue credentials for? For example: 'dev', 'prod', 'staging', etc."
 
     Returns:
-        Success message confirming credential issuance was initiated
+        Success message with hook for UI to display credential issuance button
     """
     try:
         import re
 
-        # Get user ID from context
+        # Get user ID and conversation ID from context
         user_id = tool_context.state.get("user_id", "guest")
+        conversation_id = tool_context.state.get("conversation_id", "")
 
         if not env_name:
             return "ERROR: env_name parameter is required but was not provided. You MUST ask the user which environment to issue credentials for before calling this function. Ask them: 'Which environment would you like to issue credentials for? For example: dev, prod, staging, etc.' DO NOT assume or infer the environment name."
@@ -521,27 +529,23 @@ async def ui_function_issue_technical_user(tool_context: ToolContext, env_name: 
         namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
         env_url = f"{namespace}.{client_host}"
 
-        # Create UI function parameters with environment URL
-        ui_params = {
-            "type": "ui_function",
-            "function": "ui_function_issue_technical_user",
-            "method": "POST",
-            "path": "/api/clients",
-            "response_format": "json",
-            "env_url": env_url,
-        }
+        # Create hook for issuing technical user
+        from application.agents.shared.hook_utils import (
+            create_issue_technical_user_hook,
+            wrap_response_with_hook,
+        )
 
-        logger.info(f"Storing UI function in tool context for environment {env_url}: {json.dumps(ui_params)}")
+        hook = create_issue_technical_user_hook(
+            conversation_id=conversation_id,
+            env_url=env_url,
+        )
 
-        # Store UI function in tool context so the agent framework can add it to conversation
-        # This prevents race conditions where both the tool and route handler update the conversation
-        if "ui_functions" not in tool_context.state:
-            tool_context.state["ui_functions"] = []
-        tool_context.state["ui_functions"].append(ui_params)
+        # Store hook in context for SSE streaming
+        tool_context.state["last_tool_hook"] = hook
 
-        logger.info(f"✅ UI function stored in context for {env_url}, will be added to conversation after agent response")
-
-        return f"✅ Credential issuance initiated for environment: {env_url}\n\nThe UI will create your M2M technical user credentials (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication with this environment."
+        success_msg = f"✅ Credential issuance initiated for environment: {env_url}\n\nClick the button below to create your M2M technical user credentials (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication."
+        logger.info(f"✅ Returning success message with hook for {env_url}")
+        return wrap_response_with_hook(success_msg, hook)
     except Exception as e:
         error_msg = f"Error issuing technical user: {str(e)}"
         logger.exception(error_msg)

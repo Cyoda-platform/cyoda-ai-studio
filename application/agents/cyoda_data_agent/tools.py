@@ -7,6 +7,12 @@ from typing import Any
 
 from google.adk.tools.tool_context import ToolContext
 
+# Make ToolContext available for type hint evaluation by Google ADK
+# This is needed because 'from __future__ import annotations' makes all annotations strings,
+# and typing.get_type_hints() needs to resolve ToolContext in the module's globals
+# Must be done BEFORE any function definitions so it's in the module's namespace
+__all__ = ["ToolContext"]
+
 from application.agents.cyoda_data_agent.user_service_container import (
     UserServiceContainer,
 )

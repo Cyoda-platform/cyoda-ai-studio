@@ -11,6 +11,13 @@ from typing import Any, Dict, List, Optional
 
 from google.adk.tools.tool_context import ToolContext
 
+# Make ToolContext available for type hint evaluation by Google ADK
+# This is needed because 'from __future__ import annotations' makes all annotations strings,
+# and typing.get_type_hints() needs to resolve ToolContext in the module's globals
+# Must be done BEFORE any function definitions so it's in the module's namespace
+__all__ = ["ToolContext"]
+
+from application.agents.shared.hook_decorator import creates_hook
 from application.agents.shared.prompt_loader import load_template
 from application.entity.conversation import Conversation
 from application.services.github.github_service import GitHubService
@@ -1255,6 +1262,7 @@ async def save_file_to_repository(
         return f"ERROR: {str(e)}{STOP_ON_ERROR}"
 
 
+@creates_hook("code_changes")
 async def commit_and_push_changes(
     commit_message: str, tool_context: ToolContext
 ) -> str:
@@ -2030,6 +2038,8 @@ async def _load_informational_prompt_template(language: str) -> str:
         return f"ERROR: Failed to load prompt template: {str(e)}"
 
 
+@creates_hook("background_task")
+@creates_hook("code_changes")
 async def generate_code_with_cli(
     user_request: str,
     tool_context: Optional[ToolContext] = None,
@@ -2519,6 +2529,8 @@ async def _monitor_build_process(
                 logger.error(f"Failed to update task status: {update_error}")
 
 
+@creates_hook("background_task")
+@creates_hook("code_changes")
 async def generate_application(
     requirements: str,
     language: Optional[str] = None,
@@ -2822,6 +2834,7 @@ I'll update you when it completes. You can continue chatting while the build run
 generate_code_with_auggie = generate_code_with_cli
 
 
+@creates_hook("open_canvas_tab")
 async def open_canvas_tab(
     tab_name: str,
     tool_context: Optional[ToolContext] = None,

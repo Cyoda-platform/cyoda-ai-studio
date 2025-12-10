@@ -1,0 +1,114 @@
+{
+  "dialogue_id": "test_prompt_hooks_001",
+  "title": "Test Prompt-Level Hooks - Multi-Choice Options",
+  "description": "Complete dialogue demonstrating prompt-level hooks for multi-choice questions",
+  "agent": "environment_agent",
+  "created_at": "2024-12-10T00:00:00Z",
+  "test_scenario": "prompt_hooks",
+  "messages": [
+    {
+      "id": 1,
+      "role": "user",
+      "content": "I need to manage my Cyoda environment. What can you help me with?"
+    },
+    {
+      "id": 2,
+      "role": "assistant",
+      "content": "I can help you manage your Cyoda environment! Here are the main things I can do:",
+      "hooks": [
+        {
+          "name": "option_selection",
+          "type": "option_selection",
+          "parameters": {
+            "conversation_id": "conv-test-001",
+            "question": "What would you like to do?",
+            "options": [
+              {
+                "value": "deploy",
+                "label": "🚀 Deploy Environment"
+              },
+              {
+                "value": "check",
+                "label": "✅ Check Status"
+              },
+              {
+                "value": "credentials",
+                "label": "🔐 Issue Credentials"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "role": "user",
+      "content": "deploy",
+      "selected_option": {
+        "value": "deploy",
+        "label": "🚀 Deploy Environment"
+      }
+    },
+    {
+      "id": 4,
+      "role": "assistant",
+      "content": "Great! I'll help you deploy a Cyoda environment. What would you like to name your environment? For example: 'dev', 'staging', 'prod', or a custom name."
+    },
+    {
+      "id": 5,
+      "role": "user",
+      "content": "dev"
+    },
+    {
+      "id": 6,
+      "role": "assistant",
+      "content": "Perfect! Deploying environment 'dev'...\n\n✅ Environment deployed successfully!\n\n**Environment Details:**\n- Name: dev\n- Status: ACTIVE\n- URL: https://dev.cyoda.example.com\n- Created: 2024-12-10 10:00:00\n\nWhat would you like to do next?",
+      "hooks": [
+        {
+          "name": "option_selection",
+          "type": "option_selection",
+          "parameters": {
+            "conversation_id": "conv-test-001",
+            "question": "What's next?",
+            "options": [
+              {
+                "value": "deploy_app",
+                "label": "🚀 Deploy Application"
+              },
+              {
+                "value": "check_status",
+                "label": "📊 Check Status"
+              },
+              {
+                "value": "issue_credentials",
+                "label": "🔐 Issue Credentials"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "role": "user",
+      "content": "issue_credentials",
+      "selected_option": {
+        "value": "issue_credentials",
+        "label": "🔐 Issue Credentials"
+      }
+    },
+    {
+      "id": 8,
+      "role": "assistant",
+      "content": "I'll issue technical user credentials for your dev environment.\n\n✅ Credentials issued successfully!\n\n**Technical User Details:**\n- Client ID: cyoda_client_abc123xyz\n- Client Secret: ••••••••••••••••\n- Environment: dev\n- Expires: 2025-12-10\n\nYour credentials are ready to use!"
+    }
+  ],
+  "test_results": {
+    "hooks_rendered": true,
+    "options_clickable": true,
+    "selections_captured": true,
+    "agent_responded_correctly": true,
+    "status": "PASSED"
+  }
+}
+

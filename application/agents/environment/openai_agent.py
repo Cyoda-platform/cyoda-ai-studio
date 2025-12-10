@@ -18,7 +18,7 @@ from application.agents.environment.tools import (
     deploy_user_application,
     get_deployment_status,
     get_build_logs,
-    ui_function_issue_technical_user,
+    issue_technical_user,
     show_deployment_options,
     list_environments,
     describe_environment,

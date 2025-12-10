@@ -98,7 +98,7 @@ The Cyoda AI Assistant uses a multi-agent architecture where specialized agents 
 - `deploy_user_application` - Deploy applications
 - `get_deployment_status` - Get deployment status
 - `get_build_logs` - Retrieve logs
-- `ui_function_issue_technical_user` - Issue credentials
+- `issue_technical_user` - Issue credentials
 
 ---
 

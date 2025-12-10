@@ -19,7 +19,7 @@ from .tools import (
     list_directory_files,
     read_file,
     set_setup_context,
-    ui_function_issue_technical_user,
+    issue_technical_user,
     validate_environment,
     validate_workflow_file,
 )
@@ -50,7 +50,7 @@ root_agent = LlmAgent(
         get_env_deploy_status,
         get_user_info,
         # Credential management
-        ui_function_issue_technical_user,
+        issue_technical_user,
         # File operation tools
         list_directory_files,
         read_file,

@@ -80,6 +80,43 @@ User: "Create a Customer entity"
 You: [save] → [commit] → [get_entity_path] → [get_entity_path] → [get_entity_path]... ← WRONG: Infinite loop!
 ```
 
+### 🎯 PROMPT-BASED HOOKS (NEW)
+
+You can also create hooks directly in your response without tool calls:
+
+**Example: Ask user to choose next action**
+```python
+from application.agents.shared.prompt_hook_helpers import prompt_ask_user_choice
+
+return prompt_ask_user_choice(
+    conversation_id=context["conversation_id"],
+    question="What would you like to do next?",
+    options=[
+        {"value": "build", "label": "🔨 Build Application"},
+        {"value": "analyze", "label": "📊 Analyze Structure"},
+        {"value": "deploy", "label": "🚀 Deploy to Environment"},
+    ],
+    message="Your code is ready! What's next?"
+)
+```
+
+**Example: Open canvas directly**
+```python
+from application.agents.shared.prompt_hook_helpers import prompt_open_canvas
+
+return prompt_open_canvas(
+    conversation_id=context["conversation_id"],
+    tab_name="entities",
+    message="✅ Entity created! Opening Canvas to view it..."
+)
+```
+
+**Benefits:**
+- ✅ No tool call needed
+- ✅ Faster response
+- ✅ Dynamic options based on context
+- ✅ Same hook structure as tool-based hooks
+
 ---
 
 ## 4. 🚀 Workflows (Decision Logic)

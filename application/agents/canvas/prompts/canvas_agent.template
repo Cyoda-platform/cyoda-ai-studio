@@ -120,11 +120,7 @@ transfer_to_agent("github_agent", "open_canvas_tab(tab_name='requirements')")
 
 ### 🎯 CRITICAL PATTERN: How to Return Canvas Hooks
 
-**The ONLY way to attach canvas hooks to your response is to CALL `open_canvas_tab()` via GitHub Agent.**
-
-**DO NOT try to create hooks yourself or return JSON with hooks.**
-
-**ALWAYS follow this pattern:**
+**Option 1: Tool-Based (Traditional)**
 1. Save artifact: `transfer_to_agent("github_agent", "save_file_to_repository(...)")` + `transfer_to_agent("github_agent", "commit_and_push_changes(...)")`
 2. **YOU MUST CALL** `transfer_to_agent("github_agent", "open_canvas_tab(tab_name='entities')")` (or workflows/requirements)
 3. The tool creates the hook internally and returns it wrapped in the response
@@ -142,6 +138,24 @@ Framework automatically attaches hook to your response
 ↓
 User sees: Success message + "Open Canvas" button
 ```
+
+**Option 2: Prompt-Based (NEW - Faster)**
+Use `prompt_open_canvas()` directly in your response:
+```python
+from application.agents.shared.prompt_hook_helpers import prompt_open_canvas
+
+return prompt_open_canvas(
+    conversation_id=context["conversation_id"],
+    tab_name="entities",
+    message="✅ Customer entity created! Opening Canvas..."
+)
+```
+
+**Benefits of prompt-based:**
+- ✅ No tool call needed
+- ✅ Faster response
+- ✅ Same hook structure
+- ✅ Perfect for immediate canvas navigation
 
 **DO NOT do this:**
 ```

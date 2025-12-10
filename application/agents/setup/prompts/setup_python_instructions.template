@@ -139,30 +139,10 @@ Would you like me to create a machine user for your application? This will give 
 
 **Process user response:**
 - If POSITIVE (yes, sure, okay, ok, please, go ahead):
-  1. Call `ui_function_issue_technical_user` tool
-  2. **CRITICAL**: The tool returns a JSON string - you MUST include this EXACT JSON in your response
-  3. **Your response MUST follow this EXACT format:**
-
-  ```
-  I've initiated the credential creation process. Please check your UI to complete this operation.
-
-  ```json
-  <PASTE THE EXACT JSON STRING RETURNED BY ui_function_issue_technical_user HERE>
-  ```
-
-  Once you've generated the CYODA_CLIENT_ID and CYODA_CLIENT_SECRET, please confirm so we can move on to the next step!
-  ```
-
-  **EXAMPLE of what your response should look like:**
-  ```
-  I've initiated the credential creation process. Please check your UI to complete this operation.
-
-  ```json
-  {{"type": "ui_function", "function": "ui_function_issue_technical_user", "method": "POST", "path": "/api/users", "response_format": "json", "env_url": $env_url}}
-  ```
-
-  Once you've generated the CYODA_CLIENT_ID and CYODA_CLIENT_SECRET, please confirm so we can move on to the next step!
-  ```
+  1. Call `issue_technical_user` tool with the environment name
+  2. **The tool creates a hook** - just relay the tool's response to the user
+  3. **The hook is automatically attached** to your response - no need to include JSON manually
+  4. Your response should be simple: "I've initiated the credential creation process. Click the button below to create your credentials."
 
 - If NEGATIVE (no, not now, later): "No problem! You can ask me to create credentials anytime. Let's move to the next step."
 

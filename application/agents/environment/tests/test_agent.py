@@ -14,7 +14,7 @@ def test_agent_exists() -> None:
     """Test that the agent is properly defined."""
     assert root_agent is not None
     assert root_agent.name == "environment_agent"
-    assert len(root_agent.tools) == 6
+    assert len(root_agent.tools) == 22
 
 
 def test_agent_has_tools() -> None:
@@ -26,7 +26,7 @@ def test_agent_has_tools() -> None:
     assert "deploy_user_application" in tool_names
     assert "get_deployment_status" in tool_names
     assert "get_build_logs" in tool_names
-    assert "ui_function_issue_technical_user" in tool_names
+    assert "issue_technical_user" in tool_names
 
 
 def test_agent_description() -> None:
@@ -54,26 +54,24 @@ def test_agent_instruction_exists() -> None:
 
 
 @pytest.mark.asyncio
-async def test_ui_function_issue_technical_user() -> None:
+async def test_issue_technical_user() -> None:
     """Test the credential issuance tool."""
     import json
     from unittest.mock import MagicMock
 
     from google.adk.tools.tool_context import ToolContext
 
-    from application.agents.environment.tools import ui_function_issue_technical_user
+    from application.agents.environment.tools import issue_technical_user
 
     # Create mock tool context
     mock_context = MagicMock(spec=ToolContext)
-    mock_context.state = {}
+    mock_context.state = {"conversation_id": "test-conv-123"}
 
-    result = await ui_function_issue_technical_user(mock_context)
+    result = await issue_technical_user(mock_context)
 
-    # Verify success message
-    assert "✅" in result
-    assert "Credential issuance initiated" in result
-    assert "CYODA_CLIENT_ID" in result
-    assert "CYODA_CLIENT_SECRET" in result
+    # Verify error message (env_name is required)
+    assert "ERROR" in result
+    assert "env_name parameter is required" in result
 
 
 @pytest.mark.asyncio
@@ -95,7 +93,7 @@ async def test_check_environment_exists_with_401() -> None:
     with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_send:
         mock_send.side_effect = InvalidTokenException("Unauthorized access")
 
-        result = await check_environment_exists(mock_context)
+        result = await check_environment_exists(mock_context, env_name="dev")
 
         # Parse the JSON result
         result_data = json.loads(result)
@@ -130,7 +128,7 @@ async def test_check_environment_exists_with_other_exception() -> None:
     with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_send:
         mock_send.side_effect = Exception("Connection failed")
 
-        result = await check_environment_exists(mock_context)
+        result = await check_environment_exists(mock_context, env_name="dev")
 
         # Parse the JSON result
         result_data = json.loads(result)

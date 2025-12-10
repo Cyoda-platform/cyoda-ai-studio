@@ -14,7 +14,7 @@ def test_agent_exists():
     """Test that the agent is properly defined."""
     assert root_agent is not None
     assert root_agent.name == "setup_agent"
-    assert len(root_agent.tools) == 11  # 3 original + 8 new tools
+    assert len(root_agent.tools) == 13  # 3 original + 10 new tools
 
 
 def test_agent_has_tools():
@@ -30,7 +30,7 @@ def test_agent_has_tools():
     assert "get_env_deploy_status" in tool_names
     assert "get_user_info" in tool_names
     # Credential management
-    assert "ui_function_issue_technical_user" in tool_names
+    assert "issue_technical_user" in tool_names
     # File operation tools
     assert "list_directory_files" in tool_names
     assert "read_file" in tool_names
