@@ -1213,34 +1213,17 @@ async def clone_repository(
                 logger.warning(f"⚠️ Failed to auto-save conversation files: {e}", exc_info=True)
                 # Don't fail the clone operation if file saving fails
 
-        # Create Proceed button hook for new branches
-        # Agent will dynamically decide whether to use open_canvas_tab hook based on context
-        if not use_existing_branch and tool_context:
-            from application.agents.shared.hook_utils import (
-                create_proceed_button_hook,
-                wrap_response_with_hook,
-            )
-
+        # Return success message for new branches
+        # Agent will decide what follow-up options to offer based on context
+        if not use_existing_branch:
             # Build GitHub URL
             github_url = f"https://github.com/{repository_owner}/{repository_name}/tree/{branch_name}"
             full_repo_name = f"{repository_owner}/{repository_name}"
 
-            # Get conversation ID from context
-            conversation_id = tool_context.state.get("conversation_id", "")
-
-            # Create proceed button hook only
-            # Agent will use open_canvas_tab hook dynamically if needed
-            proceed_hook = create_proceed_button_hook(
-                conversation_id=conversation_id,
-                question="Ready to proceed?",
-            )
-
-            # Store hook in context for SSE streaming
-            tool_context.state["last_tool_hook"] = proceed_hook
-
-            # Return success message with hook
+            # Return success message without hook
+            # Agent will create appropriate follow-up options hook
             success_message = f"✅ Repository configured successfully!\n\n📦 Repository: {full_repo_name}\n🌿 Branch: {branch_name}\n🔗 GitHub URL: {github_url}"
-            return wrap_response_with_hook(success_message, proceed_hook)
+            return success_message
 
         # Return appropriate success message based on whether it's a new or existing branch
         if use_existing_branch:

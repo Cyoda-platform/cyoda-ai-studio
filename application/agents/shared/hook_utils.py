@@ -967,6 +967,45 @@ def create_build_and_deploy_hooks(
     return combined
 
 
+def create_open_tasks_panel_hook(
+    conversation_id: str,
+    task_id: Optional[str] = None,
+    message: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Create a hook to open the Tasks panel for tracking deployment/build progress.
+
+    When this hook is returned, the UI should:
+    1. Open the Tasks panel on the right side
+    2. Show task progress and status
+    3. Optionally focus on a specific task if task_id is provided
+
+    Args:
+        conversation_id: Conversation technical ID
+        task_id: Optional task ID to focus on
+        message: Optional message to display
+
+    Returns:
+        Hook dictionary with type "tasks_panel"
+    """
+    hook = {
+        "type": "tasks_panel",
+        "action": "open_tasks_panel",
+        "data": {
+            "conversation_id": conversation_id,
+        }
+    }
+
+    if task_id:
+        hook["data"]["task_id"] = task_id
+
+    if message:
+        hook["data"]["message"] = message
+
+    logger.info(f"🎣 Created open_tasks_panel hook for conversation {conversation_id}")
+    return hook
+
+
 def create_issue_technical_user_hook(
     conversation_id: str,
     env_url: str,

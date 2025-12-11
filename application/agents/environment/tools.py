@@ -242,6 +242,7 @@ async def _handle_deployment_success(
         from application.agents.shared.hook_utils import (
             create_cloud_window_hook,
             create_background_task_hook,
+            create_open_tasks_panel_hook,
             create_combined_hook,
         )
 
@@ -255,6 +256,13 @@ async def _handle_deployment_success(
             metadata=metadata,
         )
 
+        # Create open tasks panel hook
+        tasks_panel_hook = create_open_tasks_panel_hook(
+            conversation_id=conversation_id,
+            task_id=task_id,
+            message="Track deployment progress in the Tasks panel",
+        )
+
         # If we have env_url, combine with cloud window hook
         if env_url:
             cloud_hook = create_cloud_window_hook(
@@ -263,14 +271,19 @@ async def _handle_deployment_success(
                 environment_status="deploying",
                 message=f"Deployment started! Track progress in the Cloud panel.",
             )
-            # Combine both hooks
+            # Combine all hooks: cloud, background task, and tasks panel
             hook = create_combined_hook(
                 code_changes_hook=cloud_hook,  # Reuse code_changes slot for cloud hook
                 background_task_hook=task_hook,
             )
+            # Add tasks panel hook to combined hooks
+            hook["hooks"].append(tasks_panel_hook)
         else:
-            # Just background task hook
-            hook = task_hook
+            # Combine background task and tasks panel hooks
+            hook = create_combined_hook(
+                background_task_hook=task_hook,
+            )
+            hook["hooks"].append(tasks_panel_hook)
 
         # Store hook in context
         tool_context.state["last_tool_hook"] = hook
@@ -419,6 +432,7 @@ def _get_namespace(user_name: str):
 
 @creates_hook("background_task")
 @creates_hook("cloud_window")
+@creates_hook("open_tasks_panel")
 async def deploy_cyoda_environment(
         tool_context: ToolContext, env_name: Optional[str] = None, build_id: Optional[str] = None,
 ) -> str:
@@ -569,6 +583,11 @@ async def deploy_cyoda_environment(
                 result += f", Task ID: {task_id}"
             result += ")"
 
+            # Return with hook if available
+            if hook:
+                from application.agents.shared.hook_utils import wrap_response_with_hook
+                return wrap_response_with_hook(result, hook)
+
             return result
 
     except httpx.HTTPStatusError as e:
@@ -585,6 +604,9 @@ async def deploy_cyoda_environment(
         return f"Error: {error_msg}. Please contact support."
 
 
+@creates_hook("background_task")
+@creates_hook("cloud_window")
+@creates_hook("open_tasks_panel")
 async def deploy_user_application(
         tool_context: ToolContext,
         repository_url: str,
@@ -730,6 +752,11 @@ async def deploy_user_application(
                 result += f"\n**Namespace:** {namespace}"
 
             result += "\n\nYour application is being built and deployed. This typically takes 3-5 minutes.\n\nI'll keep you updated on the progress!"
+
+            # Return with hook if available
+            if hook:
+                from application.agents.shared.hook_utils import wrap_response_with_hook
+                return wrap_response_with_hook(result, hook)
 
             return result
 

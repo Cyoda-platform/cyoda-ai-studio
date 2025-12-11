@@ -202,6 +202,37 @@ def register_all_hooks(registry: HookRegistry) -> None:
         )
     )
 
+    # ==================== Tasks Panel Hooks ====================
+    registry.register(
+        HookMetadata(
+            name="open_tasks_panel",
+            hook_type="tasks_panel",
+            description="Opens the Tasks panel to show deployment/build progress",
+            parameters=[
+                ParameterSpec(
+                    name="conversation_id",
+                    type="str",
+                    required=True,
+                    description="Conversation technical ID",
+                ),
+                ParameterSpec(
+                    name="task_id",
+                    type="str",
+                    required=False,
+                    description="Optional task ID to focus on",
+                ),
+                ParameterSpec(
+                    name="message",
+                    type="str",
+                    required=False,
+                    description="Optional message to display",
+                ),
+            ],
+            when_to_use="When starting deployment or build tasks to show progress tracking",
+            tool_names=["environment_agent_tools", "github_agent_tools"],
+        )
+    )
+
     # ==================== UI Function Hooks ====================
     registry.register(
         HookMetadata(

@@ -256,6 +256,16 @@ async def search_logs() -> tuple[dict, int]:
                     logger.error(f"ELK error details: {error_details}")
                 except:
                     error_details = response.text
+
+                # If ELK returns 401, it means the API key is invalid/expired
+                # Return 500 so frontend knows to regenerate the API key
+                if response.status_code == 401:
+                    logger.warning(f"ELK API key invalid/expired for user {user_id} (org: {org_id})")
+                    return jsonify({
+                        "error": "API key invalid or expired",
+                        "details": error_details,
+                    }), 500
+
                 return jsonify({
                     "error": "Search failed",
                     "details": error_details,

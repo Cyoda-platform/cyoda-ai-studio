@@ -1235,7 +1235,7 @@ async def save_file_to_repository(
         tool_context: The ADK tool context
 
     Returns:
-        Success or error message
+        Success or error message with canvas tab hook if applicable
     """
     try:
         repository_path = tool_context.state.get("repository_path")
@@ -1255,6 +1255,39 @@ async def save_file_to_repository(
         await loop.run_in_executor(None, _write_file)
 
         logger.info(f"Saved file: {file_path}")
+
+        # Detect resource type from file path and create appropriate canvas hook
+        from application.agents.shared.hook_utils import (
+            create_open_canvas_tab_hook,
+            wrap_response_with_hook,
+        )
+
+        file_lower = file_path.lower()
+        tab_name = None
+
+        # Detect resource type from file path
+        if "/entity/" in file_lower:
+            tab_name = "entities"
+        elif "/workflow/" in file_lower:
+            tab_name = "workflows"
+        elif "requirement" in file_lower:
+            tab_name = "requirements"
+
+        # If we detected a canvas resource, create and return hook
+        if tab_name:
+            conversation_id = tool_context.state.get("conversation_id")
+            if conversation_id:
+                hook = create_open_canvas_tab_hook(
+                    conversation_id=conversation_id,
+                    tab_name=tab_name,
+                )
+
+                # Store hook in context for SSE streaming
+                tool_context.state["last_tool_hook"] = hook
+
+                message = f"✅ File saved to {file_path}\n\n📂 Opening Canvas {tab_name.title()} tab to view your changes."
+                return wrap_response_with_hook(message, hook)
+
         return f"SUCCESS: File saved to {file_path}"
 
     except Exception as e:
@@ -2766,6 +2799,7 @@ async def generate_application(
             create_deploy_and_open_cloud_hook,
             create_deploy_cyoda_environment_hook,
             create_launch_setup_assistant_hook,
+            create_open_tasks_panel_hook,
             create_combined_hook,
             wrap_response_with_hook,
         )
@@ -2794,12 +2828,17 @@ async def generate_application(
             conversation_id=conversation_id,
             task_id=task_id
         )
+        tasks_panel_hook = create_open_tasks_panel_hook(
+            conversation_id=conversation_id,
+            task_id=task_id,
+            message="Track build progress in the Tasks panel",
+        )
 
-        # Combine all hooks: background task + deployment + setup
+        # Combine all hooks: background task + deployment + setup + tasks panel
         combined_hooks = create_combined_hook(
             background_task_hook=background_task_hook
         )
-        combined_hooks["hooks"].extend([deploy_hook, setup_hook])
+        combined_hooks["hooks"].extend([deploy_hook, setup_hook, tasks_panel_hook])
 
         if tool_context:
             tool_context.state["last_tool_hook"] = combined_hooks
