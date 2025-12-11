@@ -76,45 +76,21 @@ State is managed by the workflow and you can not change it manually, you can onl
 **Example** for a Customer entity:
 ```json
 {
-  "name": "Customer",
-  "version": 1,
-  "fields": [
-    {
-      "name": "customer_id",
-      "type": "string",
-      "required": true,
-      "description": "Business identifier for the customer"
-    },
-    {
-      "name": "name",
-      "type": "string",
-      "required": true,
-      "description": "Customer full name"
-    },
-    {
-      "name": "email",
-      "type": "string",
-      "required": true,
-      "description": "Customer email address"
-    },
-    {
-      "name": "phone",
-      "type": "string",
-      "required": false,
-      "description": "Customer phone number"
-    }
-  ]
+  "customer_id": "CUST-001",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1-555-0123"
 }
 ```
 
 **Rules for JSON Entity Definitions:**
 - File name must match entity name with PascalCase (e.g., `Customer.json`, `OrderItem.json`)
 - Must be in `application/resources/entity/{entity_name}/version_1/` directory
-- `name` field must match the Python class name and `ENTITY_NAME` constant
-- `version` must match `ENTITY_VERSION` constant
-- Include all business fields (not technical fields like `id`, `meta`, `state`)
-- Use appropriate types: `string`, `number`, `boolean`, `object`, `array`
-- Mark required fields with `"required": true`
+- JSON must be a concrete example instance, NOT a schema
+- Include all business fields with realistic example values
+- Do NOT include technical fields like `id`, `meta`, `state`
+- Use appropriate example values: strings, numbers, booleans, objects, arrays
+- Example values should match the field types defined in the Python entity class
 
 **When to create JSON entity definitions:**
 - ✅ ALWAYS when creating a new entity

@@ -33,7 +33,7 @@ class TestSaveFileToRepository:
     async def test_save_entity_file_creates_hook(self, mock_tool_context):
         """Test saving an entity file creates canvas tab hook."""
         file_path = "application/resources/entity/customer/version_1/customer.json"
-        content = '{"name": "Customer", "fields": []}'
+        content = '{"id": "CUST-001", "name": "John Doe", "email": "john@example.com"}'
 
         result = await save_file_to_repository(
             file_path=file_path,

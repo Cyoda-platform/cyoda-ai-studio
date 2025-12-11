@@ -34,14 +34,9 @@ class TestSaveFileCanvasHookIntegration:
     async def test_entity_file_returns_canvas_hook(self, mock_tool_context):
         """Test that saving an entity file returns a canvas hook."""
         entity_content = {
-            "name": "Customer",
-            "description": "Customer entity",
-            "version": 1,
-            "fields": [
-                {"name": "id", "type": "string", "format": "uuid"},
-                {"name": "name", "type": "string"},
-                {"name": "email", "type": "string", "format": "email"},
-            ]
+            "id": "CUST-001",
+            "name": "John Doe",
+            "email": "john@example.com"
         }
         
         file_path = "application/resources/entity/customer/version_1/customer.json"

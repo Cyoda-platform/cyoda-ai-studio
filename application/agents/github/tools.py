@@ -2949,3 +2949,258 @@ async def open_canvas_tab(
         logger.error(f"Error opening canvas tab: {e}", exc_info=True)
         return f"ERROR: Failed to open canvas tab: {str(e)}"
 
+
+async def validate_workflow_against_schema(
+    workflow_json: str,
+    tool_context: Optional[ToolContext] = None,
+) -> str:
+    """Validate a workflow JSON against the workflow schema.
+
+    This tool validates that a generated workflow matches the required schema
+    before saving it to the repository. It checks:
+    - Required fields (version, name, initialState, states)
+    - State structure and transitions
+    - Processor and criterion configurations
+    - Execution modes and retry policies
+
+    Args:
+        workflow_json: The workflow JSON content as a string
+        tool_context: Optional tool context for logging
+
+    Returns:
+        A validation result message with either:
+        - Success message if validation passes
+        - Detailed error messages if validation fails
+
+    Examples:
+        >>> workflow = '{"version": "1", "name": "Customer", "initialState": "initial_state", "states": {...}}'
+        >>> await validate_workflow_against_schema(workflow)
+        "✅ Workflow validation passed! The workflow matches the schema."
+
+        >>> invalid_workflow = '{"name": "Customer"}'
+        >>> await validate_workflow_against_schema(invalid_workflow)
+        "❌ Workflow validation failed: Missing required field 'version'"
+    """
+    try:
+        import jsonschema
+
+        # Load the workflow schema
+        schema_path = Path(__file__).parent / "prompts" / "workflow_schema.json"
+        if not schema_path.exists():
+            return f"ERROR: Workflow schema not found at {schema_path}.{STOP_ON_ERROR}"
+
+        with open(schema_path, "r") as f:
+            schema_data = json.load(f)
+
+        # Extract the actual schema from the schema file
+        schema = schema_data.get("schema", schema_data)
+
+        # Parse the workflow JSON
+        try:
+            workflow = json.loads(workflow_json)
+        except json.JSONDecodeError as e:
+            return f"❌ Workflow validation failed: Invalid JSON - {str(e)}"
+
+        # Validate against schema
+        try:
+            jsonschema.validate(instance=workflow, schema=schema)
+            logger.info("✅ Workflow validation passed")
+            return "✅ Workflow validation passed! The workflow matches the schema and is ready to save."
+
+        except jsonschema.ValidationError as e:
+            # Provide detailed error message
+            error_path = ".".join(str(p) for p in e.absolute_path) if e.absolute_path else "root"
+            error_msg = f"❌ Workflow validation failed:\n"
+            error_msg += f"   Location: {error_path}\n"
+            error_msg += f"   Error: {e.message}\n"
+
+            # Add helpful context
+            if "required" in str(e.message).lower():
+                error_msg += f"   Hint: Check that all required fields are present in your workflow.\n"
+            elif "enum" in str(e.message).lower():
+                error_msg += f"   Hint: Check that field values match the allowed options.\n"
+
+            error_msg += f"\n   Please fix the workflow and try again."
+
+            logger.warning(f"Workflow validation failed: {e.message}")
+            return error_msg
+
+        except jsonschema.SchemaError as e:
+            return f"ERROR: Invalid schema file - {str(e)}.{STOP_ON_ERROR}"
+
+    except ImportError:
+        return f"ERROR: jsonschema library not available. Install with: pip install jsonschema.{STOP_ON_ERROR}"
+    except Exception as e:
+        logger.error(f"Error validating workflow: {e}", exc_info=True)
+        return f"ERROR: Failed to validate workflow: {str(e)}.{STOP_ON_ERROR}"
+
+
+async def import_entity_to_cyoda(
+    entity_name: str,
+    entity_json: str,
+    env_name: str,
+    tool_context: Optional[ToolContext] = None,
+) -> str:
+    """Import an entity to a Cyoda environment.
+
+    This tool imports a generated entity JSON to a user's Cyoda environment
+    by making an HTTP POST request to the environment's API.
+
+    Args:
+        entity_name: Name of the entity (e.g., "Customer")
+        entity_json: The entity JSON content as a string
+        env_name: The Cyoda environment name (e.g., "dev", "prod")
+        tool_context: Optional tool context for getting user info
+
+    Returns:
+        Success or error message with entity ID if successful
+    """
+    try:
+        import httpx
+
+        if not tool_context:
+            return f"ERROR: Tool context not available.{STOP_ON_ERROR}"
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return "❌ User is not logged in. Please sign up or log in first to import to Cyoda."
+
+        # Parse entity JSON
+        try:
+            entity_data = json.loads(entity_json)
+        except json.JSONDecodeError as e:
+            return f"❌ Invalid entity JSON: {str(e)}"
+
+        # Construct environment URL
+        from application.agents.environment.tools import _get_namespace
+
+        client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        env_url = f"https://{namespace}.{client_host}"
+
+        # Get auth token from context
+        auth_token = tool_context.state.get("auth_token")
+        headers = {}
+        if auth_token:
+            headers["Authorization"] = f"Bearer {auth_token}"
+
+        # Make request to import entity
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                response = await client.post(
+                    f"{env_url}/api/ui/{entity_name.lower()}",
+                    json=entity_data,
+                    headers=headers,
+                )
+
+                if response.status_code == 200:
+                    result = response.json()
+                    entity_id = result.get("id", "unknown")
+                    logger.info(f"✅ Entity '{entity_name}' imported to '{env_name}': {entity_id}")
+                    return f"✅ Entity '{entity_name}' imported successfully to '{env_name}' environment.\n**Entity ID:** {entity_id}"
+
+                elif response.status_code == 401:
+                    return "❌ Authentication failed. Your session may have expired. Please log in again."
+
+                elif response.status_code == 404:
+                    return f"❌ Environment '{env_name}' not found or not accessible. Please check the environment name."
+
+                else:
+                    error_msg = response.text if response.text else f"HTTP {response.status_code}"
+                    logger.warning(f"Failed to import entity: {error_msg}")
+                    return f"❌ Failed to import entity: {error_msg}"
+
+            except httpx.ConnectError:
+                return f"❌ Could not connect to environment '{env_name}'. Please check if the environment is running."
+            except httpx.TimeoutException:
+                return f"❌ Request to environment '{env_name}' timed out. Please try again."
+
+    except Exception as e:
+        logger.error(f"Error importing entity to Cyoda: {e}", exc_info=True)
+        return f"ERROR: Failed to import entity: {str(e)}.{STOP_ON_ERROR}"
+
+async def import_workflow_to_cyoda(
+    workflow_name: str,
+    workflow_json: str,
+    env_name: str,
+    tool_context: Optional[ToolContext] = None,
+) -> str:
+    """Import a workflow to a Cyoda environment.
+
+    This tool imports a generated workflow JSON to a user's Cyoda environment
+    by making an HTTP POST request to the environment's workflow API.
+
+    Args:
+        workflow_name: Name of the workflow (e.g., "Customer")
+        workflow_json: The workflow JSON content as a string
+        env_name: The Cyoda environment name (e.g., "dev", "prod")
+        tool_context: Optional tool context for getting user info
+
+    Returns:
+        Success or error message with workflow ID if successful
+    """
+    try:
+        import httpx
+
+        if not tool_context:
+            return f"ERROR: Tool context not available.{STOP_ON_ERROR}"
+
+        # Get user ID from context
+        user_id = tool_context.state.get("user_id", "guest")
+        if user_id.startswith("guest"):
+            return "❌ User is not logged in. Please sign up or log in first to import to Cyoda."
+
+        # Parse workflow JSON
+        try:
+            workflow_data = json.loads(workflow_json)
+        except json.JSONDecodeError as e:
+            return f"❌ Invalid workflow JSON: {str(e)}"
+
+        # Construct environment URL
+        from application.agents.environment.tools import _get_namespace
+
+        client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
+        namespace = f"client-{_get_namespace(user_id)}-{_get_namespace(env_name)}"
+        env_url = f"https://{namespace}.{client_host}"
+
+        # Get auth token from context
+        auth_token = tool_context.state.get("auth_token")
+        headers = {}
+        if auth_token:
+            headers["Authorization"] = f"Bearer {auth_token}"
+
+        # Make request to import workflow
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                response = await client.post(
+                    f"{env_url}/api/workflows",
+                    json=workflow_data,
+                    headers=headers,
+                )
+
+                if response.status_code in (200, 201):
+                    result = response.json()
+                    workflow_id = result.get("id", "unknown")
+                    logger.info(f"✅ Workflow '{workflow_name}' imported to '{env_name}': {workflow_id}")
+                    return f"✅ Workflow '{workflow_name}' imported successfully to '{env_name}' environment.\n**Workflow ID:** {workflow_id}"
+
+                elif response.status_code == 401:
+                    return "❌ Authentication failed. Your session may have expired. Please log in again."
+
+                elif response.status_code == 404:
+                    return f"❌ Environment '{env_name}' not found or not accessible. Please check the environment name."
+
+                else:
+                    error_msg = response.text if response.text else f"HTTP {response.status_code}"
+                    logger.warning(f"Failed to import workflow: {error_msg}")
+                    return f"❌ Failed to import workflow: {error_msg}"
+
+            except httpx.ConnectError:
+                return f"❌ Could not connect to environment '{env_name}'. Please check if the environment is running."
+            except httpx.TimeoutException:
+                return f"❌ Request to environment '{env_name}' timed out. Please try again."
+
+    except Exception as e:
+        logger.error(f"Error importing workflow to Cyoda: {e}", exc_info=True)
+        return f"ERROR: Failed to import workflow: {str(e)}.{STOP_ON_ERROR}"
