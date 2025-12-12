@@ -2205,21 +2205,26 @@ Ensure all generated code follows the guidelines and best practices outlined abo
         logger.info(f"🤖 Generating code with CLI in {repository_path}")
         logger.info(f"📝 User request: {user_request[:100]}...")
 
-        # Get AI model from config
-        from common.config.config import AI_MODEL
+        # Get Augment model from config (must be haiku4.5)
+        from common.config.config import AUGMENT_MODEL
+
+        # Validate that only haiku4.5 is used for Augment CLI
+        if AUGMENT_MODEL != "haiku4.5":
+            logger.error(f"Invalid model for Augment CLI: {AUGMENT_MODEL}. Only haiku4.5 is supported.")
+            return f"ERROR: Augment CLI only supports haiku4.5 model. Current model: {AUGMENT_MODEL}"
 
         # Call CLI script
         cmd = [
             "bash",
             str(script_path.absolute()),
             full_prompt,
-            AI_MODEL,
+            AUGMENT_MODEL,
             repository_path,
             branch_name,
         ]
 
         logger.info(f"🔧 Executing CLI")
-        logger.info(f"🎯 Model: {AI_MODEL}")
+        logger.info(f"🎯 Model: {AUGMENT_MODEL}")
         logger.info(f"📁 Workspace: {repository_path}")
         logger.info(f"🌿 Branch: {branch_name}")
 
@@ -2695,8 +2700,13 @@ async def generate_application(
             f"Generating {language} application with Augment CLI in {repository_path}"
         )
 
-        # Get AI model from config
-        from common.config.config import AI_MODEL
+        # Get Augment model from config (must be haiku4.5)
+        from common.config.config import AUGMENT_MODEL
+
+        # Validate that only haiku4.5 is used for Augment CLI
+        if AUGMENT_MODEL != "haiku4.5":
+            logger.error(f"Invalid model for Augment CLI: {AUGMENT_MODEL}. Only haiku4.5 is supported.")
+            return f"ERROR: Augment CLI only supports haiku4.5 model. Current model: {AUGMENT_MODEL}"
 
         # Call Augment CLI script using asyncio
         # Format: bash <script> <prompt> <model> <workspace_dir> <branch_id>
@@ -2704,14 +2714,14 @@ async def generate_application(
             "bash",
             str(script_path.absolute()),
             full_prompt,
-            AI_MODEL,
+            AUGMENT_MODEL,
             repository_path,
             branch_name,
         ]
 
         logger.info(f"🚀 Starting Augment CLI process...")
         logger.info(f"📝 Prompt length: {len(full_prompt)} chars")
-        logger.info(f"🎯 Model: {AI_MODEL}")
+        logger.info(f"🎯 Model: {AUGMENT_MODEL}")
         logger.info(f"📁 Workspace: {repository_path}")
         logger.info(f"🌿 Branch: {branch_name}")
 

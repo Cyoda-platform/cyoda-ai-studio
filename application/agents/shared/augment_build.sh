@@ -11,7 +11,7 @@ set -euo pipefail
 
 # Parse command line arguments
 PROMPT_OR_FILE="${1:-}"
-MODEL="${2:-sonnet4}"
+MODEL="${2:-haiku4.5}"
 WORKSPACE_DIR="${3:-$(pwd)}"
 BRANCH_ID="${4:-unknown}"
 
