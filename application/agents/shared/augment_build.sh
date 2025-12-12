@@ -94,9 +94,9 @@ commit_and_push() {
             fi
         fi
 
-        # Push changes
+        # Push changes (use -u to create branch on remote if it doesn't exist)
         local push_output
-        push_output=$(git push origin HEAD 2>&1)
+        push_output=$(git push -u origin HEAD 2>&1)
         local push_exit=$?
 
         if [[ $push_exit -ne 0 ]]; then
@@ -197,7 +197,7 @@ main() {
         final_commit_output=$(git commit -m "Code generation completed with Augment CLI (branch: $BRANCH_ID)" 2>&1)
 
         local final_push_result
-        final_push_result=$(git push origin HEAD 2>&1)
+        final_push_result=$(git push -u origin HEAD 2>&1)
         local final_push_exit=$?
 
         if [[ $final_push_exit -eq 0 ]]; then
