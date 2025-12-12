@@ -448,6 +448,24 @@ show_deployment_options(
 
 ---
 
+## 🔄 When to Escalate to Coordinator
+
+If you encounter a request that is **outside your scope** and you **cannot handle it**, transfer to the coordinator:
+
+**Transfer to coordinator when:**
+- User asks for something that requires multiple agents working together
+- User asks for something that's not related to environment/deployment operations
+- You need help routing the request to the right agent
+- You're unsure which agent should handle the request
+
+**Example:**
+```
+User: "I need to deploy my app AND import data from the repository"
+You: [transfer_to_agent("cyoda_assistant", "help_with_multiple_tasks", {...})]
+```
+
+**Key Rule**: If it's not about environment deployment, application management, or credentials → escalate to coordinator
+
 ## Important Notes
 
 - **Authentication** - Tools automatically check authentication; don't ask users to confirm login.

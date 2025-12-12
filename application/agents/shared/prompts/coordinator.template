@@ -132,12 +132,17 @@ Basically if the user asks about their environment - this is your agent.
 ### 🐙 GitHub Agent - Use when:
 - User wants to configure a branch: "configure a branch in [repo-name]", "set up branch for [repo-name]", "create a branch", "add a branch", "add branch"
 - User wants to work with their GitHub repository: "show me my entities", "what's in my repo", "analyze my repository"
-- User wants to save files: "save this entity", "add Order entity", "create workflow"
+- User wants to save files: "save this entity", "add Order entity", "create workflow", "generate workflow"
 - User wants to commit changes: "commit my changes", "push to GitHub", "save to repository"
 - User wants to see diffs: "show me what changed", "what files are modified", "show diff"
 - User mentions repository operations: "repository", "GitHub", "commit", "push", "branch"
-- **Keywords**: "repository", "GitHub", "commit", "push", "save", "entity", "workflow", "requirements", "diff", "changes", "configure branch", "clone"
+- **Keywords**: "repository", "GitHub", "commit", "push", "save", "entity", "workflow", "requirements", "diff", "changes", "configure branch", "clone", "generate workflow", "create workflow"
 - **CRITICAL**: Transfer IMMEDIATELY - GitHub agent handles all repository operations including branch configuration
+
+**CRITICAL: Workflow Generation**
+- User says: "generate a workflow", "create a workflow", "generate workflow for [entity]"
+- **Action**: **IMMEDIATELY call transfer_to_agent("github_agent")** - GitHub Agent handles workflow generation and saving
+- **DO NOT** route to other agents for workflow generation
 
 **Examples that should go to GitHub Agent:**
 - "Configure a branch in mcp-cyoda-quart-app for me" → **IMMEDIATELY call transfer_to_agent("github_agent")**

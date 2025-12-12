@@ -41,8 +41,12 @@ from .tools import (
     get_repository_diff,
     get_requirements_path,
     get_workflow_path,
+    load_workflow_example,
+    load_workflow_prompt,
+    load_workflow_schema,
     pull_repository_changes,
     save_file_to_repository,
+    validate_workflow_against_schema,
 )
 
 from application.agents.shared.streaming_callback import accumulate_streaming_response
@@ -182,6 +186,12 @@ tools = [
     get_entity_path,
     get_workflow_path,
     get_requirements_path,
+    # Workflow schema, example, and prompt loading
+    load_workflow_schema,
+    load_workflow_example,
+    load_workflow_prompt,
+    # Workflow validation
+    validate_workflow_against_schema,
     # Custom tools for repository operations
     analyze_repository_structure,
     analyze_repository_structure_agentic,
