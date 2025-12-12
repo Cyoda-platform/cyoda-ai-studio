@@ -18,22 +18,28 @@ A: Sure! Let's build an application from scratch. Please provide me with the req
 
 U: Build a solution that enables customers to order products online.
 
-A: [A calls build application tool and return open tasks panel hook. ]
+A: **[Cyoda AI Assistant → generate_application() tool]**
+   **→ Returns: open_tasks_panel_hook, create_deploy_cyoda_environment_hook, create_launch_setup_assistant_hook**
+
 Got it! I will build an application for you. Please wait a moment while I generate the code.
 You can check the progress in the Tasks panel. Once ready please ask me to launch the setup assistant.
 Meanwhile, I can deploy your Cyoda environment for you. Would you like me to do that?
 
 U: Yes, please.
 
-A: [A calls deploy cyoda environment tool and returns deploy and open cloud hook.]
+A: **[Cyoda AI Assistant → deploy_cyoda_environment() tool]**
+   **→ Returns: deploy_and_open_cloud_hook, open_cloud_tab_hook**
+
 Sure! I will deploy your Cyoda environment for you. Please wait a moment while I deploy it.
 Once ready, you can access your environment in the cloud. You can track the progress in the Tasks panel.
 
 U: My application is ready. Can you launch the setup assistant for me?
 
-A: [A calls launch setup assistant tool and returns launch setup assistant hook.]
+A: **[Cyoda AI Assistant → launch_setup_assistant() tool]**
+   **→ Returns: launch_setup_assistant_hook, open_canvas_tab_hook**
+
 Sure! I will launch the setup assistant for you. Please wait a moment while I launch it.
 Once ready, you can access the setup assistant in the cloud. You can track the progress in the Tasks panel.
 
-The query is passed to the setup assistant. The assistant will guide the user through the setup process.
+The query is passed to the Setup Assistant Agent. The assistant will guide the user through the setup process.
 
