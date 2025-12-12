@@ -79,12 +79,13 @@ commit_and_push() {
     fi
 }
 
-# Main CLI execution with periodic commits
+# Main CLI execution with guaranteed periodic commits every 30 seconds
 execute_auggie() {
     local workspace="$1"
     local instruction="$2"
     local model="$3"
     local branch_id="$4"
+    local push_interval=30  # Push every 30 seconds
 
     log "Starting CLI execution in workspace: $workspace"
     log "Model: $model"
@@ -98,12 +99,27 @@ execute_auggie() {
     local cli_pid=$!
 
     log "CLI process started with PID: $cli_pid"
+    log "Will push changes every $push_interval seconds"
+
+    # Track time for guaranteed 30-second intervals
+    local start_time=$(date +%s)
+    local last_push_time=$start_time
 
     # Periodically commit and push changes every 30 seconds while CLI is running
     while kill -0 $cli_pid 2>/dev/null; do
-        sleep 30
-        log "Pushing progress commit..."
-        commit_and_push "$workspace" "$branch_id"
+        local current_time=$(date +%s)
+        local elapsed=$((current_time - last_push_time))
+
+        # If 30 seconds have passed, push changes
+        if [[ $elapsed -ge $push_interval ]]; then
+            log "Pushing progress commit (elapsed: ${elapsed}s)..."
+            commit_and_push "$workspace" "$branch_id"
+            last_push_time=$(date +%s)
+        else
+            # Sleep only for the remaining time until next push
+            local sleep_time=$((push_interval - elapsed))
+            sleep "$sleep_time"
+        fi
     done
 
     # Wait for CLI process to complete and get exit code
@@ -128,13 +144,14 @@ main() {
 
     setup_environment
 
-    # Run CLI with periodic commits every 30 seconds (with 1-hour timeout)
+    # Run CLI with guaranteed periodic commits every 30 seconds (with 1-hour timeout)
     timeout --foreground 1h bash -c "
         execute_auggie() {
             local workspace=\"\$1\"
             local instruction=\"\$2\"
             local model=\"\$3\"
             local branch_id=\"\$4\"
+            local push_interval=30
 
             cd \"\$workspace\"
 
@@ -142,12 +159,24 @@ main() {
             auggie --print --model \"\$model\" --workspace-root \"\$workspace\" \"\$instruction\" &
             local cli_pid=\$!
 
+            # Track time for guaranteed 30-second intervals
+            local start_time=\$(date +%s)
+            local last_push_time=\$start_time
+
             # Periodically commit and push changes every 30 seconds
             while kill -0 \$cli_pid 2>/dev/null; do
-                sleep 30
-                git add . 2>/dev/null || true
-                git commit -m \"Code generation progress with Augment CLI (branch: \$branch_id)\" 2>/dev/null || true
-                git push origin HEAD 2>/dev/null || true
+                local current_time=\$(date +%s)
+                local elapsed=\$((current_time - last_push_time))
+
+                if [[ \$elapsed -ge \$push_interval ]]; then
+                    git add . 2>/dev/null || true
+                    git commit -m \"Code generation progress with Augment CLI (branch: \$branch_id)\" 2>/dev/null || true
+                    git push origin HEAD 2>/dev/null || true
+                    last_push_time=\$(date +%s)
+                else
+                    local sleep_time=\$((push_interval - elapsed))
+                    sleep \"\$sleep_time\"
+                fi
             done
 
             wait \$cli_pid
