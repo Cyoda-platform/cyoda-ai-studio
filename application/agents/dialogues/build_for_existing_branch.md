@@ -13,5 +13,13 @@ U: No, that's it.
 A: [A calls generate_application tool and returns background task hook. ]
 Great! I have started building the application for you. You can continue chatting while the build runs.
 You can view the progress of the build in the 'View Tasks' tab.
+Once it's done, you can ask me to start the setup assistant.
+Would you like to deploy the Cyoda environment in parallel with the build?
+
+U: Yes, please.
+
+A: [A calls deploy cyoda environment tool and returns deploy and open cloud hook.]
+Sure! I will deploy your Cyoda environment for you. Please wait a moment while I deploy it.
+Once ready, you can access your environment in the cloud. You can track the progress in the Tasks panel.
 
 
