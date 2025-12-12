@@ -73,9 +73,40 @@ commit_and_push() {
 
     # Check if there are any changes to commit
     if ! git diff --quiet || ! git diff --cached --quiet; then
-        git add . 2>/dev/null || true
-        git commit -m "Code generation progress with Augment CLI (branch: $branch_id)" 2>/dev/null || true
-        git push origin HEAD 2>/dev/null || true
+        # Stage changes
+        if ! git add . 2>&1; then
+            log "WARNING: git add failed"
+            return 1
+        fi
+
+        # Commit changes
+        local commit_output
+        commit_output=$(git commit -m "Code generation progress with Augment CLI (branch: $branch_id)" 2>&1)
+        local commit_exit=$?
+
+        if [[ $commit_exit -ne 0 ]]; then
+            # Exit code 1 means nothing to commit, which is fine
+            if [[ $commit_exit -eq 1 ]]; then
+                log "DEBUG: No changes to commit"
+            else
+                log "WARNING: git commit failed: $commit_output"
+                return 1
+            fi
+        fi
+
+        # Push changes
+        local push_output
+        push_output=$(git push origin HEAD 2>&1)
+        local push_exit=$?
+
+        if [[ $push_exit -ne 0 ]]; then
+            log "ERROR: git push failed with exit code $push_exit: $push_output"
+            return 1
+        else
+            log "SUCCESS: Changes pushed to remote"
+        fi
+    else
+        log "DEBUG: No changes to commit"
     fi
 }
 
@@ -158,11 +189,22 @@ main() {
         # Final commit and push
         log "Pushing final changes..."
         cd "$WORKSPACE_DIR"
-        git add . 2>/dev/null || true
-        git commit -m "Code generation completed with Augment CLI (branch: $BRANCH_ID)" 2>/dev/null || true
-        git push origin HEAD 2>/dev/null || true
 
-        log "Code committed and pushed successfully"
+        local final_push_output
+        final_push_output=$(git add . 2>&1)
+
+        local final_commit_output
+        final_commit_output=$(git commit -m "Code generation completed with Augment CLI (branch: $BRANCH_ID)" 2>&1)
+
+        local final_push_result
+        final_push_result=$(git push origin HEAD 2>&1)
+        local final_push_exit=$?
+
+        if [[ $final_push_exit -eq 0 ]]; then
+            log "Code committed and pushed successfully"
+        else
+            log "WARNING: Final push may have failed: $final_push_result"
+        fi
     else
         log "ERROR: CLI execution failed with exit code $exit_code"
         exit $exit_code
