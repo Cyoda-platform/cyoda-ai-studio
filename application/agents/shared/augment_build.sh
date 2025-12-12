@@ -86,6 +86,7 @@ execute_auggie() {
     local model="$3"
     local branch_id="$4"
     local push_interval=30  # Push every 30 seconds
+    local timeout_seconds=3600  # 1 hour
 
     log "Starting CLI execution in workspace: $workspace"
     log "Model: $model"
@@ -95,7 +96,7 @@ execute_auggie() {
     log "Executing CLI with automation flags..."
 
     # Execute CLI in background to allow periodic commits
-    auggie --print --model "$model" --workspace-root "$workspace" "$instruction" &
+    timeout --foreground "$timeout_seconds" auggie --print --model "$model" --workspace-root "$workspace" "$instruction" &
     local cli_pid=$!
 
     log "CLI process started with PID: $cli_pid"
@@ -144,47 +145,8 @@ main() {
 
     setup_environment
 
-    # Run CLI with guaranteed periodic commits every 30 seconds (with 1-hour timeout)
-    timeout --foreground 1h bash -c "
-        execute_auggie() {
-            local workspace=\"\$1\"
-            local instruction=\"\$2\"
-            local model=\"\$3\"
-            local branch_id=\"\$4\"
-            local push_interval=30
-
-            cd \"\$workspace\"
-
-            # Execute CLI in background
-            auggie --print --model \"\$model\" --workspace-root \"\$workspace\" \"\$instruction\" &
-            local cli_pid=\$!
-
-            # Track time for guaranteed 30-second intervals
-            local start_time=\$(date +%s)
-            local last_push_time=\$start_time
-
-            # Periodically commit and push changes every 30 seconds
-            while kill -0 \$cli_pid 2>/dev/null; do
-                local current_time=\$(date +%s)
-                local elapsed=\$((current_time - last_push_time))
-
-                if [[ \$elapsed -ge \$push_interval ]]; then
-                    git add . 2>/dev/null || true
-                    git commit -m \"Code generation progress with Augment CLI (branch: \$branch_id)\" 2>/dev/null || true
-                    git push origin HEAD 2>/dev/null || true
-                    last_push_time=\$(date +%s)
-                else
-                    local sleep_time=\$((push_interval - elapsed))
-                    sleep \"\$sleep_time\"
-                fi
-            done
-
-            wait \$cli_pid
-            return \$?
-        }
-
-        execute_auggie \"$WORKSPACE_DIR\" \"$PROMPT\" \"$MODEL\" \"$BRANCH_ID\"
-    "
+    # Execute CLI with guaranteed periodic commits every 30 seconds
+    execute_auggie "$WORKSPACE_DIR" "$PROMPT" "$MODEL" "$BRANCH_ID"
     local exit_code=$?
 
     if [[ $exit_code -eq 124 ]]; then
