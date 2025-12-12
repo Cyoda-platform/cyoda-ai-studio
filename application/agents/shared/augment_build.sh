@@ -110,6 +110,21 @@ main() {
         exit 124
     elif [[ $exit_code -eq 0 ]]; then
         log "CLI execution completed successfully"
+
+        # Commit and push generated code
+        log "Committing and pushing generated code..."
+        cd "$WORKSPACE_DIR"
+
+        # Stage all changes
+        git add . || log "WARNING: git add failed"
+
+        # Commit changes
+        git commit -m "Code generation with Augment CLI (branch: $BRANCH_ID)" || log "WARNING: git commit failed (no changes to commit)"
+
+        # Push changes
+        git push origin HEAD || log "WARNING: git push failed"
+
+        log "Code committed and pushed successfully"
     else
         log "ERROR: CLI execution failed with exit code $exit_code"
         exit $exit_code
