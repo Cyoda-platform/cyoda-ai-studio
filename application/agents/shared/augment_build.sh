@@ -64,23 +64,50 @@ setup_environment() {
     log "Environment configured for automation"
 }
 
-# Main CLI execution
+# Function to commit and push changes
+commit_and_push() {
+    local workspace="$1"
+    local branch_id="$2"
+
+    cd "$workspace"
+
+    # Check if there are any changes to commit
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+        git add . 2>/dev/null || true
+        git commit -m "Code generation progress with Augment CLI (branch: $branch_id)" 2>/dev/null || true
+        git push origin HEAD 2>/dev/null || true
+    fi
+}
+
+# Main CLI execution with periodic commits
 execute_auggie() {
     local workspace="$1"
     local instruction="$2"
     local model="$3"
-    
+    local branch_id="$4"
+
     log "Starting CLI execution in workspace: $workspace"
     log "Model: $model"
-    
+
     cd "$workspace"
-    
+
     log "Executing CLI with automation flags..."
 
-    # Execute CLI following automation best practices
-    # Use the prompt passed as argument instead of hardcoded instruction
-    auggie --print --model "$model" --workspace-root "$workspace" "$instruction"
-    
+    # Execute CLI in background to allow periodic commits
+    auggie --print --model "$model" --workspace-root "$workspace" "$instruction" &
+    local cli_pid=$!
+
+    log "CLI process started with PID: $cli_pid"
+
+    # Periodically commit and push changes every 30 seconds while CLI is running
+    while kill -0 $cli_pid 2>/dev/null; do
+        sleep 30
+        log "Pushing progress commit..."
+        commit_and_push "$workspace" "$branch_id"
+    done
+
+    # Wait for CLI process to complete and get exit code
+    wait $cli_pid
     local exit_code=$?
 
     if [[ $exit_code -eq 0 ]]; then
@@ -101,8 +128,34 @@ main() {
 
     setup_environment
 
-    # Run CLI with a 1-hour timeout
-    timeout --foreground 1h auggie --print --model "$MODEL" --workspace-root "$WORKSPACE_DIR" "$PROMPT"
+    # Run CLI with periodic commits every 30 seconds (with 1-hour timeout)
+    timeout --foreground 1h bash -c "
+        execute_auggie() {
+            local workspace=\"\$1\"
+            local instruction=\"\$2\"
+            local model=\"\$3\"
+            local branch_id=\"\$4\"
+
+            cd \"\$workspace\"
+
+            # Execute CLI in background
+            auggie --print --model \"\$model\" --workspace-root \"\$workspace\" \"\$instruction\" &
+            local cli_pid=\$!
+
+            # Periodically commit and push changes every 30 seconds
+            while kill -0 \$cli_pid 2>/dev/null; do
+                sleep 30
+                git add . 2>/dev/null || true
+                git commit -m \"Code generation progress with Augment CLI (branch: \$branch_id)\" 2>/dev/null || true
+                git push origin HEAD 2>/dev/null || true
+            done
+
+            wait \$cli_pid
+            return \$?
+        }
+
+        execute_auggie \"$WORKSPACE_DIR\" \"$PROMPT\" \"$MODEL\" \"$BRANCH_ID\"
+    "
     local exit_code=$?
 
     if [[ $exit_code -eq 124 ]]; then
@@ -111,18 +164,12 @@ main() {
     elif [[ $exit_code -eq 0 ]]; then
         log "CLI execution completed successfully"
 
-        # Commit and push generated code
-        log "Committing and pushing generated code..."
+        # Final commit and push
+        log "Pushing final changes..."
         cd "$WORKSPACE_DIR"
-
-        # Stage all changes
-        git add . || log "WARNING: git add failed"
-
-        # Commit changes
-        git commit -m "Code generation with Augment CLI (branch: $BRANCH_ID)" || log "WARNING: git commit failed (no changes to commit)"
-
-        # Push changes
-        git push origin HEAD || log "WARNING: git push failed"
+        git add . 2>/dev/null || true
+        git commit -m "Code generation completed with Augment CLI (branch: $BRANCH_ID)" 2>/dev/null || true
+        git push origin HEAD 2>/dev/null || true
 
         log "Code committed and pushed successfully"
     else
