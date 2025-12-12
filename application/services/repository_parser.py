@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
 from application.services.github.github_service import GitHubService
+from common.config.config import CLIENT_GIT_BRANCH
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +91,7 @@ class RepositoryParser:
         logger.info(f"  Java workflows: {self.JAVA_WORKFLOW_PATH}")
         logger.info(f"  Java requirements: {self.JAVA_REQUIREMENTS_PATH}")
     
-    async def detect_app_type(self, repository_name: str, branch: str = "main") -> str:
+    async def detect_app_type(self, repository_name: str, branch: str = CLIENT_GIT_BRANCH) -> str:
         """Detect if repository is Python or Java application.
         
         Args:
@@ -123,7 +124,7 @@ class RepositoryParser:
     async def parse_repository(
         self,
         repository_name: str,
-        branch: str = "main"
+        branch: str = CLIENT_GIT_BRANCH
     ) -> RepositoryStructure:
         """Parse complete repository structure.
         

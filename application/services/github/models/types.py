@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Dict, Any, List
 
+from common.config.config import CLIENT_GIT_BRANCH
+
 
 class GitHubPermission(str, Enum):
     PULL = "pull"
@@ -97,7 +99,7 @@ class GitConfig:
 class CloneOptions:
     repository_name: str
     branch_id: str
-    base_branch: str = "main"
+    base_branch: str = CLIENT_GIT_BRANCH
     create_new_branch: bool = True
 
 

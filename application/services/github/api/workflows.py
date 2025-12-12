@@ -12,6 +12,7 @@ from typing import Optional, Dict, Any, List
 # No config imports needed - all config is passed via constructor
 from application.services.github.api.client import GitHubAPIClient
 from application.services.github.models.types import WorkflowStatus, WorkflowConclusion, WorkflowRunInfo
+from common.config.config import CLIENT_GIT_BRANCH
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class WorkflowOperations:
         self,
         repository_name: str,
         workflow_id: str,
-        ref: str = "main",
+        ref: str = CLIENT_GIT_BRANCH,
         inputs: Optional[Dict[str, Any]] = None,
         owner: Optional[str] = None,
         tracker_id: Optional[str] = None
@@ -171,7 +172,7 @@ class WorkflowOperations:
         self,
         repository_name: str,
         workflow_id: str,
-        ref: str = "main",
+        ref: str = CLIENT_GIT_BRANCH,
         inputs: Optional[Dict[str, Any]] = None,
         owner: Optional[str] = None,
         timeout_minutes: int = 60

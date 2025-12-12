@@ -14,10 +14,12 @@ from typing import Any, Dict, Optional
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 
+from application.agents.github.tools import _commit_and_push_changes
 from application.agents.shared.prompt_loader import load_template
 from application.entity.conversation.version_1.conversation import Conversation
 from application.services.github.auth.installation_token_manager import InstallationTokenManager
 from application.services.github.repository.url_parser import parse_repository_url
+from common.config.config import CLIENT_GIT_BRANCH
 from common.exception.exceptions import InvalidTokenException
 from common.utils.utils import send_get_request
 from services.services import get_entity_service
@@ -860,7 +862,7 @@ async def clone_repository(
         # Get user's repository information from context
         user_repo_url = None
         installation_id = None
-        base_branch = "main"  # Default base branch
+        base_branch = CLIENT_GIT_BRANCH  # Default base branch
 
         if tool_context:
             repo_type = tool_context.state.get("repository_type")  # "public" or "private"
@@ -1727,6 +1729,18 @@ async def _monitor_build_process(
     task_id = tool_context.state.get("background_task_id") if tool_context else None
     logger.info(f"🔍 [{branch_name}] background_task_id: {task_id}")
 
+    # Extract authentication info from tool_context for use in commit/push operations
+    auth_repo_url = None
+    auth_installation_id = None
+    auth_repository_type = None
+
+    if tool_context:
+        auth_repository_type = tool_context.state.get("repository_type")
+        # Try both keys: user_repository_url (for private repos) and repository_url (for public repos)
+        auth_repo_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+        auth_installation_id = tool_context.state.get("installation_id")
+        logger.info(f"🔐 Extracted auth info - type: {auth_repository_type}, url: {auth_repo_url}, inst_id: {auth_installation_id}")
+
     # Start streaming output in background
     output_stream_task = asyncio.create_task(
         _stream_process_output(process=process, task_id=task_id)
@@ -1742,6 +1756,10 @@ async def _monitor_build_process(
             commit_result = await _commit_and_push_changes(
                 repository_path=repository_path,
                 branch_name=branch_name,
+                tool_context=tool_context,
+                repo_url=auth_repo_url,
+                installation_id=auth_installation_id,
+                repository_type=auth_repository_type,
             )
 
             logger.info(f"🔍 [{branch_name}] Commit result: {commit_result.get('status', 'unknown')}")
@@ -1928,9 +1946,37 @@ async def _monitor_build_process(
                     commit_result = await _commit_and_push_changes(
                         repository_path=repository_path,
                         branch_name=branch_name,
+                        tool_context=tool_context,
+                        repo_url=auth_repo_url,
+                        installation_id=auth_installation_id,
+                        repository_type=auth_repository_type,
                     )
 
-                    # Progress updates are now tracked in BackgroundTask entity only
+                    # Update BackgroundTask with latest diff info
+                    if task_id and commit_result.get("status") == "success":
+                        try:
+                            from services.services import get_task_service
+
+                            task_service = get_task_service()
+                            current_task = await task_service.get_task(task_id)
+                            existing_metadata = current_task.metadata if current_task else {}
+
+                            # Merge with new diff info from commit
+                            updated_metadata = {
+                                **existing_metadata,
+                                "changed_files": commit_result.get("changed_files", [])[:20],
+                                "diff": commit_result.get("diff", {})
+                            }
+
+                            await task_service.add_progress_update(
+                                task_id=task_id,
+                                message="Progress committed",
+                                metadata=updated_metadata,
+                            )
+                            logger.info(f"📊 Updated BackgroundTask {task_id} with latest diff info")
+                        except Exception as e:
+                            logger.warning(f"⚠️ Failed to update task with diff info: {e}")
+
                     logger.info(f"✅ [{branch_name}] Progress commit completed - tracked in BackgroundTask")
                 except Exception as e:
                     logger.warning(
@@ -2001,121 +2047,7 @@ async def _is_process_running(pid: int) -> bool:
         return False
 
 
-async def _commit_and_push_changes(
-    repository_path: str, branch_name: str
-) -> Dict[str, Any]:
-    """
-    Commit and push all changes in the repository.
-    Based on old working code from auggie_processor.py.
 
-    Args:
-        repository_path: Path to repository
-        branch_name: Branch name
-
-    Returns:
-        Dict with success status, whether there were changes, and git diff
-    """
-    try:
-        # Add all changes
-        logger.debug(f"📦 [{branch_name}] Adding all changes to git...")
-        process = await asyncio.create_subprocess_exec(
-            "git",
-            "add",
-            ".",
-            cwd=repository_path,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode != 0:
-            logger.error(
-                f"❌ [{branch_name}] Git add failed: {stderr.decode('utf-8')}"
-            )
-            return {"success": False, "had_changes": False, "diff": ""}
-
-        # Check if there are changes to commit
-        logger.debug(f"🔍 [{branch_name}] Checking for changes to commit...")
-        process = await asyncio.create_subprocess_exec(
-            "git",
-            "diff",
-            "--cached",
-            "--quiet",
-            cwd=repository_path,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        await process.communicate()
-
-        # If return code is 0, there are no changes to commit
-        if process.returncode == 0:
-            logger.info(f"ℹ️ [{branch_name}] No changes to commit")
-            return {"success": True, "had_changes": False, "diff": ""}
-
-        # Get git diff stats before committing
-        process = await asyncio.create_subprocess_exec(
-            "git",
-            "diff",
-            "--cached",
-            "--stat",
-            cwd=repository_path,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        diff_stdout, diff_stderr = await process.communicate()
-        git_diff = diff_stdout.decode("utf-8", errors="replace") if diff_stdout else ""
-
-        # Commit changes
-        commit_message = f"Generated code using Augment CLI - {branch_name}"
-        logger.debug(f"💾 [{branch_name}] Committing changes...")
-        process = await asyncio.create_subprocess_exec(
-            "git",
-            "commit",
-            "-m",
-            commit_message,
-            cwd=repository_path,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode != 0:
-            logger.error(
-                f"❌ [{branch_name}] Git commit failed: {stderr.decode('utf-8')}"
-            )
-            return {"success": False, "had_changes": True, "diff": git_diff}
-
-        logger.info(f"✅ [{branch_name}] Changes committed successfully")
-
-        # Push changes with --set-upstream for new branches
-        logger.debug(f"🚀 [{branch_name}] Pushing changes to remote...")
-        process = await asyncio.create_subprocess_exec(
-            "git",
-            "push",
-            "--set-upstream",
-            "origin",
-            branch_name,
-            cwd=repository_path,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode != 0:
-            logger.warning(
-                f"⚠️ [{branch_name}] Git push failed (may not have remote): {stderr.decode('utf-8')}"
-            )
-            # Don't fail if push fails - might not have remote configured
-            return {"success": True, "had_changes": True, "diff": git_diff}
-
-        logger.info(
-            f"🎉 [{branch_name}] Successfully committed and pushed changes to origin/{branch_name}"
-        )
-        return {"success": True, "had_changes": True, "diff": git_diff}
-
-    except Exception as e:
-        logger.exception(f"Error committing changes: {e}")
-        return {"success": False, "had_changes": False, "diff": ""}
 
 
 async def _get_git_diff(repository_path: str) -> str:

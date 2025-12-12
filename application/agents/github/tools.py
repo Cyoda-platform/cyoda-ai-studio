@@ -34,7 +34,15 @@ STOP_ON_ERROR = " STOP: Do not retry this operation. Report this error to the us
 
 # Augment CLI configuration for GitHub agent
 _MODULE_DIR = Path(__file__).parent
-_DEFAULT_AUGGIE_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build.sh"
+_BUILD_MODE = os.getenv("BUILD_MODE", "production").lower()
+
+# Use mock script for testing, real script for production
+if _BUILD_MODE == "test":
+    _DEFAULT_AUGGIE_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build_mock.sh"
+    logger.info("🧪 BUILD_MODE=test: Using mock build script")
+else:
+    _DEFAULT_AUGGIE_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build.sh"
+
 AUGGIE_CLI_SCRIPT = os.getenv("AUGMENT_CLI_SCRIPT", str(_DEFAULT_AUGGIE_SCRIPT))
 
 
@@ -1663,57 +1671,215 @@ async def get_repository_diff(tool_context: ToolContext) -> str:
 
 
 async def _commit_and_push_changes(
-    repository_path: str, branch_name: str
+    repository_path: str,
+    branch_name: str,
+    tool_context: Optional[ToolContext] = None,
+    repo_url: Optional[str] = None,
+    installation_id: Optional[str] = None,
+    repository_type: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Commit and push all changes in the repository.
+    Uses GitHub App authentication to refresh credentials before push.
     Internal helper for monitoring tasks.
 
     Args:
         repository_path: Path to repository
         branch_name: Branch name
+        tool_context: Optional tool context for extracting auth info
+        repo_url: Optional repository URL (extracted from tool_context if not provided)
+        installation_id: Optional GitHub App installation ID (extracted from tool_context if not provided)
+        repository_type: Optional repository type - "public" or "private" (extracted from tool_context if not provided)
 
     Returns:
         Dict with status and message
     """
     try:
-        repo_path = Path(repository_path)
+        repository_path_str = str(repository_path)
+        logger.info(f"📝 _commit_and_push_changes START - repo: {repository_path_str}, branch: {branch_name}")
+
+        # Extract authentication info from tool_context if not provided directly
+        if tool_context and not (repo_url and installation_id and repository_type):
+            logger.info(f"📝 Extracting auth info from tool_context")
+            repository_type = repository_type or tool_context.state.get("repository_type")
+            repo_url = repo_url or tool_context.state.get("user_repository_url")
+            installation_id = installation_id or tool_context.state.get("installation_id")
+
+        logger.info(f"🔐 Auth info - type: {repository_type}, repo_url: {repo_url}, inst_id: {installation_id}")
+
+        # Validate that all required authentication parameters are available
+        missing_params = []
+        if not repo_url:
+            missing_params.append("repo_url (Repository URL for GitHub App authentication)")
+        if not installation_id:
+            missing_params.append("installation_id (GitHub App installation ID)")
+        if not repository_type:
+            missing_params.append("repository_type (Repository type: 'public' or 'private')")
+
+        if missing_params:
+            error_msg = f"❌ Missing required authentication parameters: {', '.join(missing_params)}"
+            logger.error(error_msg)
+            return {"status": "error", "message": error_msg}
+
+        # Refresh authentication with the necessary info
+        if repo_url and installation_id and repository_type:
+            logger.info(f"🔐 Refreshing authentication - repo_url: {repo_url}, inst_id: {installation_id}, type: {repository_type}")
+            try:
+                from application.agents.shared.repository_tools import _get_authenticated_repo_url_sync
+
+                # Get authenticated URL with timeout
+                try:
+                    authenticated_url = await asyncio.wait_for(
+                        _get_authenticated_repo_url_sync(repo_url, installation_id),
+                        timeout=10.0
+                    )
+                    logger.info(f"🔐 Got authenticated URL successfully")
+                except asyncio.TimeoutError:
+                    logger.error(f"❌ Timeout getting authenticated URL (10s) - will attempt push without auth refresh")
+                    authenticated_url = None
+                except Exception as e:
+                    logger.error(f"❌ Failed to get authenticated URL: {e} - will attempt push without auth refresh")
+                    authenticated_url = None
+
+                if authenticated_url:
+                    # Update the origin remote URL
+                    logger.info(f"🔐 Updating git remote URL with authenticated credentials")
+                    set_url_process = await asyncio.create_subprocess_exec(
+                        "git",
+                        "remote",
+                        "set-url",
+                        "origin",
+                        authenticated_url,
+                        cwd=repository_path_str,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
+                    )
+                    stdout, stderr = await set_url_process.communicate()
+                    logger.info(f"🔐 git remote set-url returncode: {set_url_process.returncode}")
+
+                    if set_url_process.returncode != 0:
+                        error_msg = stderr.decode("utf-8") if stderr else "Unknown error"
+                        logger.warning(f"⚠️ Failed to update remote URL: {error_msg}")
+                    else:
+                        logger.info(f"✅ Successfully updated git remote with authenticated URL")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to refresh authentication: {e}", exc_info=True)
+        else:
+            logger.warning(f"⚠️ Missing auth info - repo_url: {repo_url}, inst_id: {installation_id}, type: {repository_type}")
 
         # Stage all changes
+        logger.info(f"📝 Running: git add .")
         process = await asyncio.create_subprocess_exec(
             "git", "add", ".",
-            cwd=str(repo_path),
+            cwd=repository_path_str,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        await process.communicate()
+        add_stdout, add_stderr = await process.communicate()
+        logger.info(f"📝 git add returncode: {process.returncode}")
+        if add_stderr:
+            logger.info(f"📝 git add stderr: {add_stderr.decode('utf-8', errors='replace')}")
+
+        # Get diff of staged changes BEFORE committing
+        changed_files = []
+        diff_summary = {}
+        try:
+            logger.info(f"📝 Getting diff of staged changes...")
+            diff_process = await asyncio.create_subprocess_exec(
+                "git", "diff", "--cached", "--name-status",
+                cwd=repository_path_str,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            diff_stdout, diff_stderr = await diff_process.communicate()
+
+            if diff_process.returncode == 0:
+                diff_output = diff_stdout.decode('utf-8', errors='replace')
+                added_files = []
+                modified_files = []
+                deleted_files = []
+
+                for line in diff_output.strip().split('\n'):
+                    if not line:
+                        continue
+                    parts = line.split('\t', 1)
+                    if len(parts) == 2:
+                        status, file_path = parts
+                        if status == 'A':
+                            added_files.append(file_path)
+                            changed_files.append(file_path)
+                        elif status == 'M':
+                            modified_files.append(file_path)
+                            changed_files.append(file_path)
+                        elif status == 'D':
+                            deleted_files.append(file_path)
+                            changed_files.append(file_path)
+
+                diff_summary = {
+                    "added": added_files,
+                    "modified": modified_files,
+                    "deleted": deleted_files,
+                }
+                logger.info(f"📝 Diff summary: {len(added_files)} added, {len(modified_files)} modified, {len(deleted_files)} deleted")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not get diff: {e}")
 
         # Commit changes
         commit_msg = f"Code generation progress on {branch_name}"
+        logger.info(f"📝 Running: git commit -m '{commit_msg}'")
         process = await asyncio.create_subprocess_exec(
             "git", "commit", "-m", commit_msg,
-            cwd=str(repo_path),
+            cwd=repository_path_str,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        await process.communicate()
+        commit_stdout, commit_stderr = await process.communicate()
+        logger.info(f"📝 git commit returncode: {process.returncode}")
+        if commit_stderr:
+            logger.info(f"📝 git commit stderr: {commit_stderr.decode('utf-8', errors='replace')}")
 
-        # Push changes with -u flag to create branch on remote if needed
-        process = await asyncio.create_subprocess_exec(
-            "git", "push", "-u", "origin", branch_name,
-            cwd=str(repo_path),
+        # Check current remote URL before pushing
+        logger.info(f"📝 Checking current git remote URL...")
+        remote_process = await asyncio.create_subprocess_exec(
+            'git', 'remote', 'get-url', 'origin',
+            cwd=repository_path_str,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
         )
-        push_stdout, push_stderr = await process.communicate()
-        push_error = push_stderr.decode('utf-8', errors='replace')
+        remote_stdout, remote_stderr = await remote_process.communicate()
+        current_remote_url = remote_stdout.decode('utf-8', errors='replace').strip()
+        logger.info(f"🔐 Current git remote URL: {current_remote_url}")
 
-        if process.returncode == 0:
+        # Push changes (same as commit_and_push_changes tool - no -u flag)
+        logger.info(f"📝 Running: git push origin {branch_name}")
+        push_process = await asyncio.create_subprocess_exec(
+            'git', 'push', 'origin', branch_name,
+            cwd=repository_path_str,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await push_process.communicate()
+        logger.info(f"📝 git push returncode: {push_process.returncode}")
+        logger.info(f"📝 git push stdout: {stdout.decode('utf-8', errors='replace')}")
+        logger.info(f"📝 git push stderr: {stderr.decode('utf-8', errors='replace')}")
+
+        if push_process.returncode == 0:
             logger.info(f"💾 Progress commit pushed for branch {branch_name}")
-            return {"status": "success", "message": "Changes committed and pushed"}
+            return {
+                "status": "success",
+                "message": "Changes committed and pushed",
+                "changed_files": changed_files,
+                "diff": diff_summary
+            }
         else:
-            logger.error(f"❌ Push failed: {push_error}")
-            return {"status": "error", "message": f"Push failed: {push_error}"}
+            error_msg = stderr.decode('utf-8', errors='replace')
+            logger.error(f"❌ Push failed: {error_msg}")
+            return {
+                "status": "error",
+                "message": f"Push failed: {error_msg}",
+                "changed_files": changed_files,
+                "diff": diff_summary
+            }
 
     except Exception as e:
         logger.error(f"❌ Failed to commit/push: {e}", exc_info=True)
@@ -1849,6 +2015,8 @@ async def _monitor_code_generation_process(
     start_time = asyncio.get_event_loop().time()
     elapsed_time = 0
     check_interval = 10  # Check every 10 seconds
+    last_push_time = start_time  # Track last push time for periodic commits
+    push_interval = 30  # Push every 30 seconds
 
     logger.info(f"🔍 [{branch_name}] Monitoring code generation task started for PID {pid}")
     logger.info(f"🔍 [{branch_name}] User request: {user_request[:100]}...")
@@ -1856,6 +2024,18 @@ async def _monitor_code_generation_process(
     # Get task_id from context
     task_id = tool_context.state.get("background_task_id") if tool_context else None
     logger.info(f"🔍 [{branch_name}] background_task_id: {task_id}")
+
+    # Extract authentication info from tool_context for use in commit/push operations
+    auth_repo_url = None
+    auth_installation_id = None
+    auth_repository_type = None
+
+    if tool_context:
+        auth_repository_type = tool_context.state.get("repository_type")
+        # Try both keys: user_repository_url (for private repos) and repository_url (for public repos)
+        auth_repo_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+        auth_installation_id = tool_context.state.get("installation_id")
+        logger.info(f"🔐 Extracted auth info - type: {auth_repository_type}, url: {auth_repo_url}, inst_id: {auth_installation_id}")
 
     # Start streaming output in background
     output_stream_task = asyncio.create_task(
@@ -1870,9 +2050,14 @@ async def _monitor_code_generation_process(
             commit_result = await _commit_and_push_changes(
                 repository_path=repository_path,
                 branch_name=branch_name,
+                tool_context=tool_context,
+                repo_url=auth_repo_url,
+                installation_id=auth_installation_id,
+                repository_type=auth_repository_type,
             )
             logger.info(f"🔍 [{branch_name}] Initial commit result: {commit_result.get('status', 'unknown')}")
             logger.info(f"✅ [{branch_name}] Initial commit completed - progress tracked in BackgroundTask")
+            last_push_time = asyncio.get_event_loop().time()
         except Exception as e:
             logger.error(f"❌ [{branch_name}] Failed to send initial commit: {e}", exc_info=True)
 
@@ -1882,8 +2067,23 @@ async def _monitor_code_generation_process(
             remaining_time = min(check_interval, timeout_seconds - elapsed_time)
             await asyncio.wait_for(process.wait(), timeout=remaining_time)
 
-            # Process completed normally
+            # Process completed normally - check for final push before exiting
             logger.info(f"✅ Process {pid} completed normally")
+
+            # Push any remaining changes before marking as complete
+            if tool_context:
+                try:
+                    await _commit_and_push_changes(
+                        repository_path=repository_path,
+                        branch_name=branch_name,
+                        tool_context=tool_context,
+                        repo_url=auth_repo_url,
+                        installation_id=auth_installation_id,
+                        repository_type=auth_repository_type,
+                    )
+                    logger.info(f"✅ [{branch_name}] Final commit pushed")
+                except Exception as e:
+                    logger.warning(f"⚠️ [{branch_name}] Failed to push final changes: {e}")
 
             # Update BackgroundTask to completed
             if task_id:
@@ -1894,12 +2094,20 @@ async def _monitor_code_generation_process(
 
                     # Get diff to show what was generated
                     changed_files = []
+                    diff_summary = {}
                     if tool_context:
                         try:
                             diff_result = await get_repository_diff(tool_context)
                             diff_data = json.loads(diff_result)
                             for category in ["modified", "added", "untracked"]:
                                 changed_files.extend(diff_data.get(category, []))
+                            # Store diff summary
+                            diff_summary = {
+                                "added": diff_data.get("added", []),
+                                "modified": diff_data.get("modified", []),
+                                "deleted": diff_data.get("deleted", []),
+                                "untracked": diff_data.get("untracked", [])
+                            }
                         except Exception as e:
                             logger.warning(f"Could not get diff: {e}")
 
@@ -1909,8 +2117,12 @@ async def _monitor_code_generation_process(
                     current_task = await task_service.get_task(task_id)
                     existing_metadata = current_task.metadata if current_task else {}
 
-                    # Merge existing metadata with new changed_files
-                    updated_metadata = {**existing_metadata, "changed_files": changed_files[:20]}
+                    # Merge existing metadata with new changed_files and diff
+                    updated_metadata = {
+                        **existing_metadata,
+                        "changed_files": changed_files[:20],
+                        "diff": diff_summary
+                    }
 
                     await task_service.update_task_status(
                         task_id=task_id,
@@ -1926,6 +2138,7 @@ async def _monitor_code_generation_process(
                         await _commit_and_push_changes(
                             repository_path=repository_path,
                             branch_name=branch_name,
+                            tool_context=tool_context,
                         )
                         logger.info(f"✅ [{branch_name}] Final commit completed")
                     except Exception as e:
@@ -1964,14 +2177,46 @@ async def _monitor_code_generation_process(
                     except Exception as e:
                         logger.warning(f"⚠️ Failed to update BackgroundTask progress: {e}")
 
-                # Commit and push changes every 60 seconds
-                if tool_context and elapsed_time % 60 == 0:
+                # Commit and push changes every 30 seconds (using timestamp-based check)
+                current_time = asyncio.get_event_loop().time()
+                time_since_last_push = current_time - last_push_time
+
+                if tool_context and time_since_last_push >= push_interval:
                     try:
                         commit_result = await _commit_and_push_changes(
                             repository_path=repository_path,
                             branch_name=branch_name,
+                            tool_context=tool_context,
+                            repo_url=auth_repo_url,
+                            installation_id=auth_installation_id,
+                            repository_type=auth_repository_type,
                         )
                         logger.info(f"✅ [{branch_name}] Progress commit completed")
+
+                        # Update BackgroundTask with latest diff info
+                        if task_id and commit_result.get("status") == "success":
+                            try:
+                                task_service = get_task_service()
+                                current_task = await task_service.get_task(task_id)
+                                existing_metadata = current_task.metadata if current_task else {}
+
+                                # Merge with new diff info from commit
+                                updated_metadata = {
+                                    **existing_metadata,
+                                    "changed_files": commit_result.get("changed_files", [])[:20],
+                                    "diff": commit_result.get("diff", {})
+                                }
+
+                                await task_service.add_progress_update(
+                                    task_id=task_id,
+                                    message="Progress committed",
+                                    metadata=updated_metadata,
+                                )
+                                logger.info(f"📊 Updated BackgroundTask {task_id} with latest diff info")
+                            except Exception as e:
+                                logger.warning(f"⚠️ Failed to update task with diff info: {e}")
+
+                        last_push_time = current_time
                     except Exception as e:
                         logger.warning(f"⚠️ [{branch_name}] Failed to commit/push: {e}")
 
@@ -1988,12 +2233,20 @@ async def _monitor_code_generation_process(
 
                         # Get diff
                         changed_files = []
+                        diff_summary = {}
                         if tool_context:
                             try:
                                 diff_result = await get_repository_diff(tool_context)
                                 diff_data = json.loads(diff_result)
                                 for category in ["modified", "added", "untracked"]:
                                     changed_files.extend(diff_data.get(category, []))
+                                # Store diff summary
+                                diff_summary = {
+                                    "added": diff_data.get("added", []),
+                                    "modified": diff_data.get("modified", []),
+                                    "deleted": diff_data.get("deleted", []),
+                                    "untracked": diff_data.get("untracked", [])
+                                }
                             except Exception as e:
                                 logger.warning(f"Could not get diff: {e}")
 
@@ -2004,7 +2257,10 @@ async def _monitor_code_generation_process(
                             status="completed",
                             message=f"Code generation completed - {files_summary}",
                             progress=100,
-                            metadata={"changed_files": changed_files[:20]},
+                            metadata={
+                                "changed_files": changed_files[:20],
+                                "diff": diff_summary
+                            },
                         )
                         logger.info(f"✅ Updated BackgroundTask {task_id} to completed")
                     except Exception as e:
@@ -2423,6 +2679,18 @@ async def _monitor_build_process(
     task_id = tool_context.state.get("background_task_id") if tool_context else None
     task_service = get_task_service()
 
+    # Extract authentication info from tool_context for use in commit/push operations
+    auth_repo_url = None
+    auth_installation_id = None
+    auth_repository_type = None
+
+    if tool_context:
+        auth_repository_type = tool_context.state.get("repository_type")
+        # Try both keys: user_repository_url (for private repos) and repository_url (for public repos)
+        auth_repo_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+        auth_installation_id = tool_context.state.get("installation_id")
+        logger.info(f"🔐 Extracted auth info - type: {auth_repository_type}, url: {auth_repo_url}, inst_id: {auth_installation_id}")
+
     try:
         logger.info(f"🔍 Starting build monitoring for task {task_id}, PID: {process.pid}")
 
@@ -2492,7 +2760,14 @@ async def _monitor_build_process(
 
                 # Final commit
                 try:
-                    await _commit_and_push_changes(repository_path, branch_name)
+                    await _commit_and_push_changes(
+                        repository_path=repository_path,
+                        branch_name=branch_name,
+                        tool_context=tool_context,
+                        repo_url=auth_repo_url,
+                        installation_id=auth_installation_id,
+                        repository_type=auth_repository_type,
+                    )
                     logger.info(f"✅ Final commit pushed for branch {branch_name}")
                 except Exception as e:
                     logger.warning(f"Failed to commit final changes: {e}")
@@ -2546,8 +2821,37 @@ async def _monitor_build_process(
             # Commit changes periodically
             if current_time - last_commit_time >= commit_interval:
                 try:
-                    await _commit_and_push_changes(repository_path, branch_name)
+                    commit_result = await _commit_and_push_changes(
+                        repository_path=repository_path,
+                        branch_name=branch_name,
+                        tool_context=tool_context,
+                        repo_url=auth_repo_url,
+                        installation_id=auth_installation_id,
+                        repository_type=auth_repository_type,
+                    )
                     logger.info(f"💾 Progress commit pushed for branch {branch_name}")
+
+                    # Update BackgroundTask with latest diff info
+                    if task_id and commit_result.get("status") == "success":
+                        try:
+                            current_task = await task_service.get_task(task_id)
+                            existing_metadata = current_task.metadata if current_task else {}
+
+                            # Merge with new diff info from commit
+                            updated_metadata = {
+                                **existing_metadata,
+                                "changed_files": commit_result.get("changed_files", [])[:20],
+                                "diff": commit_result.get("diff", {})
+                            }
+
+                            await task_service.add_progress_update(
+                                task_id=task_id,
+                                message="Progress committed",
+                                metadata=updated_metadata,
+                            )
+                            logger.info(f"📊 Updated BackgroundTask {task_id} with latest diff info")
+                        except Exception as e:
+                            logger.warning(f"⚠️ Failed to update task with diff info: {e}")
                 except Exception as e:
                     logger.warning(f"Failed to commit progress: {e}")
 

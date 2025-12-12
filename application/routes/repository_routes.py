@@ -18,6 +18,7 @@ from application.services import (
     get_github_service_for_private_repo,
 )
 from application.services.repository_parser import RepositoryParser
+from common.config.config import CLIENT_GIT_BRANCH
 from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ class AnalyzeRepositoryRequest(BaseModel):
     repository_name: str = Field(
         ..., description="Repository name (e.g., 'mcp-cyoda-quart-app')"
     )
-    branch: str = Field(default="main", description="Branch name to analyze")
+    branch: str = Field(default=CLIENT_GIT_BRANCH, description="Branch name to analyze")
     owner: str = Field(default="Cyoda-platform", description="Repository owner")
     installation_id: Optional[int] = Field(
         default=None,
@@ -319,7 +320,7 @@ async def get_file_content() -> ResponseReturnValue:
         data = await request.get_json()
         repository_name = data.get("repository_name")
         file_path = data.get("file_path")
-        branch = data.get("branch", "main")
+        branch = data.get("branch", CLIENT_GIT_BRANCH)
         owner = data.get("owner", "Cyoda-platform")
 
         if not repository_name or not file_path:

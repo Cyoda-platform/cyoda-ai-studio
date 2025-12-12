@@ -21,7 +21,7 @@ class RepositoryConfig:
     
     name: str
     owner: str
-    default_branch: str = "main"
+    default_branch: str = CLIENT_GIT_BRANCH
     url_template: Optional[str] = None
     raw_url_template: Optional[str] = None
     

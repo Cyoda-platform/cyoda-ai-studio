@@ -9,6 +9,9 @@ Shows how to use the hook framework in:
 
 from __future__ import annotations
 
+from common.config.config import CLIENT_GIT_BRANCH
+
+
 # ==================== Example 1: Using Hook Registry ====================
 
 def example_hook_registry() -> None:
@@ -142,7 +145,7 @@ def example_tool_with_hooks() -> None:
             "code_changes",
             conversation_id="conv-123",
             repository_name="my-repo",
-            branch_name="main",
+            branch_name=CLIENT_GIT_BRANCH,
             changed_files=["app.py"],
             resource_type="application",
         )

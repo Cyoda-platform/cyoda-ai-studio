@@ -34,6 +34,7 @@ from application.services.github.models.types import (
     WorkflowRunInfo,
     BranchInfo,
 )
+from common.config.config import CLIENT_GIT_BRANCH
 
 
 class GitHubService:
@@ -149,7 +150,7 @@ class GitHubService:
         self,
         repository_name: str,
         workflow_id: str,
-        ref: str = "main",
+        ref: str = CLIENT_GIT_BRANCH,
         inputs: Optional[Dict[str, Any]] = None,
         owner: Optional[str] = None,
         tracker_id: Optional[str] = None
@@ -199,7 +200,7 @@ class GitHubService:
         self,
         repository_name: str,
         workflow_id: str,
-        ref: str = "main",
+        ref: str = CLIENT_GIT_BRANCH,
         inputs: Optional[Dict[str, Any]] = None,
         owner: Optional[str] = None,
         timeout_minutes: int = 60
