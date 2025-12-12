@@ -64,59 +64,14 @@ setup_environment() {
     log "Environment configured for automation"
 }
 
-# Function to commit and push changes
-commit_and_push() {
-    local workspace="$1"
-    local branch_id="$2"
+# Note: Git operations (commit/push) are handled by the Python code
+# This script only runs the Augment CLI and exits
 
-    cd "$workspace"
-
-    # Check if there are any changes to commit
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        # Stage changes
-        if ! git add . 2>&1; then
-            log "WARNING: git add failed"
-            return 1
-        fi
-
-        # Commit changes
-        local commit_output
-        commit_output=$(git commit -m "Code generation progress with Augment CLI (branch: $branch_id)" 2>&1)
-        local commit_exit=$?
-
-        if [[ $commit_exit -ne 0 ]]; then
-            # Exit code 1 means nothing to commit, which is fine
-            if [[ $commit_exit -eq 1 ]]; then
-                log "DEBUG: No changes to commit"
-            else
-                log "WARNING: git commit failed: $commit_output"
-                return 1
-            fi
-        fi
-
-        # Push changes (use -u to create branch on remote if it doesn't exist)
-        local push_output
-        push_output=$(git push -u origin HEAD 2>&1)
-        local push_exit=$?
-
-        if [[ $push_exit -ne 0 ]]; then
-            log "ERROR: git push failed with exit code $push_exit: $push_output"
-            return 1
-        else
-            log "SUCCESS: Changes pushed to remote"
-        fi
-    else
-        log "DEBUG: No changes to commit"
-    fi
-}
-
-# Main CLI execution with guaranteed periodic commits every 30 seconds
+# Main CLI execution
 execute_auggie() {
     local workspace="$1"
     local instruction="$2"
     local model="$3"
-    local branch_id="$4"
-    local push_interval=30  # Push every 30 seconds
     local timeout_seconds=3600  # 1 hour
 
     log "Starting CLI execution in workspace: $workspace"
@@ -126,40 +81,15 @@ execute_auggie() {
 
     log "Executing CLI with automation flags..."
 
-    # Execute CLI in background to allow periodic commits
-    timeout --foreground "$timeout_seconds" auggie --print --model "$model" --workspace-root "$workspace" "$instruction" &
-    local cli_pid=$!
-
-    log "CLI process started with PID: $cli_pid"
-    log "Will push changes every $push_interval seconds"
-
-    # Track time for guaranteed 30-second intervals
-    local start_time=$(date +%s)
-    local last_push_time=$start_time
-
-    # Periodically commit and push changes every 30 seconds while CLI is running
-    while kill -0 $cli_pid 2>/dev/null; do
-        local current_time=$(date +%s)
-        local elapsed=$((current_time - last_push_time))
-
-        # If 30 seconds have passed, push changes
-        if [[ $elapsed -ge $push_interval ]]; then
-            log "Pushing progress commit (elapsed: ${elapsed}s)..."
-            commit_and_push "$workspace" "$branch_id"
-            last_push_time=$(date +%s)
-        else
-            # Sleep only for the remaining time until next push
-            local sleep_time=$((push_interval - elapsed))
-            sleep "$sleep_time"
-        fi
-    done
-
-    # Wait for CLI process to complete and get exit code
-    wait $cli_pid
+    # Execute CLI with 1-hour timeout
+    timeout --foreground "$timeout_seconds" auggie --print --model "$model" --workspace-root "$workspace" "$instruction"
     local exit_code=$?
 
     if [[ $exit_code -eq 0 ]]; then
         log "CLI execution completed successfully"
+    elif [[ $exit_code -eq 124 ]]; then
+        log "ERROR: CLI execution timed out after 1 hour"
+        return 124
     else
         log "ERROR: CLI execution failed with exit code $exit_code"
         return $exit_code
@@ -176,41 +106,17 @@ main() {
 
     setup_environment
 
-    # Execute CLI with guaranteed periodic commits every 30 seconds
-    execute_auggie "$WORKSPACE_DIR" "$PROMPT" "$MODEL" "$BRANCH_ID"
+    # Execute CLI (git operations are handled by Python code)
+    execute_auggie "$WORKSPACE_DIR" "$PROMPT" "$MODEL"
     local exit_code=$?
 
-    if [[ $exit_code -eq 124 ]]; then
-        log "ERROR: CLI execution timed out after 1 hour"
-        exit 124
-    elif [[ $exit_code -eq 0 ]]; then
-        log "CLI execution completed successfully"
-
-        # Final commit and push
-        log "Pushing final changes..."
-        cd "$WORKSPACE_DIR"
-
-        local final_push_output
-        final_push_output=$(git add . 2>&1)
-
-        local final_commit_output
-        final_commit_output=$(git commit -m "Code generation completed with Augment CLI (branch: $BRANCH_ID)" 2>&1)
-
-        local final_push_result
-        final_push_result=$(git push -u origin HEAD 2>&1)
-        local final_push_exit=$?
-
-        if [[ $final_push_exit -eq 0 ]]; then
-            log "Code committed and pushed successfully"
-        else
-            log "WARNING: Final push may have failed: $final_push_result"
-        fi
+    if [[ $exit_code -eq 0 ]]; then
+        log "CLI automation script completed successfully"
+        exit 0
     else
-        log "ERROR: CLI execution failed with exit code $exit_code"
+        log "CLI automation script failed with exit code $exit_code"
         exit $exit_code
     fi
-
-    log "CLI automation script completed successfully"
 }
 
 # Execute main function
