@@ -1,0 +1,16 @@
+- As a user, I want to create a new Cyoda environment for testing purposes.
+- As a user, I want to list all the Cyoda environments I have access to.
+- As a user, I want to describe a specific Cyoda environment and see what services are running in it.
+- As a user, I want to check the current status of a Cyoda environment.
+- As a user, I want to deploy my Python/Java application to a specific Cyoda environment.
+- As a user, I want to list all the applications deployed in a specific Cyoda environment.
+- As a user, I want to get the details of a specific application deployed in a Cyoda environment.
+- As a user, I want to troubleshoot an application deployed in a Cyoda environment by checking the logs.
+- As a user, I want to scale a specific environment.
+- As a user, I want to restart a specific application deployed in a Cyoda environment.
+- As a user, I want to scale a specific application deployed in a Cyoda environment.
+- As a user, I want to get the status of a specific application deployed in a Cyoda environment.
+- As a user, I want to get the metrics of a specific application deployed in a Cyoda environment.
+- As a user, I want to get the pods of a specific application deployed in a Cyoda environment.
+- As a user, I want to get the logs of a specific application deployed in a Cyoda environment.
+

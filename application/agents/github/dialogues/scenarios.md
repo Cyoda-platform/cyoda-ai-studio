@@ -1,0 +1,12 @@
+- As a user, I want to add a Customer entity with id, name, email, phone fields.
+- As a user, I want to add a workflow for Customer with create, update, delete transitions.
+- As a user, I want to add a processor to validate email format in Customer entity.
+- As a user, I want to add REST endpoints for Product entity with GET, POST, PUT, DELETE operations.
+- As a user, I want to add a discount feature to orders.
+- As a user, I want to add a requirement document to the repository for a customer management system.
+- As a user, I want to build an application based on the docs in this branch ...
+- As a user, I want to build an application based on the attached requirements.
+- As a user I want to view/edit the Customer entity in the canvas.
+- As a user I want to view/edit the Order workflow in the canvas.
+- As a user I want to view/edit the requirement document in the canvas.
+

@@ -10,7 +10,6 @@ from typing import Any, Union
 from application.agents.canvas.agent import root_agent as canvas_agent
 from application.agents.cyoda_data_agent.agent import root_agent as cyoda_data_agent
 from application.agents.environment.agent import root_agent as environment_agent
-from application.agents.environment_mcp.agent import root_agent as environment_mcp_agent
 from application.agents.github.agent import root_agent as github_agent
 from application.agents.guidelines.agent import root_agent as guidelines_agent
 from application.agents.qa.agent import root_agent as qa_agent
@@ -18,6 +17,7 @@ from application.agents.setup.agent import root_agent as setup_agent
 from application.agents.shared.cyoda_response_plugin import CyodaResponsePlugin
 from application.agents.shared.prompts import create_instruction_provider
 from application.entity.conversation import Conversation
+from application.services.cyoda_session_service import CyodaSessionService
 from application.services.sdk_factory import get_sdk_name, is_using_openai_sdk
 from common.service.service import EntityServiceError
 
