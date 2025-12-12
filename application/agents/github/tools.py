@@ -1667,7 +1667,6 @@ async def _commit_and_push_changes(
 ) -> Dict[str, Any]:
     """
     Commit and push all changes in the repository.
-    Logs all files and GitHub status.
     Internal helper for monitoring tasks.
 
     Args:
@@ -1679,38 +1678,6 @@ async def _commit_and_push_changes(
     """
     try:
         repo_path = Path(repository_path)
-
-        # Get list of all files in repository before staging
-        logger.info(f"📁 Repository contents in {repository_path}:")
-        all_files = []
-        for root, dirs, files in os.walk(repo_path):
-            # Skip .git and other hidden directories
-            dirs[:] = [d for d in dirs if not d.startswith('.')]
-            for file in files:
-                if not file.startswith('.'):
-                    file_path = os.path.relpath(os.path.join(root, file), repo_path)
-                    all_files.append(file_path)
-                    logger.info(f"  📄 {file_path}")
-
-        logger.info(f"📊 Total files in repository: {len(all_files)}")
-
-        # Get git status before staging
-        status_process = await asyncio.create_subprocess_exec(
-            "git", "status", "--porcelain",
-            cwd=str(repo_path),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        status_stdout, status_stderr = await status_process.communicate()
-        status_output = status_stdout.decode('utf-8', errors='replace')
-
-        if status_output:
-            logger.info(f"📝 Git status (changes to commit):")
-            for line in status_output.strip().split('\n'):
-                if line:
-                    logger.info(f"  {line}")
-        else:
-            logger.info("✅ No changes to commit")
 
         # Stage all changes
         process = await asyncio.create_subprocess_exec(
@@ -1729,16 +1696,9 @@ async def _commit_and_push_changes(
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        commit_stdout, commit_stderr = await process.communicate()
-        commit_output = commit_stdout.decode('utf-8', errors='replace')
-
-        if process.returncode == 0:
-            logger.info(f"✅ Commit successful: {commit_output.strip()}")
-        else:
-            logger.info(f"ℹ️ No changes to commit (exit code: {process.returncode})")
+        await process.communicate()
 
         # Push changes with -u flag to create branch on remote if needed
-        logger.info(f"🚀 Pushing to origin/{branch_name}...")
         process = await asyncio.create_subprocess_exec(
             "git", "push", "-u", "origin", branch_name,
             cwd=str(repo_path),
@@ -1746,17 +1706,10 @@ async def _commit_and_push_changes(
             stderr=asyncio.subprocess.PIPE,
         )
         push_stdout, push_stderr = await process.communicate()
-        push_output = push_stdout.decode('utf-8', errors='replace')
         push_error = push_stderr.decode('utf-8', errors='replace')
 
         if process.returncode == 0:
-            logger.info(f"✅ Push successful to origin/{branch_name}")
-            logger.info(f"📤 Push output: {push_output.strip()}")
-
-            # Log GitHub status
-            logger.info(f"🔗 GitHub branch: origin/{branch_name}")
-            logger.info(f"📊 Files pushed: {len(all_files)}")
-
+            logger.info(f"💾 Progress commit pushed for branch {branch_name}")
             return {"status": "success", "message": "Changes committed and pushed"}
         else:
             logger.error(f"❌ Push failed: {push_error}")
