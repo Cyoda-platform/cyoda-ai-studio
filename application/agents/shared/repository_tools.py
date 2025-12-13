@@ -1161,59 +1161,9 @@ async def clone_repository(
             logger.warning(f"⚠️ Failed to update conversation build context: {e}", exc_info=True)
             # Don't fail the clone operation if context update fails
 
-        # Automatically retrieve and save any files that were attached to the conversation
-        # This ensures all files uploaded during the conversation are saved to the branch
+        # NOTE: Files are now saved immediately when attached in Canvas via /api/v1/repository/save-files endpoint
+        # No need to retrieve and save files here - they're already in the repository
         files_saved_message = ""
-        if tool_context:
-            try:
-                logger.info("📂 Checking for conversation files to save to branch...")
-                conversation_id = tool_context.state.get("conversation_id")
-
-                if conversation_id:
-                    # Get conversation entity to check for files
-                    from services.services import get_entity_service
-                    from application.entity.conversation.version_1.conversation import Conversation
-
-                    entity_service = get_entity_service()
-                    response = await entity_service.get_by_id(
-                        entity_id=conversation_id,
-                        entity_class=Conversation.ENTITY_NAME,
-                        entity_version=str(Conversation.ENTITY_VERSION),
-                    )
-
-                    if response and response.data:
-                        conversation_data = response.data
-                        if isinstance(conversation_data, dict):
-                            conversation = Conversation(**conversation_data)
-                        else:
-                            conversation = conversation_data
-
-                        # Check if there are any files in the conversation
-                        has_files = False
-                        if hasattr(conversation, 'file_blob_ids') and conversation.file_blob_ids:
-                            has_files = True
-                            file_count = len(conversation.file_blob_ids)
-                            logger.info(f"📎 Found {file_count} files in conversation.file_blob_ids")
-
-                        if has_files:
-                            # Call retrieve_and_save_conversation_files to save them
-                            logger.info("💾 Automatically saving conversation files to branch...")
-                            save_result: str = await retrieve_and_save_conversation_files(tool_context=tool_context)
-
-                            if save_result.startswith("✅"):
-                                # Extract file info from result message
-                                files_saved_message = f"\n{save_result}"
-                                logger.info(f"✅ Conversation files saved successfully")
-                            else:
-                                logger.warning(f"⚠️ Failed to save conversation files: {save_result}")
-                        else:
-                            logger.info("📂 No files found in conversation to save")
-                else:
-                    logger.warning("⚠️ No conversation_id in context, skipping file retrieval")
-
-            except Exception as e:
-                logger.warning(f"⚠️ Failed to auto-save conversation files: {e}", exc_info=True)
-                # Don't fail the clone operation if file saving fails
 
         # Return success message for new branches
         # Agent will decide what follow-up options to offer based on context
@@ -2354,6 +2304,34 @@ async def save_files_to_branch(
         logger.info(f"📦 Committing and pushing {len(saved_files)} files to branch {branch_name}...")
 
         try:
+            # Configure git user for this repository (local config)
+            logger.info(f"🔧 Configuring git user for repository...")
+
+            # Set git user.name
+            config_name_process = await asyncio.create_subprocess_exec(
+                "git",
+                "config",
+                "user.name",
+                "Cyoda Agent",
+                cwd=str(repo_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await config_name_process.communicate()
+
+            # Set git user.email
+            config_email_process = await asyncio.create_subprocess_exec(
+                "git",
+                "config",
+                "user.email",
+                "agent@cyoda.ai",
+                cwd=str(repo_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await config_email_process.communicate()
+            logger.info(f"✅ Git user configured")
+
             # Add files to git
             process = await asyncio.create_subprocess_exec(
                 "git",

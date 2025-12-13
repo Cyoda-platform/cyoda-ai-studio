@@ -26,6 +26,53 @@ logger = logging.getLogger(__name__)
 repository_bp = Blueprint("repository", __name__, url_prefix="/api/v1/repository")
 
 
+def _is_textual_file(filename: str) -> bool:
+    """Check if a file is a textual format based on extension."""
+    filename_lower = filename.lower()
+
+    # Supported textual file extensions
+    textual_extensions = {
+        # Documents
+        ".pdf", ".docx", ".xlsx", ".pptx", ".xml", ".json", ".txt",
+        # Configuration
+        ".yml", ".yaml", ".toml", ".ini", ".cfg", ".conf", ".properties", ".env",
+        # Documentation / Markup
+        ".md", ".markdown", ".rst", ".tex", ".latex", ".sql",
+        # System / Build
+        ".dockerfile", ".gitignore", ".gitattributes",
+        ".editorconfig", ".htaccess", ".robots",
+        ".mk", ".cmake", ".gradle",
+        # Programming Languages
+        # Web
+        ".js", ".ts", ".jsx", ".tsx",
+        # Systems
+        ".c", ".cpp", ".h", ".hpp", ".cs", ".rs", ".go",
+        # Mobile
+        ".swift", ".dart",
+        # Functional
+        ".hs", ".ml", ".fs", ".clj", ".elm",
+        # Scientific
+        ".r", ".jl", ".f90", ".f95",
+        # Other
+        ".php", ".rb", ".scala", ".lua", ".nim", ".zig", ".v",
+        ".d", ".cr", ".ex", ".exs", ".erl", ".hrl"
+    }
+
+    # Files without extension (dockerfile, makefile, etc.)
+    files_without_extension = {"dockerfile", "makefile"}
+
+    # Check by extension
+    for ext in textual_extensions:
+        if filename_lower.endswith(ext):
+            return True
+
+    # Check files without extension
+    if filename_lower in files_without_extension:
+        return True
+
+    return False
+
+
 class AnalyzeRepositoryRequest(BaseModel):
     """Request model for repository analysis."""
 
@@ -172,17 +219,19 @@ async def analyze_repository() -> ResponseReturnValue:
                 requirements = []
                 requirements_dir = repo_path_obj / paths["requirements_path"]
                 if requirements_dir.exists():
-                    for req_file in requirements_dir.glob("*.md"):
-                        try:
-                            with open(req_file, "r") as f:
-                                content = f.read()
-                            requirements.append({
-                                "name": req_file.stem,
-                                "path": str(req_file.relative_to(repo_path_obj)),
-                                "content": content,
-                            })
-                        except Exception as e:
-                            logger.warning(f"Failed to read requirement {req_file}: {e}")
+                    # Support all textual file formats for requirements
+                    for req_file in sorted(requirements_dir.glob("*")):
+                        if req_file.is_file() and _is_textual_file(req_file.name):
+                            try:
+                                with open(req_file, "r", encoding="utf-8") as f:
+                                    content = f.read()
+                                requirements.append({
+                                    "name": req_file.stem,
+                                    "path": str(req_file.relative_to(repo_path_obj)),
+                                    "content": content,
+                                })
+                            except Exception as e:
+                                logger.warning(f"Failed to read requirement {req_file}: {e}")
 
                 # Convert workflows to response format with content
                 workflows_with_content = [

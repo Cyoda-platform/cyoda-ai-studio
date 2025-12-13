@@ -90,6 +90,53 @@ async def _get_github_service_from_context(tool_context: ToolContext) -> GitHubS
     return GitHubService(installation_id=installation_id)
 
 
+def _is_textual_file(filename: str) -> bool:
+    """Check if a file is a textual format based on extension."""
+    filename_lower = filename.lower()
+
+    # Supported textual file extensions
+    textual_extensions = {
+        # Documents
+        ".pdf", ".docx", ".xlsx", ".pptx", ".xml", ".json", ".txt",
+        # Configuration
+        ".yml", ".yaml", ".toml", ".ini", ".cfg", ".conf", ".properties", ".env",
+        # Documentation / Markup
+        ".md", ".markdown", ".rst", ".tex", ".latex", ".sql",
+        # System / Build
+        ".dockerfile", ".gitignore", ".gitattributes",
+        ".editorconfig", ".htaccess", ".robots",
+        ".mk", ".cmake", ".gradle",
+        # Programming Languages
+        # Web
+        ".js", ".ts", ".jsx", ".tsx",
+        # Systems
+        ".c", ".cpp", ".h", ".hpp", ".cs", ".rs", ".go",
+        # Mobile
+        ".swift", ".dart",
+        # Functional
+        ".hs", ".ml", ".fs", ".clj", ".elm",
+        # Scientific
+        ".r", ".jl", ".f90", ".f95",
+        # Other
+        ".php", ".rb", ".scala", ".lua", ".nim", ".zig", ".v",
+        ".d", ".cr", ".ex", ".exs", ".erl", ".hrl"
+    }
+
+    # Files without extension (dockerfile, makefile, etc.)
+    files_without_extension = {"dockerfile", "makefile"}
+
+    # Check by extension
+    for ext in textual_extensions:
+        if filename_lower.endswith(ext):
+            return True
+
+    # Check files without extension
+    if filename_lower in files_without_extension:
+        return True
+
+    return False
+
+
 def _detect_project_type(repo_path: str) -> Dict[str, str]:
     """Detect project type (Python or Java) and return resource paths."""
     repo_path_obj = Path(repo_path)
@@ -987,21 +1034,25 @@ async def analyze_repository_structure_agentic(tool_context: ToolContext) -> str
                     except json.JSONDecodeError:
                         logger.warning(f"Invalid JSON in workflow file: {workflow_file}")
 
-        # 4. Find requirements files
+        # 4. Find requirements files (support all textual formats)
         req_files_result = await execute_unix_command(
-            "find . -name '*.md' -path '*/functional_requirements/*' | sort",
+            "find . -path '*/functional_requirements/*' -type f | sort",
             tool_context
         )
         req_data = json.loads(req_files_result)
         analysis_results["commands_executed"].append({
-            "command": "find . -name '*.md' -path '*/functional_requirements/*' | sort",
-            "purpose": "Find requirements files",
+            "command": "find . -path '*/functional_requirements/*' -type f | sort",
+            "purpose": "Find requirements files (all textual formats)",
             "success": req_data.get("success", False)
         })
 
         if req_data.get("success"):
             req_files = [f.strip() for f in req_data["stdout"].split('\n') if f.strip()]
             for req_file in req_files:
+                # Filter for textual files only
+                if not _is_textual_file(Path(req_file).name):
+                    continue
+
                 req_name = Path(req_file).stem
 
                 # Read requirements content
@@ -1156,19 +1207,21 @@ async def analyze_repository_structure(tool_context: ToolContext) -> str:
         def _read_requirements():
             requirements = []
             if requirements_dir.exists():
-                for req_file in requirements_dir.glob("*.md"):
-                    try:
-                        with open(req_file, "r") as f:
-                            content = f.read()
-                        requirements.append(
-                            {
-                                "name": req_file.stem,
-                                "path": str(req_file.relative_to(repo_path_obj)),
-                                "content": content,
-                            }
-                        )
-                    except Exception as e:
-                        logger.warning(f"Failed to read requirement {req_file}: {e}")
+                # Support all textual file formats for requirements
+                for req_file in sorted(requirements_dir.glob("*")):
+                    if req_file.is_file() and _is_textual_file(req_file.name):
+                        try:
+                            with open(req_file, "r", encoding="utf-8") as f:
+                                content = f.read()
+                            requirements.append(
+                                {
+                                    "name": req_file.stem,
+                                    "path": str(req_file.relative_to(repo_path_obj)),
+                                    "content": content,
+                                }
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to read requirement {req_file}: {e}")
             return requirements
 
         result["requirements"] = await loop.run_in_executor(None, _read_requirements)
@@ -1387,6 +1440,26 @@ async def commit_and_push_changes(
                     if len(line) > 3:
                         # Format: "XY filename" where XY is status code
                         changed_files.append(line[3:].strip())
+
+            # Configure git user for this repository (local config)
+            logger.info(f"🔧 Configuring git user for repository...")
+
+            # Set git user.name
+            config_name_process = await asyncio.create_subprocess_exec(
+                'git', 'config', 'user.name', 'Cyoda Agent',
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            await config_name_process.communicate()
+
+            # Set git user.email
+            config_email_process = await asyncio.create_subprocess_exec(
+                'git', 'config', 'user.email', 'agent@cyoda.ai',
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            await config_email_process.communicate()
+            logger.info(f"✅ Git user configured")
 
             # Add all changes
             add_process = await asyncio.create_subprocess_exec(
@@ -1823,6 +1896,28 @@ async def _commit_and_push_changes(
                 logger.info(f"📝 Diff summary: {len(added_files)} added, {len(modified_files)} modified, {len(deleted_files)} deleted")
         except Exception as e:
             logger.warning(f"⚠️ Could not get diff: {e}")
+
+        # Configure git user for this repository (local config)
+        logger.info(f"🔧 Configuring git user for repository...")
+
+        # Set git user.name
+        config_name_process = await asyncio.create_subprocess_exec(
+            "git", "config", "user.name", "Cyoda Agent",
+            cwd=repository_path_str,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        await config_name_process.communicate()
+
+        # Set git user.email
+        config_email_process = await asyncio.create_subprocess_exec(
+            "git", "config", "user.email", "agent@cyoda.ai",
+            cwd=repository_path_str,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        await config_email_process.communicate()
+        logger.info(f"✅ Git user configured")
 
         # Commit changes
         commit_msg = f"Code generation progress on {branch_name}"
@@ -2966,27 +3061,8 @@ async def generate_application(
         cli_count = get_cli_invocation_count(session_id)
         logger.info(f"🔧 CLI invocation #{cli_count} for session {session_id}")
 
-        # IMPORTANT: Save all conversation files to branch BEFORE generating application
-        # This ensures the AI has access to all attached files (requirements, specs, etc.)
-        logger.info("📂 Checking for conversation files to save before generating application...")
-        if tool_context:
-            try:
-                from application.agents.shared.repository_tools import retrieve_and_save_conversation_files
-
-                conversation_id = tool_context.state.get("conversation_id")
-                if conversation_id:
-                    save_result = await retrieve_and_save_conversation_files(tool_context=tool_context)
-                    if save_result.startswith("✅") or save_result.startswith("SUCCESS"):
-                        logger.info(f"✅ Files saved successfully before generating application: {save_result}")
-                    elif "No files found" in save_result or "No valid files" in save_result:
-                        logger.info(f"ℹ️ No files to save: {save_result}")
-                    else:
-                        logger.warning(f"⚠️ File saving returned: {save_result}")
-                else:
-                    logger.info("ℹ️ No conversation_id in context, skipping file retrieval")
-            except Exception as e:
-                logger.warning(f"⚠️ Failed to save conversation files before generating application: {e}", exc_info=True)
-                # Don't fail the build if file saving fails - continue with generation
+        # NOTE: Files are now saved immediately when attached in Canvas via /api/v1/repository/save-files endpoint
+        # No need to retrieve and save files here - they're already in the repository
 
         # Load comprehensive build prompt template
         template_name = f"build_{language.lower()}_instructions"
