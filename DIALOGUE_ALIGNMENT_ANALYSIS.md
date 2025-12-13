@@ -121,6 +121,7 @@ Agent must provide information about the repository structure, how it is structu
 
 **build_app.md says:**
 - "Agent MUST let the user know - once the app is built they can call setup assistant"
+- "Agent MUST let the user know - once the app is built they can ask to deploy their application to a Cyoda environment"
 - This is a MANDATORY notification, not optional
 
 **github_agent.template says:**
