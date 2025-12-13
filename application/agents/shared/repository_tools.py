@@ -1016,6 +1016,18 @@ async def clone_repository(
                 logger.error(f"Failed to checkout existing branch '{branch_name}': {error_msg}")
                 return f"ERROR: Branch '{branch_name}' does not exist in the repository. Please verify the branch name. Error: {error_msg}"
 
+            # Configure git pull strategy to merge (not rebase) for divergent branches
+            config_cmd = ["git", "config", "pull.rebase", "false"]
+            returncode, stdout, stderr = await _run_git_command(
+                config_cmd,
+                cwd=str(target_path),
+                timeout=30,
+            )
+            if returncode != 0:
+                logger.warning(f"Failed to set git pull.rebase config: {stderr or stdout}")
+            else:
+                logger.info("Git pull.rebase set to false (merge strategy)")
+
             # Pull latest changes from remote
             pull_cmd = ["git", "pull", "origin", branch_name]
             returncode, stdout, stderr = await _run_git_command(

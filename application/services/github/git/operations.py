@@ -341,6 +341,19 @@ class GitOperations:
                     diff=diff_result
                 )
 
+            # Configure git pull strategy to merge (not rebase) for divergent branches
+            config_process = await asyncio.create_subprocess_exec(
+                'git', '--git-dir', f"{clone_dir}/.git", '--work-tree', clone_dir,
+                'config', 'pull.rebase', 'false',
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            config_stdout, config_stderr = await config_process.communicate()
+            if config_process.returncode != 0:
+                logger.warning(f"Warning: Failed to set git pull.rebase config: {config_stderr.decode()}")
+            else:
+                logger.info("Git pull.rebase set to false (merge strategy)")
+
             pull_process = await asyncio.create_subprocess_exec(
                 'git', '--git-dir', f"{clone_dir}/.git", '--work-tree', clone_dir,
                 'pull', '--strategy', merge_strategy, '--strategy-option=theirs', 'origin', str(git_branch_id),
