@@ -2329,7 +2329,9 @@ async def save_files_to_branch(
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            await config_name_process.communicate()
+            name_stdout, name_stderr = await config_name_process.communicate()
+            if config_name_process.returncode != 0:
+                logger.warning(f"⚠️ Failed to set git user.name: {name_stderr.decode('utf-8') if name_stderr else 'Unknown error'}")
 
             # Set git user.email
             config_email_process = await asyncio.create_subprocess_exec(
@@ -2341,10 +2343,14 @@ async def save_files_to_branch(
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            await config_email_process.communicate()
+            email_stdout, email_stderr = await config_email_process.communicate()
+            if config_email_process.returncode != 0:
+                logger.warning(f"⚠️ Failed to set git user.email: {email_stderr.decode('utf-8') if email_stderr else 'Unknown error'}")
+
             logger.info(f"✅ Git user configured")
 
             # Add files to git
+            logger.info(f"📝 Adding files from {func_req_dir} to git...")
             process = await asyncio.create_subprocess_exec(
                 "git",
                 "add",
@@ -2356,9 +2362,42 @@ async def save_files_to_branch(
             stdout, stderr = await process.communicate()
 
             if process.returncode != 0:
-                error_msg = stderr.decode("utf-8") if stderr else "Unknown error"
+                stdout_msg = stdout.decode("utf-8") if stdout else ""
+                stderr_msg = stderr.decode("utf-8") if stderr else ""
+                error_msg = stderr_msg or stdout_msg or "Unknown error"
                 logger.error(f"❌ Git add failed: {error_msg}")
+                logger.error(f"   stdout: {stdout_msg}")
+                logger.error(f"   stderr: {stderr_msg}")
+                logger.error(f"   func_req_dir: {func_req_dir}")
+                logger.error(f"   repo_path: {repo_path}")
                 return f"ERROR: Failed to add files to git: {error_msg}"
+
+            logger.info(f"✅ Files added to git staging area")
+
+            # Check git status before committing
+            status_process = await asyncio.create_subprocess_exec(
+                "git",
+                "status",
+                "--short",
+                cwd=str(repo_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            status_stdout, status_stderr = await status_process.communicate()
+            status_output = status_stdout.decode("utf-8") if status_stdout else ""
+            logger.info(f"📊 Git status before commit:\n{status_output}")
+
+            # Check if there are any staged changes
+            if not status_output.strip():
+                logger.warning(f"⚠️ No staged changes detected. Files may not have been added properly.")
+                logger.info(f"   Saved files: {saved_files}")
+                logger.info(f"   func_req_dir: {func_req_dir}")
+                # List directory contents for debugging
+                try:
+                    dir_contents = list(func_req_dir.iterdir())
+                    logger.info(f"   Directory contents: {[f.name for f in dir_contents]}")
+                except Exception as e:
+                    logger.error(f"   Failed to list directory: {e}")
 
             # Commit files
             commit_message = f"Add functional requirements files: {', '.join(saved_files)}"
@@ -2375,11 +2414,19 @@ async def save_files_to_branch(
 
             if process.returncode != 0:
                 # Check if there were no changes to commit
-                error_msg = stderr.decode("utf-8") if stderr else ""
+                stdout_msg = stdout.decode("utf-8") if stdout else ""
+                stderr_msg = stderr.decode("utf-8") if stderr else ""
+                error_msg = stderr_msg or stdout_msg or "Unknown error"
+
                 if "nothing to commit" in error_msg.lower():
                     logger.info("ℹ️ Files already committed (no changes)")
+                    # Continue to push - files are already committed
                 else:
                     logger.error(f"❌ Git commit failed: {error_msg}")
+                    logger.error(f"   stdout: {stdout_msg}")
+                    logger.error(f"   stderr: {stderr_msg}")
+                    logger.error(f"   repo_path: {repo_path}")
+                    logger.error(f"   func_req_dir: {func_req_dir}")
                     return f"ERROR: Failed to commit files: {error_msg}"
 
             # Update remote URL with fresh authentication token before pushing
