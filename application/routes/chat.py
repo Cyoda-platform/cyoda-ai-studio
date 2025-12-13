@@ -922,9 +922,10 @@ async def stream_chat_message(technical_id: str) -> Response:
             if files:
                 import base64
 
-                for file_key in files:
-                    file = files[file_key]
+                # Get all files with key 'files' (handles multiple file uploads)
+                file_list = files.getlist('files') if 'files' in files else []
 
+                for file in file_list:
                     # Read file content
                     file_content = file.read()
 
