@@ -1087,14 +1087,14 @@ async def _monitor_deployment_progress(
                             progress = min(95, 10 + int((check_num / max_checks) * 85))
 
                         # Update BackgroundTask
-                        # Check if status is UNKNOWN - treat as failure regardless of state
-                        if status.upper() == "UNKNOWN":
+                        # Check if status indicates failure - treat as failure regardless of state
+                        if status.upper() in ["UNKNOWN", "FAILURE", "FAILED", "ERROR"]:
                             await task_service.update_task_status(
                                 task_id=task_id,
                                 status="failed",
-                                message=f"Environment deployment failed: status is UNKNOWN (state: {state})",
+                                message=f"Environment deployment failed: {status}",
                                 progress=0,
-                                error=f"Deployment status is UNKNOWN (state: {state})",
+                                error=f"Deployment status: {status} (state: {state})",
                                 metadata={
                                     "build_id": build_id,
                                     "namespace": namespace,
@@ -1102,7 +1102,7 @@ async def _monitor_deployment_progress(
                                     "state": state,
                                 },
                             )
-                            logger.error(f"❌ Deployment {build_id} failed: status UNKNOWN (state: {state})")
+                            logger.error(f"❌ Deployment {build_id} failed: status {status} (state: {state})")
                             return
                         elif state.upper() in ["COMPLETE", "SUCCESS", "FINISHED"]:
                             await task_service.update_task_status(
@@ -1118,7 +1118,7 @@ async def _monitor_deployment_progress(
                             )
                             logger.info(f"✅ Deployment {build_id} completed successfully")
                             return
-                        elif state.upper() in ["FAILED", "ERROR", "UNKNOWN"]:
+                        elif state.upper() in ["FAILED", "ERROR"]:
                             await task_service.update_task_status(
                                 task_id=task_id,
                                 status="failed",
