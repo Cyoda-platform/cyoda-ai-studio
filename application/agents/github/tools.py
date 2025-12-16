@@ -2956,6 +2956,36 @@ async def generate_application(
         # NOTE: Files are now saved immediately when attached in Canvas via /api/v1/repository/save-files endpoint
         # No need to retrieve and save files here - they're already in the repository
 
+        # Check if functional requirements directory exists and has content
+        if language.lower() == "python":
+            requirements_path = f"{repository_path}/application/resources/functional_requirements"
+        elif language.lower() == "java":
+            requirements_path = f"{repository_path}/src/main/resources/functional_requirements"
+        else:
+            return f"ERROR: Unsupported language '{language}'. Supported: java, python"
+
+        requirements_dir = Path(requirements_path)
+        has_requirements = False
+
+        if requirements_dir.exists() and requirements_dir.is_dir():
+            # Check if directory has any files
+            requirement_files = list(requirements_dir.glob("*"))
+            has_requirements = len(requirement_files) > 0
+            if has_requirements:
+                logger.info(f"✅ Found {len(requirement_files)} functional requirement file(s)")
+
+        if not has_requirements:
+            return (
+                f"⚠️ No functional requirements found in {requirements_path}\n\n"
+                f"Before we can build your application, we need to create functional requirements together. "
+                f"Functional requirements describe what your application should do.\n\n"
+                f"**Next steps:**\n"
+                f"1. Let's design your application requirements together\n"
+                f"2. I'll help you create a comprehensive requirements document\n"
+                f"3. Then we can generate the application code\n\n"
+                f"Would you like to start building requirements together?"
+            )
+
         # Load comprehensive build prompt template
         template_name = f"build_{language.lower()}_instructions"
         try:

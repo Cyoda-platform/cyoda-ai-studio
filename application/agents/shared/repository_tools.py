@@ -578,6 +578,12 @@ async def ask_user_to_select_option(
     This is a generic tool that can be used whenever you need to ask the user to choose from multiple options.
     The UI will display clickable buttons or checkboxes for the user to make their selection.
 
+    **CRITICAL PATTERN - YOU MUST ALWAYS PROVIDE THE 'options' PARAMETER:**
+    This tool REQUIRES the 'options' parameter. You MUST provide a list of at least one option.
+    Each option MUST be a dictionary with 'value' and 'label' fields.
+    NEVER call this tool without the 'options' parameter.
+    Example: options=[{"value": "yes", "label": "Yes"}, {"value": "no", "label": "No"}]
+
     **WHEN TO USE:**
     - When you need to ask the user to choose from a list of options
     - Instead of asking the user to type their choice
@@ -589,12 +595,12 @@ async def ask_user_to_select_option(
     - Parse the response and proceed with your workflow
 
     Args:
-        question: The question to ask the user
+        question: The question to ask the user (required, cannot be empty)
         options: List of option dictionaries, each with:
             - value: The value to return when selected (required)
             - label: Display text for the option (required)
             - description: Optional description text (optional)
-            If not provided, returns an error message with instructions.
+            MUST provide at least one option. This parameter is REQUIRED.
         selection_type: Either "single" (radio buttons) or "multiple" (checkboxes). Default: "single"
         context: Optional additional context or information to display
         tool_context: Execution context (auto-injected)
@@ -635,31 +641,47 @@ async def ask_user_to_select_option(
         )
     """
     if not tool_context:
-        return "ERROR: Tool context not available. This function must be called within a conversation context."
+        raise ValueError("Tool context not available. This function must be called within a conversation context.")
 
-    # If options not provided, return helpful error with example
+    # Validate required parameters
+    if not question:
+        raise ValueError("The 'question' parameter is required and cannot be empty")
+
+    # If options not provided, return helpful guidance instead of raising exception
     if not options or len(options) == 0:
-        example = """ERROR: The 'options' parameter is required. Here's an example of how to call this tool:
+        return (
+            "I need to provide options for the user to choose from. "
+            "Please provide the 'options' parameter as a list of dictionaries. "
+            "Each option must have:\n"
+            "- 'value': A unique identifier (e.g., 'opt1', 'new_branch', 'deploy')\n"
+            "- 'label': Display text shown to user (e.g., 'Create a new branch')\n"
+            "- 'description': (optional) Additional context\n\n"
+            "Example format:\n"
+            "options=[\n"
+            "  {'value': 'new', 'label': 'Create a new branch', 'description': 'Start fresh'},\n"
+            "  {'value': 'existing', 'label': 'Use an existing branch', 'description': 'Continue work'}\n"
+            "]\n\n"
+            "Please call ask_user_to_select_option again with the options parameter populated."
+        )
 
-ask_user_to_select_option(
-    question="Which option would you prefer?",
-    options=[
-        {"value": "opt1", "label": "Option 1", "description": "Description for option 1"},
-        {"value": "opt2", "label": "Option 2", "description": "Description for option 2"}
-    ],
-    selection_type="single"
-)
-
-Each option must have:
-- 'value': A unique identifier for the option
-- 'label': Display text shown to the user
-- 'description': (optional) Additional context for the option"""
-        return example
-
-    # Validate each option
-    for option in options:
-        if "value" not in option or "label" not in option:
-            return "ERROR: Each option must have 'value' and 'label' fields."
+    # Validate each option has required fields
+    for i, option in enumerate(options):
+        if not isinstance(option, dict):
+            return (
+                f"Option at index {i} is not a dictionary. "
+                f"Each option must be a dict with 'value' and 'label' fields. "
+                f"Example: {{'value': 'opt1', 'label': 'Option 1', 'description': 'Description'}}"
+            )
+        if "value" not in option:
+            return (
+                f"Option at index {i} is missing required 'value' field. "
+                f"Each option must have: {{'value': '...', 'label': '...'}}"
+            )
+        if "label" not in option:
+            return (
+                f"Option at index {i} is missing required 'label' field. "
+                f"Each option must have: {{'value': '...', 'label': '...'}}"
+            )
 
     from application.agents.shared.hook_utils import (
         create_option_selection_hook,
@@ -720,30 +742,27 @@ async def set_repository_config(
             repository_url="https://github.com/myorg/my-repo"
         )
     """
+    if not repository_type:
+        raise ValueError("repository_type parameter is required and cannot be empty")
+
     if repository_type not in ["public", "private"]:
-        return (
-            f"ERROR: repository_type must be 'public' or 'private', got '{repository_type}'.\n\n"
-            f"Use:\n"
-            f"- 'public' for Cyoda template repositories\n"
-            f"- 'private' for your own repositories"
+        raise ValueError(
+            f"repository_type must be 'public' or 'private', got '{repository_type}'"
         )
 
     if not tool_context:
-        return "ERROR: Tool context not available. This function must be called within a conversation context."
+        raise ValueError("Tool context not available. This function must be called within a conversation context.")
 
     tool_context.state["repository_type"] = repository_type
 
     if repository_type == "private":
-        if not installation_id or not repository_url:
-            return (
-                f"ERROR: For private repositories, both installation_id and repository_url are required.\n\n"
-                f"Example:\n"
-                f"set_repository_config(\n"
-                f"    repository_type='private',\n"
-                f"    installation_id='12345678',\n"
-                f"    repository_url='https://github.com/myorg/my-repo'\n"
-                f")\n\n"
-                f"💡 To get your installation_id, install the Cyoda AI Assistant GitHub App on your repository."
+        if not installation_id:
+            raise ValueError(
+                "installation_id parameter is required for private repositories"
+            )
+        if not repository_url:
+            raise ValueError(
+                "repository_url parameter is required for private repositories"
             )
 
         tool_context.state["installation_id"] = installation_id
@@ -849,6 +868,12 @@ async def clone_repository(
         clone_repository("python", "existing-branch", use_existing_branch=True)
     """
     try:
+        # Validate required parameters
+        if not language:
+            raise ValueError("language parameter is required and cannot be empty")
+        if not branch_name:
+            raise ValueError("branch_name parameter is required and cannot be empty")
+
         # CRITICAL: Validate branch name is not protected
         if await _is_protected_branch(branch_name):
             error_msg = (
@@ -1232,7 +1257,12 @@ async def generate_application(
     Returns:
         Status message with build job ID or error
     """
+    # Validate required parameters BEFORE try-except so they raise immediately
+    if not requirements:
+        raise ValueError("requirements parameter is required and cannot be empty")
+
     try:
+
         # SAFEGUARD: Check if build already started for this branch
         if tool_context:
             existing_build_pid = tool_context.state.get("build_process_pid")
@@ -1284,6 +1314,36 @@ async def generate_application(
             return f"ERROR: Directory exists but is not a git repository: {repository_path}. Please call clone_repository first."
 
         logger.info(f"✅ Repository verified at: {repository_path}")
+
+        # Check if functional requirements directory exists and has content
+        if language.lower() == "python":
+            requirements_path = f"{repository_path}/application/resources/functional_requirements"
+        elif language.lower() == "java":
+            requirements_path = f"{repository_path}/src/main/resources/functional_requirements"
+        else:
+            return f"ERROR: Unsupported language '{language}'. Supported: java, python"
+
+        requirements_dir = Path(requirements_path)
+        has_requirements = False
+
+        if requirements_dir.exists() and requirements_dir.is_dir():
+            # Check if directory has any files
+            requirement_files = list(requirements_dir.glob("*"))
+            has_requirements = len(requirement_files) > 0
+            if has_requirements:
+                logger.info(f"✅ Found {len(requirement_files)} functional requirement file(s)")
+
+        if not has_requirements:
+            return (
+                f"⚠️ No functional requirements found in {requirements_path}\n\n"
+                f"Before we can build your application, we need to create functional requirements together. "
+                f"Functional requirements describe what your application should do.\n\n"
+                f"**Next steps:**\n"
+                f"1. Let's design your application requirements together\n"
+                f"2. I'll help you create a comprehensive requirements document\n"
+                f"3. Then we can generate the application code\n\n"
+                f"Would you like to start building requirements together?"
+            )
 
         # Load prompt template based on language
         prompt_template = await _load_prompt_template(language)
@@ -2262,10 +2322,21 @@ async def save_files_to_branch(
     Returns:
         Status message indicating success or error
     """
+    # Validate required parameters BEFORE try-except so they raise immediately
+    if not files or len(files) == 0:
+        raise ValueError("files parameter is required and must contain at least one file")
+
+    for i, file_dict in enumerate(files):
+        if "filename" not in file_dict:
+            raise ValueError(f"File at index {i} is missing required 'filename' field")
+        if "content" not in file_dict:
+            raise ValueError(f"File at index {i} is missing required 'content' field")
+
     try:
+
         # Get repository info from context
         if not tool_context:
-            return "ERROR: tool_context not available"
+            raise ValueError("tool_context not available")
 
         repository_path = tool_context.state.get("repository_path")
         branch_name = tool_context.state.get("branch_name")

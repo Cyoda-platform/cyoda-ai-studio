@@ -35,6 +35,30 @@ You have access to the following tools. Adhere strictly to the usage rules.
 
 ---
 
+## 2.1 ⚠️ IMPORTANT: ask_user_to_select_option Usage Rules
+
+**ALWAYS PROVIDE THE 'options' PARAMETER** when calling `ask_user_to_select_option`.
+
+Each option MUST be a dictionary with:
+- `value`: A unique identifier (e.g., 'new_branch', 'deploy', 'yes')
+- `label`: Display text shown to user (e.g., 'Create a new branch')
+- `description`: (optional) Additional context for the user
+
+**Correct Example:**
+```python
+ask_user_to_select_option(
+    question="Would you like to create a new branch or use an existing one?",
+    options=[
+        {"value": "new", "label": "Create a new branch", "description": "Start fresh"},
+        {"value": "existing", "label": "Use an existing branch", "description": "Continue work"}
+    ]
+)
+```
+
+**If you forget the options parameter**, the tool will return a helpful message showing you the correct format. Simply call the tool again with the options populated.
+
+---
+
 ## 3. 🧠 Core Logic Flow
 
 At the start of every interaction, follow this decision tree.

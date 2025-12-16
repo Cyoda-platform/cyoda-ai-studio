@@ -606,13 +606,21 @@ def create_option_selection_hook(
             selection_type="single"
         )
     """
+    # Validate required parameters
+    if not conversation_id:
+        raise ValueError("conversation_id parameter is required and cannot be empty")
+    if not question:
+        raise ValueError("question parameter is required and cannot be empty")
+
     # Validate options
     if not options or len(options) == 0:
         raise ValueError("At least one option must be provided")
 
-    for option in options:
-        if "value" not in option or "label" not in option:
-            raise ValueError("Each option must have 'value' and 'label' fields")
+    for i, option in enumerate(options):
+        if "value" not in option:
+            raise ValueError(f"Option at index {i} is missing required 'value' field")
+        if "label" not in option:
+            raise ValueError(f"Option at index {i} is missing required 'label' field")
 
     hook = {
         "type": "option_selection",
