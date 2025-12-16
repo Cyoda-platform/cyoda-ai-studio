@@ -1983,15 +1983,14 @@ async def _commit_and_push_changes(
         return {"status": "error", "message": str(e)}
 
 
-def _cleanup_temp_files(prompt_file: Optional[str] = None, output_file: Optional[str] = None) -> None:
+def _cleanup_temp_files(prompt_file: Optional[str] = None) -> None:
     """
     Clean up temporary files created for CLI process.
 
     Args:
         prompt_file: Path to temp prompt file to remove
-        output_file: Path to output log file to remove
     """
-    # Clean up prompt file
+    # Clean up prompt file only (output file is preserved for user access)
     if prompt_file:
         try:
             if os.path.exists(prompt_file):
@@ -1999,15 +1998,6 @@ def _cleanup_temp_files(prompt_file: Optional[str] = None, output_file: Optional
                 logger.info(f"🗑️ Cleaned up temp prompt file: {prompt_file}")
         except Exception as e:
             logger.warning(f"⚠️ Failed to clean up prompt file {prompt_file}: {e}")
-
-    # Clean up output file
-    if output_file:
-        try:
-            if os.path.exists(output_file):
-                os.remove(output_file)
-                logger.info(f"🗑️ Cleaned up output log file: {output_file}")
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to clean up output file {output_file}: {e}")
 
 
 async def _monitor_cli_process(
@@ -2017,7 +2007,6 @@ async def _monitor_cli_process(
     timeout_seconds: int = 3600,
     tool_context: Optional[ToolContext] = None,
     prompt_file: Optional[str] = None,
-    output_file: Optional[str] = None,
     commit_interval: int = 30,
     progress_update_interval: int = 30,
 ) -> None:
@@ -2035,7 +2024,6 @@ async def _monitor_cli_process(
         timeout_seconds: Maximum time to wait (default: 1 hour for code gen, 30 min for builds)
         tool_context: Tool context with task_id and auth info
         prompt_file: Path to temp prompt file to clean up after completion
-        output_file: Path to output log file to save process output
         commit_interval: Seconds between commits (default: 30)
         progress_update_interval: Seconds between progress updates (default: 30)
     """
@@ -2174,8 +2162,8 @@ async def _monitor_cli_process(
             except Exception as e:
                 logger.warning(f"⚠️ Failed to unregister process: {e}")
 
-            # Clean up temp files
-            _cleanup_temp_files(prompt_file, output_file)
+            # Clean up temp files (output file is preserved)
+            _cleanup_temp_files(prompt_file)
 
             logger.info("✅ Process completed - status tracked in BackgroundTask entity")
             return
@@ -2236,8 +2224,8 @@ async def _monitor_cli_process(
                     except Exception as e:
                         logger.warning(f"⚠️ Failed to update BackgroundTask: {e}")
 
-                # Clean up temp files
-                _cleanup_temp_files(prompt_file, output_file)
+                # Clean up temp files (output file is preserved)
+                _cleanup_temp_files(prompt_file)
 
                 logger.info("✅ Process completed")
                 return
@@ -2340,8 +2328,8 @@ async def _monitor_cli_process(
     except Exception as e:
         logger.warning(f"⚠️ Failed to unregister process: {e}")
 
-    # Clean up temp files
-    _cleanup_temp_files(prompt_file, output_file)
+    # Clean up temp files (output file is preserved)
+    _cleanup_temp_files(prompt_file)
 
     await _terminate_process(process)
 
@@ -2354,7 +2342,6 @@ async def _monitor_code_generation_process(
     timeout_seconds: int = 3600,
     tool_context: Optional[ToolContext] = None,
     prompt_file: Optional[str] = None,
-    output_file: Optional[str] = None,
 ) -> None:
     """
     Wrapper for code generation process monitoring.
@@ -2368,7 +2355,6 @@ async def _monitor_code_generation_process(
         timeout_seconds: Maximum time to wait (default: 1 hour)
         tool_context: Tool context with task_id
         prompt_file: Path to temp prompt file to clean up after completion
-        output_file: Path to output log file to clean up after completion
     """
     logger.info(f"🔍 [{branch_name}] Code generation request: {user_request[:100]}...")
 
@@ -2379,7 +2365,6 @@ async def _monitor_code_generation_process(
         timeout_seconds=timeout_seconds,
         tool_context=tool_context,
         prompt_file=prompt_file,
-        output_file=output_file,
         commit_interval=30,
         progress_update_interval=30,
     )
@@ -2710,7 +2695,6 @@ async def generate_code_with_cli(
                 timeout_seconds=3600,  # 1 hour timeout
                 tool_context=tool_context,
                 prompt_file=prompt_file,
-                output_file=output_file,
             )
         )
 
@@ -2787,7 +2771,6 @@ async def _monitor_build_process(
     timeout_seconds: int = 1800,
     tool_context: Optional[ToolContext] = None,
     prompt_file: Optional[str] = None,
-    output_file: Optional[str] = None,
 ) -> None:
     """
     Wrapper for build process monitoring.
@@ -2801,7 +2784,6 @@ async def _monitor_build_process(
         timeout_seconds: Maximum time to wait (default: 1800 = 30 minutes)
         tool_context: Tool context for accessing conversation/task info
         prompt_file: Path to temp prompt file to clean up after completion
-        output_file: Path to output log file to save process output
     """
     logger.info(f"🔍 Build requirements: {requirements[:100]}...")
 
@@ -2812,7 +2794,6 @@ async def _monitor_build_process(
         timeout_seconds=timeout_seconds,
         tool_context=tool_context,
         prompt_file=prompt_file,
-        output_file=output_file,
         commit_interval=60,  # Build commits every 60 seconds
         progress_update_interval=30,
     )
@@ -3114,7 +3095,6 @@ async def generate_application(
                 timeout_seconds=1800,  # 30 minutes
                 tool_context=tool_context,
                 prompt_file=prompt_file,
-                output_file=output_file,
             )
         )
 
