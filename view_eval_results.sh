@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # View and analyze ADK evaluation results
 
 set -e
