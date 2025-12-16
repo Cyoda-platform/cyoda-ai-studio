@@ -81,7 +81,7 @@ ENV PATH=$PATH:$JAVA_HOME/bin
 RUN npm install -g @augmentcode/auggie
 
 # Upgrade pip and install Python package management tools
-RUN python -m pip install --upgrade pip setuptools wheel && \
+RUN python -m pip install --upgrade pip setuptools>=70.0.0 wheel && \
     python -m pip install --no-cache-dir pipx virtualenv poetry && \
     pipx ensurepath
 
@@ -94,7 +94,8 @@ COPY common ./common
 COPY services ./services
 
 # Install the package in editable mode (same as local development)
-RUN pip install -e .
+RUN pip install --upgrade pip setuptools>=70.0.0 wheel && \
+    pip install -e .
 
 # Create non-root user
 RUN useradd -m -s /bin/bash appuser && \
