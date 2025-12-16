@@ -94,10 +94,7 @@ COPY common ./common
 COPY services ./services
 
 # Install the package in editable mode (same as local development)
-# First install numpy with prebuilt wheel to avoid compilation issues
-RUN pip install --upgrade pip setuptools>=70.0.0 wheel && \
-    pip install "numpy>=1.26.0,<2.0" --only-binary=:all: && \
-    pip install -e .
+RUN pip install -e .
 
 # Create non-root user
 RUN useradd -m -s /bin/bash appuser && \
