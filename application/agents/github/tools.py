@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 import logging
 import os
@@ -1982,108 +1983,31 @@ async def _commit_and_push_changes(
         return {"status": "error", "message": str(e)}
 
 
-async def _stream_process_output(
-    process: Any,
-    task_id: Optional[str] = None,
-) -> None:
+def _cleanup_temp_files(prompt_file: Optional[str] = None, output_file: Optional[str] = None) -> None:
     """
-    Stream process output chunks as they arrive.
-    Reads from stdout and stderr, updates BackgroundTask with output.
+    Clean up temporary files created for CLI process.
 
     Args:
-        process: The asyncio subprocess
-        task_id: BackgroundTask ID for storing output
+        prompt_file: Path to temp prompt file to remove
+        output_file: Path to output log file to remove
     """
-    try:
-        from services.services import get_task_service
+    # Clean up prompt file
+    if prompt_file:
+        try:
+            if os.path.exists(prompt_file):
+                os.remove(prompt_file)
+                logger.info(f"🗑️ Cleaned up temp prompt file: {prompt_file}")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to clean up prompt file {prompt_file}: {e}")
 
-        task_service = get_task_service()
-        accumulated_output = []
-        chunk_size = 1024  # Read 1KB at a time
-        last_update_time = asyncio.get_event_loop().time()
-        update_interval = 2  # Update every 2 seconds or 5KB
-
-        while True:
-            try:
-                # Read from stdout with timeout
-                chunk = await asyncio.wait_for(
-                    process.stdout.read(chunk_size),
-                    timeout=0.5
-                )
-                if chunk:
-                    output_str = chunk.decode('utf-8', errors='replace')
-                    accumulated_output.append(output_str)
-                    logger.debug(f"📤 Output chunk: {output_str[:100]}...")
-
-                    current_time = asyncio.get_event_loop().time()
-                    accumulated_size = sum(len(s) for s in accumulated_output)
-
-                    # Update task with accumulated output every 5KB or every 2 seconds
-                    if (accumulated_size > 5120 or (current_time - last_update_time) > update_interval) and task_id:
-                        try:
-                            full_output = ''.join(accumulated_output)
-                            # Get current task to preserve existing metadata
-                            current_task = await task_service.get_task(task_id)
-                            existing_metadata = current_task.metadata if current_task else {}
-
-                            # Merge existing metadata with new output
-                            updated_metadata = {**existing_metadata, "output": full_output[-10000:]}  # Keep last 10KB
-
-                            await task_service.update_task_status(
-                                task_id=task_id,
-                                metadata=updated_metadata,
-                            )
-                            logger.info(f"📤 Updated task {task_id} with {accumulated_size} bytes of output")
-                            accumulated_output = []
-                            last_update_time = current_time
-                        except Exception as e:
-                            logger.debug(f"Could not update task output: {e}")
-                else:
-                    # EOF reached
-                    break
-            except asyncio.TimeoutError:
-                # No data available, check if we should update anyway
-                current_time = asyncio.get_event_loop().time()
-                if accumulated_output and (current_time - last_update_time) > update_interval and task_id:
-                    try:
-                        full_output = ''.join(accumulated_output)
-                        current_task = await task_service.get_task(task_id)
-                        existing_metadata = current_task.metadata if current_task else {}
-                        updated_metadata = {**existing_metadata, "output": full_output[-10000:]}
-                        await task_service.update_task_status(
-                            task_id=task_id,
-                            metadata=updated_metadata,
-                        )
-                        logger.debug(f"📤 Periodic output update: {len(full_output)} characters")
-                        accumulated_output = []
-                        last_update_time = current_time
-                    except Exception as e:
-                        logger.debug(f"Could not update task output: {e}")
-            except Exception as e:
-                logger.debug(f"Error reading stdout: {e}")
-                break
-
-        # Update task with any remaining output when process completes
-        if accumulated_output and task_id:
-            try:
-                full_output = ''.join(accumulated_output)
-                # Get current task to preserve existing metadata
-                current_task = await task_service.get_task(task_id)
-                existing_metadata = current_task.metadata if current_task else {}
-
-                # Merge existing metadata with final output
-                updated_metadata = {**existing_metadata, "output": full_output[-10000:]}  # Keep last 10KB
-
-                await task_service.update_task_status(
-                    task_id=task_id,
-                    metadata=updated_metadata,
-                )
-                logger.info(f"📤 Final output update: {len(full_output)} characters")
-            except Exception as e:
-                logger.debug(f"Could not update final task output: {e}")
-
-    except Exception as e:
-        logger.warning(f"Error streaming process output: {e}")
+    # Clean up output file
+    if output_file:
+        try:
+            if os.path.exists(output_file):
+                os.remove(output_file)
+                logger.info(f"🗑️ Cleaned up output log file: {output_file}")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to clean up output file {output_file}: {e}")
 
 
 async def _monitor_cli_process(
@@ -2093,6 +2017,7 @@ async def _monitor_cli_process(
     timeout_seconds: int = 3600,
     tool_context: Optional[ToolContext] = None,
     prompt_file: Optional[str] = None,
+    output_file: Optional[str] = None,
     commit_interval: int = 30,
     progress_update_interval: int = 30,
 ) -> None:
@@ -2100,7 +2025,7 @@ async def _monitor_cli_process(
     Unified monitoring function for CLI processes (code generation and application builds).
 
     Updates BackgroundTask entity periodically with progress.
-    Streams output chunks as they arrive.
+    Streams output chunks as they arrive and saves to file.
     Commits changes at specified intervals.
 
     Args:
@@ -2110,6 +2035,7 @@ async def _monitor_cli_process(
         timeout_seconds: Maximum time to wait (default: 1 hour for code gen, 30 min for builds)
         tool_context: Tool context with task_id and auth info
         prompt_file: Path to temp prompt file to clean up after completion
+        output_file: Path to output log file to save process output
         commit_interval: Seconds between commits (default: 30)
         progress_update_interval: Seconds between progress updates (default: 30)
     """
@@ -2135,11 +2061,9 @@ async def _monitor_cli_process(
         auth_installation_id = tool_context.state.get("installation_id")
         logger.info(f"🔐 Extracted auth info - type: {auth_repository_type}, url: {auth_repo_url}, inst_id: {auth_installation_id}")
 
-    # Start streaming output in background
-    output_stream_task = asyncio.create_task(
-        _stream_process_output(process=process, task_id=task_id)
-    )
-    logger.info(f"📤 Started output streaming for PID {pid}")
+    # Note: Output is already being written directly to file descriptor,
+    # so we don't need to stream from pipes
+    logger.info(f"📤 Process output being written directly to: {output_file or 'pipe'}")
 
     # Send initial commit immediately when process starts
     if tool_context:
@@ -2250,14 +2174,8 @@ async def _monitor_cli_process(
             except Exception as e:
                 logger.warning(f"⚠️ Failed to unregister process: {e}")
 
-            # Clean up temp prompt file
-            if prompt_file:
-                try:
-                    if os.path.exists(prompt_file):
-                        os.remove(prompt_file)
-                        logger.info(f"🗑️ Cleaned up temp prompt file: {prompt_file}")
-                except Exception as e:
-                    logger.warning(f"⚠️ Failed to clean up prompt file {prompt_file}: {e}")
+            # Clean up temp files
+            _cleanup_temp_files(prompt_file, output_file)
 
             logger.info("✅ Process completed - status tracked in BackgroundTask entity")
             return
@@ -2318,14 +2236,8 @@ async def _monitor_cli_process(
                     except Exception as e:
                         logger.warning(f"⚠️ Failed to update BackgroundTask: {e}")
 
-                # Clean up temp prompt file
-                if prompt_file:
-                    try:
-                        if os.path.exists(prompt_file):
-                            os.remove(prompt_file)
-                            logger.info(f"🗑️ Cleaned up temp prompt file: {prompt_file}")
-                    except Exception as e:
-                        logger.warning(f"⚠️ Failed to clean up prompt file {prompt_file}: {e}")
+                # Clean up temp files
+                _cleanup_temp_files(prompt_file, output_file)
 
                 logger.info("✅ Process completed")
                 return
@@ -2428,14 +2340,8 @@ async def _monitor_cli_process(
     except Exception as e:
         logger.warning(f"⚠️ Failed to unregister process: {e}")
 
-    # Clean up temp prompt file
-    if prompt_file:
-        try:
-            if os.path.exists(prompt_file):
-                os.remove(prompt_file)
-                logger.info(f"🗑️ Cleaned up temp prompt file: {prompt_file}")
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to clean up prompt file {prompt_file}: {e}")
+    # Clean up temp files
+    _cleanup_temp_files(prompt_file, output_file)
 
     await _terminate_process(process)
 
@@ -2448,6 +2354,7 @@ async def _monitor_code_generation_process(
     timeout_seconds: int = 3600,
     tool_context: Optional[ToolContext] = None,
     prompt_file: Optional[str] = None,
+    output_file: Optional[str] = None,
 ) -> None:
     """
     Wrapper for code generation process monitoring.
@@ -2461,6 +2368,7 @@ async def _monitor_code_generation_process(
         timeout_seconds: Maximum time to wait (default: 1 hour)
         tool_context: Tool context with task_id
         prompt_file: Path to temp prompt file to clean up after completion
+        output_file: Path to output log file to clean up after completion
     """
     logger.info(f"🔍 [{branch_name}] Code generation request: {user_request[:100]}...")
 
@@ -2471,6 +2379,7 @@ async def _monitor_code_generation_process(
         timeout_seconds=timeout_seconds,
         tool_context=tool_context,
         prompt_file=prompt_file,
+        output_file=output_file,
         commit_interval=30,
         progress_update_interval=30,
     )
@@ -2629,6 +2538,7 @@ async def generate_code_with_cli(
         # Write prompt to temp file for security (avoid exposing in process list)
         import tempfile
         prompt_file = None
+        output_file = None
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, dir='/tmp') as f:
                 f.write(full_prompt)
@@ -2637,6 +2547,19 @@ async def generate_code_with_cli(
         except Exception as e:
             logger.error(f"Failed to write prompt to temp file: {e}")
             return f"ERROR: Failed to write prompt to temp file: {e}"
+
+        # Check process limit before starting
+        from application.agents.shared.process_manager import get_process_manager
+        process_manager = get_process_manager()
+
+        if not await process_manager.can_start_process():
+            active_count = await process_manager.get_active_count()
+            error_msg = (
+                f"Cannot start code generation: maximum concurrent CLI processes ({active_count}) reached. "
+                f"Please wait for existing builds to complete."
+            )
+            logger.error(error_msg)
+            return f"ERROR: {error_msg}"
 
         # Call CLI script with prompt file reference
         cmd = [
@@ -2653,26 +2576,51 @@ async def generate_code_with_cli(
         logger.info(f"📁 Workspace: {repository_path}")
         logger.info(f"🌿 Branch: {branch_name}")
 
-        # Check process limit before starting
-        from application.agents.shared.process_manager import get_process_manager
-        process_manager = get_process_manager()
+        # Create output file for process logs with identifying info (admin-only, outside repository)
+        output_file = None
+        output_fd = None
+        try:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_filename = f"augment_codegen_{branch_name}_TEMP_{timestamp}.log"
+            output_file = os.path.join('/tmp', output_filename)
+            output_fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
 
-        if not await process_manager.can_start_process():
-            active_count = await process_manager.get_active_count()
-            error_msg = (
-                f"Cannot start code generation: maximum concurrent CLI processes ({active_count}) reached. "
-                f"Please wait for existing builds to complete."
+            # Write header to file
+            header = (
+                f"Code Generation Log\n"
+                f"Branch: {branch_name}\n"
+                f"Model: {AUGMENT_MODEL}\n"
+                f"Repository: {repository_path}\n"
+                f"Started: {timestamp}\n"
+                f"{'='*80}\n\n"
             )
-            logger.error(error_msg)
-            return f"ERROR: {error_msg}"
+            os.write(output_fd, header.encode('utf-8'))
+            logger.info(f"📝 Output log file created: {output_file}")
+        except Exception as e:
+            logger.error(f"Failed to create output file: {e}")
+            if output_fd:
+                os.close(output_fd)
+            return f"ERROR: Failed to create output file: {e}"
 
-        # Execute CLI
+        # Execute CLI with output redirected to file descriptor
         process = await asyncio.create_subprocess_exec(
             *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stdout=output_fd,
+            stderr=output_fd,
             cwd=str(script_path.parent),
         )
+
+        # Rename file to include PID now that we have it
+        try:
+            output_filename_with_pid = f"augment_codegen_{branch_name}_{process.pid}_{timestamp}.log"
+            output_file_with_pid = os.path.join('/tmp', output_filename_with_pid)
+            os.rename(output_file, output_file_with_pid)
+            output_file = output_file_with_pid
+            logger.info(f"📝 Output log file renamed with PID: {output_file}")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to rename output file with PID: {e}")
+
+        logger.info(f"📋 Output log: {output_file}")
 
         logger.info(f"Started CLI process {process.pid}")
 
@@ -2734,11 +2682,13 @@ async def generate_code_with_cli(
                 message=f"Code generation started (PID: {process.pid})",
                 progress=5,
                 process_pid=process.pid,
+                metadata={"output_log": output_file},
             )
 
             # Store task_id in context
             tool_context.state["background_task_id"] = task_id
             tool_context.state["code_gen_process_pid"] = process.pid
+            tool_context.state["output_log"] = output_file
 
             # Add task to conversation's background_task_ids list
             if conversation_id:
@@ -2760,6 +2710,7 @@ async def generate_code_with_cli(
                 timeout_seconds=3600,  # 1 hour timeout
                 tool_context=tool_context,
                 prompt_file=prompt_file,
+                output_file=output_file,
             )
         )
 
@@ -2836,6 +2787,7 @@ async def _monitor_build_process(
     timeout_seconds: int = 1800,
     tool_context: Optional[ToolContext] = None,
     prompt_file: Optional[str] = None,
+    output_file: Optional[str] = None,
 ) -> None:
     """
     Wrapper for build process monitoring.
@@ -2849,6 +2801,7 @@ async def _monitor_build_process(
         timeout_seconds: Maximum time to wait (default: 1800 = 30 minutes)
         tool_context: Tool context for accessing conversation/task info
         prompt_file: Path to temp prompt file to clean up after completion
+        output_file: Path to output log file to save process output
     """
     logger.info(f"🔍 Build requirements: {requirements[:100]}...")
 
@@ -2859,6 +2812,7 @@ async def _monitor_build_process(
         timeout_seconds=timeout_seconds,
         tool_context=tool_context,
         prompt_file=prompt_file,
+        output_file=output_file,
         commit_interval=60,  # Build commits every 60 seconds
         progress_update_interval=30,
     )
@@ -3019,6 +2973,8 @@ async def generate_application(
         # Write prompt to temp file for security (avoid exposing in process list)
         import tempfile
         prompt_file = None
+        output_file = None
+        output_fd = None
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, dir='/tmp') as f:
                 f.write(full_prompt)
@@ -3027,6 +2983,31 @@ async def generate_application(
         except Exception as e:
             logger.error(f"Failed to write prompt to temp file: {e}")
             return f"ERROR: Failed to write prompt to temp file: {e}"
+
+        # Create output file for process logs with identifying info (admin-only, outside repository)
+        try:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_filename = f"augment_build_{branch_name}_TEMP_{timestamp}.log"
+            output_file = os.path.join('/tmp', output_filename)
+            output_fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+
+            # Write header to file
+            header = (
+                f"Application Build Log\n"
+                f"Branch: {branch_name}\n"
+                f"Model: {AUGMENT_MODEL}\n"
+                f"Repository: {repository_path}\n"
+                f"Language: {language}\n"
+                f"Started: {timestamp}\n"
+                f"{'='*80}\n\n"
+            )
+            os.write(output_fd, header.encode('utf-8'))
+            logger.info(f"📝 Output log file created: {output_file}")
+        except Exception as e:
+            logger.error(f"Failed to create output file: {e}")
+            if output_fd:
+                os.close(output_fd)
+            return f"ERROR: Failed to create output file: {e}"
 
         # Call Augment CLI script using asyncio
         # Format: bash <script> <prompt_file> <model> <workspace_dir> <branch_id>
@@ -3045,13 +3026,23 @@ async def generate_application(
         logger.info(f"📁 Workspace: {repository_path}")
         logger.info(f"🌿 Branch: {branch_name}")
 
-        # Start the process (non-blocking)
+        # Start the process with output redirected to file descriptor
         process = await asyncio.create_subprocess_exec(
             *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stdout=output_fd,
+            stderr=output_fd,
             cwd=repository_path,
         )
+
+        # Rename file to include PID now that we have it
+        try:
+            output_filename_with_pid = f"augment_build_{branch_name}_{process.pid}_{timestamp}.log"
+            output_file_with_pid = os.path.join('/tmp', output_filename_with_pid)
+            os.rename(output_file, output_file_with_pid)
+            output_file = output_file_with_pid
+            logger.info(f"📝 Output log file renamed with PID: {output_file}")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to rename output file with PID: {e}")
 
         logger.info(f"✅ Augment CLI process started with PID: {process.pid}")
 
@@ -3093,9 +3084,20 @@ async def generate_application(
         task_id = background_task.technical_id
         logger.info(f"📋 Created BackgroundTask entity: {task_id}")
 
+        # Update task to running status with PID
+        await task_service.update_task_status(
+            task_id=task_id,
+            status="running",
+            message=f"Application build started (PID: {process.pid})",
+            progress=5,
+            process_pid=process.pid,
+            metadata={"output_log": output_file},
+        )
+
         # Store task_id in context
         if tool_context:
             tool_context.state["background_task_id"] = task_id
+            tool_context.state["output_log"] = output_file
 
             # Add task to conversation's background_task_ids list
             if conversation_id:
@@ -3112,6 +3114,7 @@ async def generate_application(
                 timeout_seconds=1800,  # 30 minutes
                 tool_context=tool_context,
                 prompt_file=prompt_file,
+                output_file=output_file,
             )
         )
 
