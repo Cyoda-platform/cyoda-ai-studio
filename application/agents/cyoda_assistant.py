@@ -71,16 +71,13 @@ def _create_google_adk_assistant(entity_service: Any) -> "CyodaAssistantWrapper"
     model_config = get_model_config()
     logger.info(f"Using model: {AI_MODEL} with retry support")
 
-    # Import get_user_info tool
-    from application.agents.setup.tools import get_user_info
-
     # Create coordinator agent with sub-agents
     coordinator = LlmAgent(
         name="cyoda_assistant",
         model=model_config,
         description="Cyoda AI Assistant - helps users build and edit event-driven applications naturally",
         instruction=create_instruction_provider("coordinator"),
-        tools=[get_user_info],
+        tools=[],
         sub_agents=[qa_agent, guidelines_agent, setup_agent, environment_agent, canvas_agent, github_agent, cyoda_data_agent],
     )
 

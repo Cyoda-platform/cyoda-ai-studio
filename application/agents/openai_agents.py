@@ -34,9 +34,6 @@ def create_openai_coordinator_agent() -> Agent:
     The coordinator routes user requests to appropriate sub-agents
     based on the nature of the request.
     """
-    from application.agents.shared.openai_tool_adapter import adapt_adk_tools_list
-    from application.agents.setup.tools import get_user_info
-
     # Create all sub-agents
     qa_agent = create_openai_qa_agent()
     setup_agent = create_openai_setup_agent()
@@ -52,16 +49,12 @@ def create_openai_coordinator_agent() -> Agent:
     def coordinator_instructions(context: Any, agent: Any) -> str:
         return adk_instruction_provider(context)
 
-    # Adapt coordinator tools
-    adk_tools = [get_user_info]
-    openai_tools = adapt_adk_tools_list(adk_tools)
-
     # Create coordinator with handoffs to all sub-agents
     coordinator = Agent(
         name="cyoda_assistant",
         instructions=coordinator_instructions,
         handoff_description="Cyoda AI Assistant - helps users build and edit event-driven applications naturally",
-        tools=openai_tools,
+        tools=[],
         handoffs=[
             handoff(qa_agent),
             handoff(setup_agent),
@@ -73,6 +66,6 @@ def create_openai_coordinator_agent() -> Agent:
         ],
     )
 
-    logger.info("✓ OpenAI Coordinator Agent created with handoffs to all sub-agents and tools")
+    logger.info("✓ OpenAI Coordinator Agent created with handoffs to all sub-agents")
     return coordinator
 

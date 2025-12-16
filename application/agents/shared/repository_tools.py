@@ -14,8 +14,8 @@ from typing import Any, Dict, Optional
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 
-from application.agents.github.tools import _commit_and_push_changes
 from application.agents.shared.prompt_loader import load_template
+from application.agents.shared.process_utils import _is_process_running
 from application.entity.conversation.version_1.conversation import Conversation
 from application.services.github.auth.installation_token_manager import InstallationTokenManager
 from application.services.github.repository.url_parser import parse_repository_url
@@ -1220,6 +1220,8 @@ async def generate_application(
     Uses repository_path, branch_name, and language from tool_context.state if not provided.
     This allows the agent to call generate_application with just requirements after clone_repository.
 
+    Enforces a limit on concurrent CLI processes to prevent resource exhaustion.
+
     Args:
         requirements: User requirements for the application
         language: Programming language ('java' or 'python') - optional if already in context
@@ -1320,6 +1322,19 @@ async def generate_application(
         logger.info(f"📁 Workspace: {repository_path}")
         logger.info(f"🌿 Branch: {branch_name}")
 
+        # Check process limit before starting
+        from application.agents.shared.process_manager import get_process_manager
+        process_manager = get_process_manager()
+
+        if not await process_manager.can_start_process():
+            active_count = await process_manager.get_active_count()
+            error_msg = (
+                f"Cannot start build: maximum concurrent CLI processes ({active_count}) reached. "
+                f"Please wait for existing builds to complete."
+            )
+            logger.error(error_msg)
+            return f"ERROR: {error_msg}"
+
         # Start process using asyncio (like old code)
         process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -1329,6 +1344,14 @@ async def generate_application(
         )
 
         logger.info(f"Started Augment CLI process {process.pid}")
+
+        # Register process with manager
+        if not await process_manager.register_process(process.pid):
+            # Process limit was exceeded between check and registration
+            await _terminate_process(process)
+            error_msg = "Cannot start build: process limit exceeded. Please try again."
+            logger.error(error_msg)
+            return f"ERROR: {error_msg}"
 
         # Check if environment needs deployment and deploy if needed
         env_task_id = None
@@ -1714,6 +1737,9 @@ async def _monitor_build_process(
         try:
             logger.info(f"🔍 [{branch_name}] Sending initial notification...")
 
+            # Lazy import to avoid circular dependency
+            from application.agents.github.tools import _commit_and_push_changes
+
             # Commit and push initial state
             commit_result = await _commit_and_push_changes(
                 repository_path=repository_path,
@@ -1739,6 +1765,11 @@ async def _monitor_build_process(
             await asyncio.wait_for(process.wait(), timeout=remaining_time)
             # Process completed normally
             logger.info(f"✅ Process {pid} completed normally")
+
+            # Unregister process from manager
+            from application.agents.shared.process_manager import get_process_manager
+            process_manager = get_process_manager()
+            await process_manager.unregister_process(pid)
 
             # Update BackgroundTask to completed
             if task_id:
@@ -1810,6 +1841,11 @@ async def _monitor_build_process(
             if not await _is_process_running(pid):
                 # Process has exited silently
                 logger.info(f"✅ Process {pid} completed (detected during PID check)")
+
+                # Unregister process from manager
+                from application.agents.shared.process_manager import get_process_manager
+                process_manager = get_process_manager()
+                await process_manager.unregister_process(pid)
 
                 # Update BackgroundTask to completed
                 if task_id:
@@ -1904,6 +1940,9 @@ async def _monitor_build_process(
             # (but check for completion every 10 seconds)
             if tool_context and elapsed_time % 60 == 0:
                 try:
+                    # Lazy import to avoid circular dependency
+                    from application.agents.github.tools import _commit_and_push_changes
+
                     # Commit and push changes
                     commit_result = await _commit_and_push_changes(
                         repository_path=repository_path,
@@ -1947,6 +1986,11 @@ async def _monitor_build_process(
 
     # Timeout exceeded, terminate the process
     logger.error(f"⏰ Process exceeded {timeout_seconds} seconds, terminating... (PID: {pid})")
+
+    # Unregister process from manager
+    from application.agents.shared.process_manager import get_process_manager
+    process_manager = get_process_manager()
+    await process_manager.unregister_process(pid)
 
     # Update BackgroundTask to failed
     if task_id:
@@ -1992,21 +2036,7 @@ async def _terminate_process(process: Any) -> None:
         await process.wait()
 
 
-async def _is_process_running(pid: int) -> bool:
-    """
-    Check if a process is still running by PID.
 
-    Args:
-        pid: Process ID to check
-
-    Returns:
-        True if process is running, False otherwise
-    """
-    try:
-        os.kill(pid, 0)
-        return True
-    except (OSError, ProcessLookupError):
-        return False
 
 
 

@@ -487,3 +487,7 @@ You: [transfer_to_agent("cyoda_assistant", "help_with_multiple_tasks", {...})]
 8. **Status Checks:** ALWAYS call `check_environment_exists()` first for environment questions.
 9. **Monitoring:** Direct users to Tasks window for progress, not "I'll monitor and notify you."
 10. **Log Time Ranges:** After deployment, use `time_range="3m"` or `since_timestamp=deployment_start`. DON'T use "15m" for new deployments.
+
+## Setting application locally, running app
+Transfer to setup agent if user asks to run the app locally.
+Transfer to coordinator if you are not sure which agent to use. Do not make things up.

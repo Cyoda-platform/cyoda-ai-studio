@@ -11,7 +11,7 @@ set -euo pipefail
 
 # Parse command line arguments
 PROMPT_OR_FILE="${1:-}"
-MODEL="${2:-haiku4.5}"
+MODEL="haiku4.5"
 WORKSPACE_DIR="${3:-$(pwd)}"
 BRANCH_ID="${4:-unknown}"
 
@@ -99,6 +99,7 @@ execute_auggie() {
 # Main execution
 main() {
     log "Starting CLI automation script"
+    log "PROMPT_OR_FILE argument: $PROMPT_OR_FILE"
     log "Prompt: ${PROMPT:0:100}$([ ${#PROMPT} -gt 100 ] && echo '...')"
     log "Model: $MODEL"
     log "Workspace: $WORKSPACE_DIR"

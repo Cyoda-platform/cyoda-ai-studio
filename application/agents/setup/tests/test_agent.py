@@ -14,29 +14,7 @@ def test_agent_exists():
     """Test that the agent is properly defined."""
     assert root_agent is not None
     assert root_agent.name == "setup_agent"
-    assert len(root_agent.tools) == 13  # 3 original + 10 new tools
-
-
-def test_agent_has_tools():
-    """Test that the agent has the expected tools."""
-    tool_names = {tool.__name__ for tool in root_agent.tools}
-
-    # Original tools
-    assert "validate_environment" in tool_names
-    assert "check_project_structure" in tool_names
-    assert "validate_workflow_file" in tool_names
-    # New deployment & context tools
-    assert "get_build_id_from_context" in tool_names
-    assert "get_env_deploy_status" in tool_names
-    assert "get_user_info" in tool_names
-    # Credential management
-    assert "issue_technical_user" in tool_names
-    # File operation tools
-    assert "list_directory_files" in tool_names
-    assert "read_file" in tool_names
-    assert "add_application_resource" in tool_names
-    # Workflow management
-    assert "finish_discussion" in tool_names
+    assert len(root_agent.tools) == 0  # Setup agent is a guidance agent with no tools
 
 
 @pytest.mark.asyncio
@@ -47,6 +25,13 @@ async def test_agent_basic_query():
         app_name="test-setup",
         agent=root_agent,
         session_service=session_service,
+    )
+
+    # Create session first
+    await session_service.create_session(
+        app_name="test-setup",
+        user_id="test-user",
+        session_id="test-session",
     )
 
     response_text = ""
@@ -67,10 +52,8 @@ async def test_agent_basic_query():
 
 
 @pytest.mark.asyncio
-async def test_agent_can_use_tools(monkeypatch):
-    """Test that agent can use its tools."""
-    monkeypatch.setenv("CYODA_HOST", "localhost")
-
+async def test_agent_provides_guidance():
+    """Test that agent provides guidance without tools."""
     session_service = InMemorySessionService()
     runner = Runner(
         app_name="test-setup",
@@ -78,12 +61,19 @@ async def test_agent_can_use_tools(monkeypatch):
         session_service=session_service,
     )
 
+    # Create session first
+    await session_service.create_session(
+        app_name="test-setup",
+        user_id="test-user",
+        session_id="test-session",
+    )
+
     response_text = ""
     async for event in runner.run_async(
         user_id="test-user",
         session_id="test-session",
         new_message=types.Content(
-            parts=[types.Part(text="Check if CYODA_HOST environment variable is set")]
+            parts=[types.Part(text="I just built a Python Cyoda application, what do I do next?")]
         ),
     ):
         if hasattr(event, "content") and event.content:
@@ -92,5 +82,5 @@ async def test_agent_can_use_tools(monkeypatch):
                     response_text += part.text
 
     assert response_text is not None
-    # The agent should have used the validate_environment tool
+    # The agent should provide guidance about setup phases
     assert len(response_text) > 0

@@ -19,6 +19,7 @@ __all__ = ["ToolContext"]
 
 from application.agents.shared.hook_decorator import creates_hook
 from application.agents.shared.prompt_loader import load_template
+from application.agents.shared.process_utils import _is_process_running
 from application.entity.conversation import Conversation
 from application.services.github.github_service import GitHubService
 from services.services import get_entity_service
@@ -2085,36 +2086,39 @@ async def _stream_process_output(
         logger.warning(f"Error streaming process output: {e}")
 
 
-async def _monitor_code_generation_process(
+async def _monitor_cli_process(
     process: Any,
     repository_path: str,
     branch_name: str,
-    user_request: str,
     timeout_seconds: int = 3600,
     tool_context: Optional[ToolContext] = None,
+    prompt_file: Optional[str] = None,
+    commit_interval: int = 30,
+    progress_update_interval: int = 30,
 ) -> None:
     """
-    Monitor code generation process with periodic checks and git commits.
-    Updates BackgroundTask entity every 30 seconds with progress.
+    Unified monitoring function for CLI processes (code generation and application builds).
+
+    Updates BackgroundTask entity periodically with progress.
     Streams output chunks as they arrive.
+    Commits changes at specified intervals.
 
     Args:
         process: The asyncio subprocess
         repository_path: Path to repository
         branch_name: Branch name
-        user_request: User's code generation request
-        timeout_seconds: Maximum time to wait (default: 1 hour)
-        tool_context: Tool context with task_id
+        timeout_seconds: Maximum time to wait (default: 1 hour for code gen, 30 min for builds)
+        tool_context: Tool context with task_id and auth info
+        prompt_file: Path to temp prompt file to clean up after completion
+        commit_interval: Seconds between commits (default: 30)
+        progress_update_interval: Seconds between progress updates (default: 30)
     """
     pid = process.pid
     start_time = asyncio.get_event_loop().time()
-    elapsed_time = 0
+    last_push_time = start_time
     check_interval = 10  # Check every 10 seconds
-    last_push_time = start_time  # Track last push time for periodic commits
-    push_interval = 30  # Push every 30 seconds
 
-    logger.info(f"🔍 [{branch_name}] Monitoring code generation task started for PID {pid}")
-    logger.info(f"🔍 [{branch_name}] User request: {user_request[:100]}...")
+    logger.info(f"🔍 [{branch_name}] Monitoring CLI process started for PID {pid}")
 
     # Get task_id from context
     task_id = tool_context.state.get("background_task_id") if tool_context else None
@@ -2127,7 +2131,6 @@ async def _monitor_code_generation_process(
 
     if tool_context:
         auth_repository_type = tool_context.state.get("repository_type")
-        # Try both keys: user_repository_url (for private repos) and repository_url (for public repos)
         auth_repo_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
         auth_installation_id = tool_context.state.get("installation_id")
         logger.info(f"🔐 Extracted auth info - type: {auth_repository_type}, url: {auth_repo_url}, inst_id: {auth_installation_id}")
@@ -2142,41 +2145,51 @@ async def _monitor_code_generation_process(
     if tool_context:
         try:
             logger.info(f"🔍 [{branch_name}] Sending initial commit...")
-            commit_result = await _commit_and_push_changes(
-                repository_path=repository_path,
-                branch_name=branch_name,
-                tool_context=tool_context,
-                repo_url=auth_repo_url,
-                installation_id=auth_installation_id,
-                repository_type=auth_repository_type,
+            await asyncio.wait_for(
+                _commit_and_push_changes(
+                    repository_path=repository_path,
+                    branch_name=branch_name,
+                    tool_context=tool_context,
+                    repo_url=auth_repo_url,
+                    installation_id=auth_installation_id,
+                    repository_type=auth_repository_type,
+                ),
+                timeout=60.0
             )
-            logger.info(f"🔍 [{branch_name}] Initial commit result: {commit_result.get('status', 'unknown')}")
-            logger.info(f"✅ [{branch_name}] Initial commit completed - progress tracked in BackgroundTask")
+            logger.info(f"✅ [{branch_name}] Initial commit completed")
             last_push_time = asyncio.get_event_loop().time()
+        except asyncio.TimeoutError:
+            logger.warning(f"⚠️ [{branch_name}] Initial commit timed out after 60s")
         except Exception as e:
             logger.error(f"❌ [{branch_name}] Failed to send initial commit: {e}", exc_info=True)
 
+    elapsed_time = 0
     while elapsed_time < timeout_seconds:
         try:
             # Wait for process to complete or timeout
             remaining_time = min(check_interval, timeout_seconds - elapsed_time)
             await asyncio.wait_for(process.wait(), timeout=remaining_time)
 
-            # Process completed normally - check for final push before exiting
+            # Process completed normally
             logger.info(f"✅ Process {pid} completed normally")
 
             # Push any remaining changes before marking as complete
             if tool_context:
                 try:
-                    await _commit_and_push_changes(
-                        repository_path=repository_path,
-                        branch_name=branch_name,
-                        tool_context=tool_context,
-                        repo_url=auth_repo_url,
-                        installation_id=auth_installation_id,
-                        repository_type=auth_repository_type,
+                    await asyncio.wait_for(
+                        _commit_and_push_changes(
+                            repository_path=repository_path,
+                            branch_name=branch_name,
+                            tool_context=tool_context,
+                            repo_url=auth_repo_url,
+                            installation_id=auth_installation_id,
+                            repository_type=auth_repository_type,
+                        ),
+                        timeout=60.0
                     )
                     logger.info(f"✅ [{branch_name}] Final commit pushed")
+                except asyncio.TimeoutError:
+                    logger.warning(f"⚠️ [{branch_name}] Final commit timed out after 60s")
                 except Exception as e:
                     logger.warning(f"⚠️ [{branch_name}] Failed to push final changes: {e}")
 
@@ -2196,7 +2209,6 @@ async def _monitor_code_generation_process(
                             diff_data = json.loads(diff_result)
                             for category in ["modified", "added", "untracked"]:
                                 changed_files.extend(diff_data.get(category, []))
-                            # Store diff summary
                             diff_summary = {
                                 "added": diff_data.get("added", []),
                                 "modified": diff_data.get("modified", []),
@@ -2208,11 +2220,9 @@ async def _monitor_code_generation_process(
 
                     files_summary = f"{len(changed_files)} files changed" if changed_files else "No files changed"
 
-                    # Get current task to preserve existing metadata (especially CLI output)
                     current_task = await task_service.get_task(task_id)
                     existing_metadata = current_task.metadata if current_task else {}
 
-                    # Merge existing metadata with new changed_files and diff
                     updated_metadata = {
                         **existing_metadata,
                         "changed_files": changed_files[:20],
@@ -2222,102 +2232,50 @@ async def _monitor_code_generation_process(
                     await task_service.update_task_status(
                         task_id=task_id,
                         status="completed",
-                        message=f"Code generation completed - {files_summary}",
+                        message=f"Process completed - {files_summary}",
                         progress=100,
                         metadata=updated_metadata,
                     )
                     logger.info(f"✅ Updated BackgroundTask {task_id} to completed")
 
-                    # Commit final changes
-                    try:
-                        await _commit_and_push_changes(
-                            repository_path=repository_path,
-                            branch_name=branch_name,
-                            tool_context=tool_context,
-                        )
-                        logger.info(f"✅ [{branch_name}] Final commit completed")
-                    except Exception as e:
-                        logger.warning(f"⚠️ Failed to commit final changes: {e}")
-
                 except Exception as e:
                     logger.warning(f"⚠️ Failed to update BackgroundTask: {e}")
 
-            logger.info("✅ Code generation completed - status tracked in BackgroundTask entity")
+            # Unregister process from manager
+            try:
+                from application.agents.shared.process_manager import get_process_manager
+                process_manager = get_process_manager()
+                await process_manager.unregister_process(pid)
+                logger.info(f"✅ Unregistered CLI process {pid}")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to unregister process: {e}")
+
+            # Clean up temp prompt file
+            if prompt_file:
+                try:
+                    if os.path.exists(prompt_file):
+                        os.remove(prompt_file)
+                        logger.info(f"🗑️ Cleaned up temp prompt file: {prompt_file}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to clean up prompt file {prompt_file}: {e}")
+
+            logger.info("✅ Process completed - status tracked in BackgroundTask entity")
             return
 
         except asyncio.TimeoutError:
-            # Check if process is still running
-            try:
-                os.kill(pid, 0)  # Signal 0 checks if process exists
-                # Process is still running
-                elapsed_time += remaining_time
-                logger.debug(f"🔍 Process {pid} still running after {elapsed_time}s")
+            # Manually check if process is still running by PID
+            if not await _is_process_running(pid):
+                # Process has exited silently
+                logger.info(f"✅ Process {pid} completed (detected during PID check)")
 
-                # Update BackgroundTask every 30 seconds
-                if task_id and elapsed_time % 30 == 0:
-                    try:
-                        from services.services import get_task_service
-
-                        task_service = get_task_service()
-                        progress = min(95, int((elapsed_time / timeout_seconds) * 100))
-
-                        await task_service.update_task_status(
-                            task_id=task_id,
-                            status="running",
-                            message=f"Code generation in progress... ({int(elapsed_time)}s elapsed)",
-                            progress=progress,
-                            metadata={"elapsed_time": int(elapsed_time), "pid": pid},
-                        )
-                        logger.info(f"📊 Updated BackgroundTask {task_id} progress: {progress}%")
-                    except Exception as e:
-                        logger.warning(f"⚠️ Failed to update BackgroundTask progress: {e}")
-
-                # Commit and push changes every 30 seconds (using timestamp-based check)
-                current_time = asyncio.get_event_loop().time()
-                time_since_last_push = current_time - last_push_time
-
-                if tool_context and time_since_last_push >= push_interval:
-                    try:
-                        commit_result = await _commit_and_push_changes(
-                            repository_path=repository_path,
-                            branch_name=branch_name,
-                            tool_context=tool_context,
-                            repo_url=auth_repo_url,
-                            installation_id=auth_installation_id,
-                            repository_type=auth_repository_type,
-                        )
-                        logger.info(f"✅ [{branch_name}] Progress commit completed")
-
-                        # Update BackgroundTask with latest diff info
-                        if task_id and commit_result.get("status") == "success":
-                            try:
-                                task_service = get_task_service()
-                                current_task = await task_service.get_task(task_id)
-                                existing_metadata = current_task.metadata if current_task else {}
-
-                                # Merge with new diff info from commit
-                                updated_metadata = {
-                                    **existing_metadata,
-                                    "changed_files": commit_result.get("changed_files", [])[:20],
-                                    "diff": commit_result.get("diff", {})
-                                }
-
-                                await task_service.add_progress_update(
-                                    task_id=task_id,
-                                    message="Progress committed",
-                                    metadata=updated_metadata,
-                                )
-                                logger.info(f"📊 Updated BackgroundTask {task_id} with latest diff info")
-                            except Exception as e:
-                                logger.warning(f"⚠️ Failed to update task with diff info: {e}")
-
-                        last_push_time = current_time
-                    except Exception as e:
-                        logger.warning(f"⚠️ [{branch_name}] Failed to commit/push: {e}")
-
-            except OSError:
-                # Process has exited
-                logger.info(f"✅ Process {pid} completed (detected during check)")
+                # Unregister process from manager
+                try:
+                    from application.agents.shared.process_manager import get_process_manager
+                    process_manager = get_process_manager()
+                    await process_manager.unregister_process(pid)
+                    logger.info(f"✅ Unregistered CLI process {pid}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to unregister process: {e}")
 
                 # Update BackgroundTask to completed
                 if task_id:
@@ -2335,7 +2293,6 @@ async def _monitor_code_generation_process(
                                 diff_data = json.loads(diff_result)
                                 for category in ["modified", "added", "untracked"]:
                                     changed_files.extend(diff_data.get(category, []))
-                                # Store diff summary
                                 diff_summary = {
                                     "added": diff_data.get("added", []),
                                     "modified": diff_data.get("modified", []),
@@ -2350,7 +2307,7 @@ async def _monitor_code_generation_process(
                         await task_service.update_task_status(
                             task_id=task_id,
                             status="completed",
-                            message=f"Code generation completed - {files_summary}",
+                            message=f"Process completed - {files_summary}",
                             progress=100,
                             metadata={
                                 "changed_files": changed_files[:20],
@@ -2361,8 +2318,87 @@ async def _monitor_code_generation_process(
                     except Exception as e:
                         logger.warning(f"⚠️ Failed to update BackgroundTask: {e}")
 
-                logger.info("✅ Code generation completed")
+                # Clean up temp prompt file
+                if prompt_file:
+                    try:
+                        if os.path.exists(prompt_file):
+                            os.remove(prompt_file)
+                            logger.info(f"🗑️ Cleaned up temp prompt file: {prompt_file}")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Failed to clean up prompt file {prompt_file}: {e}")
+
+                logger.info("✅ Process completed")
                 return
+
+            # Process is still running
+            elapsed_time += remaining_time
+            logger.debug(f"🔍 Process {pid} still running after {elapsed_time}s")
+
+            # Update BackgroundTask and commit periodically
+            current_time = asyncio.get_event_loop().time()
+            time_since_last_push = current_time - last_push_time
+
+            if task_id and time_since_last_push >= progress_update_interval:
+                try:
+                    from services.services import get_task_service
+
+                    task_service = get_task_service()
+                    progress = min(95, int((elapsed_time / timeout_seconds) * 100))
+
+                    await task_service.update_task_status(
+                        task_id=task_id,
+                        status="running",
+                        message=f"Process in progress... ({int(elapsed_time)}s elapsed)",
+                        progress=progress,
+                        metadata={"elapsed_time": int(elapsed_time), "pid": pid},
+                    )
+                    logger.info(f"📊 Updated BackgroundTask {task_id} progress: {progress}%")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to update BackgroundTask progress: {e}")
+
+            # Commit and push changes periodically
+            if tool_context and time_since_last_push >= commit_interval:
+                try:
+                    commit_result = await asyncio.wait_for(
+                        _commit_and_push_changes(
+                            repository_path=repository_path,
+                            branch_name=branch_name,
+                            tool_context=tool_context,
+                            repo_url=auth_repo_url,
+                            installation_id=auth_installation_id,
+                            repository_type=auth_repository_type,
+                        ),
+                        timeout=60.0
+                    )
+                    logger.info(f"✅ [{branch_name}] Progress commit completed")
+
+                    # Update BackgroundTask with latest diff info
+                    if task_id and commit_result.get("status") == "success":
+                        try:
+                            task_service = get_task_service()
+                            current_task = await task_service.get_task(task_id)
+                            existing_metadata = current_task.metadata if current_task else {}
+
+                            updated_metadata = {
+                                **existing_metadata,
+                                "changed_files": commit_result.get("changed_files", [])[:20],
+                                "diff": commit_result.get("diff", {})
+                            }
+
+                            await task_service.add_progress_update(
+                                task_id=task_id,
+                                message="Progress committed",
+                                metadata=updated_metadata,
+                            )
+                            logger.info(f"📊 Updated BackgroundTask {task_id} with latest diff info")
+                        except Exception as e:
+                            logger.warning(f"⚠️ Failed to update task with diff info: {e}")
+
+                    last_push_time = current_time
+                except asyncio.TimeoutError:
+                    logger.warning(f"⚠️ [{branch_name}] Progress commit timed out after 60s")
+                except Exception as e:
+                    logger.warning(f"⚠️ [{branch_name}] Failed to commit/push: {e}")
 
     # Timeout exceeded, terminate the process
     logger.error(f"⏰ Process exceeded {timeout_seconds} seconds, terminating... (PID: {pid})")
@@ -2376,7 +2412,7 @@ async def _monitor_code_generation_process(
             await task_service.update_task_status(
                 task_id=task_id,
                 status="failed",
-                message=f"Code generation timeout after {timeout_seconds} seconds",
+                message=f"Process timeout after {timeout_seconds} seconds",
                 progress=0,
                 error=f"Process exceeded {timeout_seconds} seconds timeout",
             )
@@ -2384,15 +2420,60 @@ async def _monitor_code_generation_process(
         except Exception as e:
             logger.warning(f"⚠️ Failed to update BackgroundTask on timeout: {e}")
 
-    # Terminate process
+    # Unregister process from manager
     try:
-        process.terminate()
-        await asyncio.sleep(5)
-        if process.returncode is None:
-            process.kill()
-            await process.wait()
+        from application.agents.shared.process_manager import get_process_manager
+        process_manager = get_process_manager()
+        await process_manager.unregister_process(pid)
     except Exception as e:
-        logger.error(f"Failed to terminate process: {e}")
+        logger.warning(f"⚠️ Failed to unregister process: {e}")
+
+    # Clean up temp prompt file
+    if prompt_file:
+        try:
+            if os.path.exists(prompt_file):
+                os.remove(prompt_file)
+                logger.info(f"🗑️ Cleaned up temp prompt file: {prompt_file}")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to clean up prompt file {prompt_file}: {e}")
+
+    await _terminate_process(process)
+
+
+async def _monitor_code_generation_process(
+    process: Any,
+    repository_path: str,
+    branch_name: str,
+    user_request: str,
+    timeout_seconds: int = 3600,
+    tool_context: Optional[ToolContext] = None,
+    prompt_file: Optional[str] = None,
+) -> None:
+    """
+    Wrapper for code generation process monitoring.
+    Delegates to unified _monitor_cli_process function.
+
+    Args:
+        process: The asyncio subprocess
+        repository_path: Path to repository
+        branch_name: Branch name
+        user_request: User's code generation request (for logging)
+        timeout_seconds: Maximum time to wait (default: 1 hour)
+        tool_context: Tool context with task_id
+        prompt_file: Path to temp prompt file to clean up after completion
+    """
+    logger.info(f"🔍 [{branch_name}] Code generation request: {user_request[:100]}...")
+
+    await _monitor_cli_process(
+        process=process,
+        repository_path=repository_path,
+        branch_name=branch_name,
+        timeout_seconds=timeout_seconds,
+        tool_context=tool_context,
+        prompt_file=prompt_file,
+        commit_interval=30,
+        progress_update_interval=30,
+    )
 
 
 async def _load_informational_prompt_template(language: str) -> str:
@@ -2527,32 +2608,7 @@ async def generate_code_with_cli(
 
         # Combine informational template with user request
         # The template is informational (describes patterns), user request is the action
-        full_prompt = f"""{prompt_template}
-
-## User Request (Action to Take):
-{user_request}
-
-## 🚨 CRITICAL INSTRUCTIONS:
-
-1. **Implement ONLY what the user requested above** - Do not add extra features or components
-2. **Consult the reference documentation above** to understand how to implement correctly
-3. **Follow the established patterns** described in the reference when implementing
-4. **Do not build complete applications** unless explicitly requested
-
-**Scope Control Examples:**
-- ✅ User requests: "Add a Customer entity" → Create ONLY: entity class + JSON entity definition
-- ❌ User requests: "Add a Customer entity" → Do NOT create: processor, criterion, workflow, routes (unless requested)
-- ✅ User requests: "Add a Customer entity with workflow" → Create: entity class + JSON definition + workflow JSON
-- ✅ User requests: "Add validation to Customer" → Create ONLY: criterion or processor for validation
-
-**ALWAYS create JSON entity definition when creating/modifying entities:**
-- Python: `application/resources/entity/{{entity_name}}/version_1/{{EntityName}}.json`
-- Java: `src/main/resources/entity/{{entity_name}}/version_1/{{EntityName}}.json`
-
-Based on the codebase patterns and structure described above, please implement EXACTLY what the user requested.
-Follow the established patterns, naming conventions, and project structure.
-Ensure all generated code follows the guidelines and best practices outlined above.
-"""
+        full_prompt = f"""{prompt_template}\n\n## User Request:\n{user_request}"""
 
         # Check if CLI script exists
         script_path = Path(AUGGIE_CLI_SCRIPT)
@@ -2570,11 +2626,23 @@ Ensure all generated code follows the guidelines and best practices outlined abo
             logger.error(f"Invalid model for Augment CLI: {AUGMENT_MODEL}. Only haiku4.5 is supported.")
             return f"ERROR: Augment CLI only supports haiku4.5 model. Current model: {AUGMENT_MODEL}"
 
-        # Call CLI script
+        # Write prompt to temp file for security (avoid exposing in process list)
+        import tempfile
+        prompt_file = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, dir='/tmp') as f:
+                f.write(full_prompt)
+                prompt_file = f.name
+            logger.info(f"📝 Prompt written to temp file: {prompt_file}")
+        except Exception as e:
+            logger.error(f"Failed to write prompt to temp file: {e}")
+            return f"ERROR: Failed to write prompt to temp file: {e}"
+
+        # Call CLI script with prompt file reference
         cmd = [
             "bash",
             str(script_path.absolute()),
-            full_prompt,
+            f"@{prompt_file}",
             AUGMENT_MODEL,
             repository_path,
             branch_name,
@@ -2585,6 +2653,19 @@ Ensure all generated code follows the guidelines and best practices outlined abo
         logger.info(f"📁 Workspace: {repository_path}")
         logger.info(f"🌿 Branch: {branch_name}")
 
+        # Check process limit before starting
+        from application.agents.shared.process_manager import get_process_manager
+        process_manager = get_process_manager()
+
+        if not await process_manager.can_start_process():
+            active_count = await process_manager.get_active_count()
+            error_msg = (
+                f"Cannot start code generation: maximum concurrent CLI processes ({active_count}) reached. "
+                f"Please wait for existing builds to complete."
+            )
+            logger.error(error_msg)
+            return f"ERROR: {error_msg}"
+
         # Execute CLI
         process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -2594,6 +2675,15 @@ Ensure all generated code follows the guidelines and best practices outlined abo
         )
 
         logger.info(f"Started CLI process {process.pid}")
+
+        # Register process with manager
+        if not await process_manager.register_process(process.pid):
+            # Process limit was exceeded between check and registration
+            from application.agents.shared.repository_tools import _terminate_process
+            await _terminate_process(process)
+            error_msg = "Cannot start code generation: process limit exceeded. Please try again."
+            logger.error(error_msg)
+            return f"ERROR: {error_msg}"
 
         # Create BackgroundTask entity to track code generation progress
         task_id = None
@@ -2669,6 +2759,7 @@ Ensure all generated code follows the guidelines and best practices outlined abo
                 user_request=user_request,
                 timeout_seconds=3600,  # 1 hour timeout
                 tool_context=tool_context,
+                prompt_file=prompt_file,
             )
         )
 
@@ -2744,232 +2835,33 @@ async def _monitor_build_process(
     requirements: str,
     timeout_seconds: int = 1800,
     tool_context: Optional[ToolContext] = None,
+    prompt_file: Optional[str] = None,
 ) -> None:
     """
-    Monitor the build process and update BackgroundTask entity with progress.
-
-    This function runs in the background and:
-    - Streams output chunks as they arrive
-    - Checks process status every 10 seconds
-    - Updates BackgroundTask progress every 30 seconds
-    - Commits changes every 60 seconds
-    - Handles completion, timeout, and errors
+    Wrapper for build process monitoring.
+    Delegates to unified _monitor_cli_process function.
 
     Args:
         process: The subprocess running Augment CLI
         repository_path: Path to repository
         branch_name: Branch name
-        requirements: User requirements
+        requirements: User requirements (for logging)
         timeout_seconds: Maximum time to wait (default: 1800 = 30 minutes)
         tool_context: Tool context for accessing conversation/task info
+        prompt_file: Path to temp prompt file to clean up after completion
     """
-    from services.services import get_task_service
+    logger.info(f"🔍 Build requirements: {requirements[:100]}...")
 
-    start_time = asyncio.get_event_loop().time()
-    last_progress_update = start_time
-    last_commit_time = start_time
-    progress_update_interval = 30  # seconds
-    commit_interval = 60  # seconds
-
-    task_id = tool_context.state.get("background_task_id") if tool_context else None
-    task_service = get_task_service()
-
-    # Extract authentication info from tool_context for use in commit/push operations
-    auth_repo_url = None
-    auth_installation_id = None
-    auth_repository_type = None
-
-    if tool_context:
-        auth_repository_type = tool_context.state.get("repository_type")
-        # Try both keys: user_repository_url (for private repos) and repository_url (for public repos)
-        auth_repo_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
-        auth_installation_id = tool_context.state.get("installation_id")
-        logger.info(f"🔐 Extracted auth info - type: {auth_repository_type}, url: {auth_repo_url}, inst_id: {auth_installation_id}")
-
-    try:
-        logger.info(f"🔍 Starting build monitoring for task {task_id}, PID: {process.pid}")
-
-        # Start streaming output in background
-        output_stream_task = asyncio.create_task(
-            _stream_process_output(process=process, task_id=task_id)
-        )
-        logger.info(f"📤 Started output streaming for PID {process.pid}")
-
-        while True:
-            current_time = asyncio.get_event_loop().time()
-            elapsed = current_time - start_time
-
-            # Check if timeout exceeded
-            if elapsed > timeout_seconds:
-                logger.error(f"⏱️ Build timeout after {elapsed:.0f}s (limit: {timeout_seconds}s)")
-
-                # Kill the process
-                try:
-                    process.kill()
-                    await process.wait()
-                except Exception as e:
-                    logger.warning(f"Failed to kill process: {e}")
-
-                # Update task as failed
-                if task_id:
-                    await task_service.update_task_status(
-                        task_id=task_id,
-                        status="failed",
-                        progress=0,
-                        message=f"Build timeout after {elapsed:.0f} seconds",
-                        metadata={"error": "timeout", "elapsed_time": elapsed}
-                    )
-
-                return
-
-            # Check if process is still running
-            return_code = process.returncode
-            if return_code is not None:
-                # Process has finished
-                logger.info(f"✅ Build process completed with return code: {return_code}")
-
-                # Read final output
-                try:
-                    stdout, stderr = await asyncio.wait_for(
-                        process.communicate(), timeout=10
-                    )
-                    stdout_text = stdout.decode('utf-8', errors='replace') if stdout else ""
-                    stderr_text = stderr.decode('utf-8', errors='replace') if stderr else ""
-                except asyncio.TimeoutError:
-                    stdout_text = ""
-                    stderr_text = "Failed to read process output (timeout)"
-
-                # Determine success/failure
-                success = return_code == 0
-
-                # Get diff to show what was generated
-                changed_files = []
-                if tool_context:
-                    try:
-                        diff_result = await get_repository_diff(tool_context)
-                        diff_data = json.loads(diff_result)
-                        for category in ["modified", "added", "untracked"]:
-                            changed_files.extend(diff_data.get(category, []))
-                    except Exception as e:
-                        logger.warning(f"Could not get diff: {e}")
-
-                # Final commit
-                try:
-                    await _commit_and_push_changes(
-                        repository_path=repository_path,
-                        branch_name=branch_name,
-                        tool_context=tool_context,
-                        repo_url=auth_repo_url,
-                        installation_id=auth_installation_id,
-                        repository_type=auth_repository_type,
-                    )
-                    logger.info(f"✅ Final commit pushed for branch {branch_name}")
-                except Exception as e:
-                    logger.warning(f"Failed to commit final changes: {e}")
-
-                # Update task status
-                if task_id:
-                    if success:
-                        await task_service.update_task_status(
-                            task_id=task_id,
-                            status="completed",
-                            progress=100,
-                            message=f"Build completed successfully! Generated {len(changed_files)} files.",
-                            metadata={
-                                "elapsed_time": elapsed,
-                                "changed_files": changed_files[:50],  # Limit to 50 files
-                                "total_files": len(changed_files)
-                            }
-                        )
-                    else:
-                        await task_service.update_task_status(
-                            task_id=task_id,
-                            status="failed",
-                            progress=0,
-                            message=f"Build failed with return code {return_code}",
-                            metadata={
-                                "return_code": return_code,
-                                "stderr": stderr_text[:1000],  # Limit error output
-                                "elapsed_time": elapsed
-                            }
-                        )
-
-                return
-
-            # Process still running - update progress periodically
-            if current_time - last_progress_update >= progress_update_interval:
-                # Calculate progress (0-95% based on elapsed time, max 95% until complete)
-                progress = min(95, int((elapsed / timeout_seconds) * 100))
-
-                if task_id:
-                    await task_service.update_task_status(
-                        task_id=task_id,
-                        status="running",
-                        progress=progress,
-                        message=f"Build in progress... ({int(elapsed)}s elapsed)",
-                        metadata={"elapsed_time": elapsed, "pid": process.pid}
-                    )
-
-                last_progress_update = current_time
-                logger.info(f"📊 Build progress: {progress}% ({int(elapsed)}s elapsed)")
-
-            # Commit changes periodically
-            if current_time - last_commit_time >= commit_interval:
-                try:
-                    commit_result = await _commit_and_push_changes(
-                        repository_path=repository_path,
-                        branch_name=branch_name,
-                        tool_context=tool_context,
-                        repo_url=auth_repo_url,
-                        installation_id=auth_installation_id,
-                        repository_type=auth_repository_type,
-                    )
-                    logger.info(f"💾 Progress commit pushed for branch {branch_name}")
-
-                    # Update BackgroundTask with latest diff info
-                    if task_id and commit_result.get("status") == "success":
-                        try:
-                            current_task = await task_service.get_task(task_id)
-                            existing_metadata = current_task.metadata if current_task else {}
-
-                            # Merge with new diff info from commit
-                            updated_metadata = {
-                                **existing_metadata,
-                                "changed_files": commit_result.get("changed_files", [])[:20],
-                                "diff": commit_result.get("diff", {})
-                            }
-
-                            await task_service.add_progress_update(
-                                task_id=task_id,
-                                message="Progress committed",
-                                metadata=updated_metadata,
-                            )
-                            logger.info(f"📊 Updated BackgroundTask {task_id} with latest diff info")
-                        except Exception as e:
-                            logger.warning(f"⚠️ Failed to update task with diff info: {e}")
-                except Exception as e:
-                    logger.warning(f"Failed to commit progress: {e}")
-
-                last_commit_time = current_time
-
-            # Wait before next check
-            await asyncio.sleep(10)
-
-    except Exception as e:
-        logger.error(f"❌ Error monitoring build process: {e}", exc_info=True)
-
-        # Update task as failed
-        if task_id:
-            try:
-                await task_service.update_task_status(
-                    task_id=task_id,
-                    status="failed",
-                    progress=0,
-                    message=f"Build monitoring error: {str(e)}",
-                    metadata={"error": str(e)}
-                )
-            except Exception as update_error:
-                logger.error(f"Failed to update task status: {update_error}")
+    await _monitor_cli_process(
+        process=process,
+        repository_path=repository_path,
+        branch_name=branch_name,
+        timeout_seconds=timeout_seconds,
+        tool_context=tool_context,
+        prompt_file=prompt_file,
+        commit_interval=60,  # Build commits every 60 seconds
+        progress_update_interval=30,
+    )
 
 
 @creates_hook("background_task")
@@ -2995,7 +2887,7 @@ async def generate_application(
     This allows the agent to call generate_application with just requirements after clone_repository.
 
     Args:
-        requirements: User requirements for the application
+        requirements: User requirements for the application - exactly what the user asked without any modifications/improvements. Keep minimal as all the requireents should be in functional requirements in the branch.
         language: Programming language ('java' or 'python') - optional if already in context
         repository_path: Path to cloned repository - optional if already in context
         branch_name: Branch name for the build - optional if already in context
@@ -3094,12 +2986,24 @@ async def generate_application(
             logger.error(f"Invalid model for Augment CLI: {AUGMENT_MODEL}. Only haiku4.5 is supported.")
             return f"ERROR: Augment CLI only supports haiku4.5 model. Current model: {AUGMENT_MODEL}"
 
+        # Write prompt to temp file for security (avoid exposing in process list)
+        import tempfile
+        prompt_file = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, dir='/tmp') as f:
+                f.write(full_prompt)
+                prompt_file = f.name
+            logger.info(f"📝 Prompt written to temp file: {prompt_file}")
+        except Exception as e:
+            logger.error(f"Failed to write prompt to temp file: {e}")
+            return f"ERROR: Failed to write prompt to temp file: {e}"
+
         # Call Augment CLI script using asyncio
-        # Format: bash <script> <prompt> <model> <workspace_dir> <branch_id>
+        # Format: bash <script> <prompt_file> <model> <workspace_dir> <branch_id>
         cmd = [
             "bash",
             str(script_path.absolute()),
-            full_prompt,
+            f"@{prompt_file}",
             AUGMENT_MODEL,
             repository_path,
             branch_name,
@@ -3177,6 +3081,7 @@ async def generate_application(
                 requirements=requirements,
                 timeout_seconds=1800,  # 30 minutes
                 tool_context=tool_context,
+                prompt_file=prompt_file,
             )
         )
 

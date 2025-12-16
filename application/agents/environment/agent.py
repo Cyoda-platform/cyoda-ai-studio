@@ -39,12 +39,7 @@ root_agent = LlmAgent(
     name="environment_agent",
     model=get_model_config(),
     description="Cyoda environment management specialist. Handles environment provisioning, application deployment, build monitoring, troubleshooting, and credential management.",
-    instruction=create_instruction_provider(
-        "environment_agent",
-        build_id="<unknown>",
-        namespace="<unknown>",
-        env_url="<unknown>",
-    ),
+    instruction=create_instruction_provider("environment_agent"),
     tools=[
         check_environment_exists,
         deploy_cyoda_environment,
