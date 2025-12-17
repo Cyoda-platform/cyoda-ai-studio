@@ -34,18 +34,46 @@ JAVA_RESOURCES_PATH = os.getenv("JAVA_RESOURCES_PATH", "src/main/resources")
 # Error suffix to instruct LLM to stop on errors
 STOP_ON_ERROR = " STOP: Do not retry this operation. Report this error to the user and wait for instructions."
 
-# Augment CLI configuration for GitHub agent
+# CLI configuration for GitHub agent
 _MODULE_DIR = Path(__file__).parent
 _BUILD_MODE = os.getenv("BUILD_MODE", "production").lower()
 
-# Use mock script for testing, real script for production
+# Get CLI provider from config
+from common.config.config import CLI_PROVIDER, AUGMENT_MODEL, CLAUDE_MODEL, GEMINI_MODEL
+
+# Determine CLI script paths based on provider
 if _BUILD_MODE == "test":
     _DEFAULT_AUGGIE_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build_mock.sh"
+    _DEFAULT_CLAUDE_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build_mock.sh"  # Use mock for testing
+    _DEFAULT_GEMINI_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build_mock.sh"  # Use mock for testing
     logger.info("🧪 BUILD_MODE=test: Using mock build script")
 else:
     _DEFAULT_AUGGIE_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build.sh"
+    _DEFAULT_CLAUDE_SCRIPT = _MODULE_DIR.parent / "shared" / "claude_build.sh"
+    _DEFAULT_GEMINI_SCRIPT = _MODULE_DIR.parent / "shared" / "gemini_build.sh"
 
+# Legacy env var for backward compatibility
 AUGGIE_CLI_SCRIPT = os.getenv("AUGMENT_CLI_SCRIPT", str(_DEFAULT_AUGGIE_SCRIPT))
+
+# Helper function to get CLI script and model based on provider
+def _get_cli_config(provider: str = None) -> tuple[Path, str]:
+    """Get CLI script path and model based on provider.
+
+    Args:
+        provider: CLI provider ("augment", "claude", or "gemini").
+                 If None, uses CLI_PROVIDER from config.
+
+    Returns:
+        Tuple of (script_path, model)
+    """
+    provider = provider or CLI_PROVIDER
+
+    if provider == "claude":
+        return _DEFAULT_CLAUDE_SCRIPT, CLAUDE_MODEL
+    elif provider == "gemini":
+        return _DEFAULT_GEMINI_SCRIPT, GEMINI_MODEL
+    else:  # default to augment
+        return _DEFAULT_AUGGIE_SCRIPT, AUGMENT_MODEL
 
 
 async def _get_github_service_from_context(tool_context: ToolContext) -> GitHubService:
@@ -2508,21 +2536,21 @@ async def generate_code_with_cli(
         # The template is informational (describes patterns), user request is the action
         full_prompt = f"""{prompt_template}\n\n## User Request:\n{user_request}"""
 
-        # Check if CLI script exists
-        script_path = Path(AUGGIE_CLI_SCRIPT)
+        # Get CLI configuration (script path and model) based on provider
+        script_path, cli_model = _get_cli_config()
+
         if not script_path.exists():
-            return f"ERROR: CLI script not found at {AUGGIE_CLI_SCRIPT}"
+            return f"ERROR: CLI script not found at {script_path}"
 
-        logger.info(f"🤖 Generating code with CLI in {repository_path}")
+        provider_name = CLI_PROVIDER.capitalize()
+        logger.info(f"🤖 Generating code with {provider_name} CLI in {repository_path}")
         logger.info(f"📝 User request: {user_request[:100]}...")
+        logger.info(f"🎯 Model: {cli_model}")
 
-        # Get Augment model from config (must be haiku4.5)
-        from common.config.config import AUGMENT_MODEL
-
-        # Validate that only haiku4.5 is used for Augment CLI
-        if AUGMENT_MODEL != "haiku4.5":
-            logger.error(f"Invalid model for Augment CLI: {AUGMENT_MODEL}. Only haiku4.5 is supported.")
-            return f"ERROR: Augment CLI only supports haiku4.5 model. Current model: {AUGMENT_MODEL}"
+        # Validate model for Augment CLI (only haiku4.5 supported)
+        if CLI_PROVIDER == "augment" and cli_model != "haiku4.5":
+            logger.error(f"Invalid model for Augment CLI: {cli_model}. Only haiku4.5 is supported.")
+            return f"ERROR: Augment CLI only supports haiku4.5 model. Current model: {cli_model}"
 
         # Write prompt to temp file for security (avoid exposing in process list)
         import tempfile
@@ -2555,13 +2583,13 @@ async def generate_code_with_cli(
             "bash",
             str(script_path.absolute()),
             f"@{prompt_file}",
-            AUGMENT_MODEL,
+            cli_model,
             repository_path,
             branch_name,
         ]
 
-        logger.info(f"🔧 Executing CLI")
-        logger.info(f"🎯 Model: {AUGMENT_MODEL}")
+        logger.info(f"🔧 Executing {provider_name} CLI")
+        logger.info(f"🎯 Model: {cli_model}")
         logger.info(f"📁 Workspace: {repository_path}")
         logger.info(f"🌿 Branch: {branch_name}")
 
@@ -2570,15 +2598,16 @@ async def generate_code_with_cli(
         output_fd = None
         try:
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_filename = f"augment_codegen_{branch_name}_TEMP_{timestamp}.log"
+            output_filename = f"{CLI_PROVIDER}_codegen_{branch_name}_TEMP_{timestamp}.log"
             output_file = os.path.join('/tmp', output_filename)
             output_fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
 
             # Write header to file
             header = (
                 f"Code Generation Log\n"
+                f"CLI Provider: {CLI_PROVIDER}\n"
                 f"Branch: {branch_name}\n"
-                f"Model: {AUGMENT_MODEL}\n"
+                f"Model: {cli_model}\n"
                 f"Repository: {repository_path}\n"
                 f"Started: {timestamp}\n"
                 f"{'='*80}\n\n"
@@ -2599,9 +2628,12 @@ async def generate_code_with_cli(
             cwd=str(script_path.parent),
         )
 
+        # Close file descriptor in parent process - subprocess now owns it
+        os.close(output_fd)
+
         # Rename file to include PID now that we have it
         try:
-            output_filename_with_pid = f"augment_codegen_{branch_name}_{process.pid}_{timestamp}.log"
+            output_filename_with_pid = f"{CLI_PROVIDER}_codegen_{branch_name}_{process.pid}_{timestamp}.log"
             output_file_with_pid = os.path.join('/tmp', output_filename_with_pid)
             os.rename(output_file, output_file_with_pid)
             output_file = output_file_with_pid
@@ -2611,7 +2643,7 @@ async def generate_code_with_cli(
 
         logger.info(f"📋 Output log: {output_file}")
 
-        logger.info(f"Started CLI process {process.pid}")
+        logger.info(f"Started {provider_name} CLI process {process.pid}")
 
         # Register process with manager
         if not await process_manager.register_process(process.pid):
@@ -2817,10 +2849,10 @@ async def generate_application(
     tool_context: Optional[ToolContext] = None,
 ) -> str:
     """
-    Generate a complete Cyoda application using Augment CLI with comprehensive prompts.
+    Generate a complete Cyoda application using configured CLI provider (Augment, Claude, or Gemini).
 
     This tool builds a COMPLETE application from scratch (entities, workflows, processors, routes, etc.)
-    Use generate_code_with_auggie() for incremental changes to existing code.
+    Use generate_code_with_cli() for incremental changes to existing code.
 
     **IMPORTANT:** This tool automatically saves all conversation files to the branch BEFORE generating
     the application. This ensures the AI has access to all attached files (requirements, specs, etc.)
@@ -2941,23 +2973,23 @@ async def generate_application(
         # Combine template with user requirements
         full_prompt = f"{prompt_template}\n\n## User Requirements:\n{requirements}"
 
-        # Check if Augment CLI script exists
-        script_path = Path(AUGGIE_CLI_SCRIPT)
+        # Get CLI configuration (script path and model) based on provider
+        script_path, cli_model = _get_cli_config()
+
         if not script_path.exists():
-            logger.error(f"Augment CLI script not found: {AUGGIE_CLI_SCRIPT}")
-            return f"ERROR: Augment CLI script not found at {AUGGIE_CLI_SCRIPT}"
+            logger.error(f"CLI script not found: {script_path}")
+            return f"ERROR: CLI script not found at {script_path}"
 
+        provider_name = CLI_PROVIDER.capitalize()
         logger.info(
-            f"Generating {language} application with Augment CLI in {repository_path}"
+            f"Generating {language} application with {provider_name} CLI in {repository_path}"
         )
+        logger.info(f"Using model: {cli_model}")
 
-        # Get Augment model from config (must be haiku4.5)
-        from common.config.config import AUGMENT_MODEL
-
-        # Validate that only haiku4.5 is used for Augment CLI
-        if AUGMENT_MODEL != "haiku4.5":
-            logger.error(f"Invalid model for Augment CLI: {AUGMENT_MODEL}. Only haiku4.5 is supported.")
-            return f"ERROR: Augment CLI only supports haiku4.5 model. Current model: {AUGMENT_MODEL}"
+        # Validate model for Augment CLI (only haiku4.5 supported)
+        if CLI_PROVIDER == "augment" and cli_model != "haiku4.5":
+            logger.error(f"Invalid model for Augment CLI: {cli_model}. Only haiku4.5 is supported.")
+            return f"ERROR: Augment CLI only supports haiku4.5 model. Current model: {cli_model}"
 
         # Write prompt to temp file for security (avoid exposing in process list)
         import tempfile
@@ -2976,15 +3008,16 @@ async def generate_application(
         # Create output file for process logs with identifying info (admin-only, outside repository)
         try:
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_filename = f"augment_build_{branch_name}_TEMP_{timestamp}.log"
+            output_filename = f"{CLI_PROVIDER}_build_{branch_name}_TEMP_{timestamp}.log"
             output_file = os.path.join('/tmp', output_filename)
             output_fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
 
             # Write header to file
             header = (
                 f"Application Build Log\n"
+                f"CLI Provider: {CLI_PROVIDER}\n"
                 f"Branch: {branch_name}\n"
-                f"Model: {AUGMENT_MODEL}\n"
+                f"Model: {cli_model}\n"
                 f"Repository: {repository_path}\n"
                 f"Language: {language}\n"
                 f"Started: {timestamp}\n"
@@ -2998,20 +3031,20 @@ async def generate_application(
                 os.close(output_fd)
             return f"ERROR: Failed to create output file: {e}"
 
-        # Call Augment CLI script using asyncio
+        # Call CLI script using asyncio
         # Format: bash <script> <prompt_file> <model> <workspace_dir> <branch_id>
         cmd = [
             "bash",
             str(script_path.absolute()),
             f"@{prompt_file}",
-            AUGMENT_MODEL,
+            cli_model,
             repository_path,
             branch_name,
         ]
 
-        logger.info(f"🚀 Starting Augment CLI process...")
+        logger.info(f"🚀 Starting {provider_name} CLI process...")
         logger.info(f"📝 Prompt length: {len(full_prompt)} chars")
-        logger.info(f"🎯 Model: {AUGMENT_MODEL}")
+        logger.info(f"🎯 Model: {cli_model}")
         logger.info(f"📁 Workspace: {repository_path}")
         logger.info(f"🌿 Branch: {branch_name}")
 
@@ -3023,9 +3056,12 @@ async def generate_application(
             cwd=repository_path,
         )
 
+        # Close file descriptor in parent process - subprocess now owns it
+        os.close(output_fd)
+
         # Rename file to include PID now that we have it
         try:
-            output_filename_with_pid = f"augment_build_{branch_name}_{process.pid}_{timestamp}.log"
+            output_filename_with_pid = f"{CLI_PROVIDER}_build_{branch_name}_{process.pid}_{timestamp}.log"
             output_file_with_pid = os.path.join('/tmp', output_filename_with_pid)
             os.rename(output_file, output_file_with_pid)
             output_file = output_file_with_pid
@@ -3033,7 +3069,7 @@ async def generate_application(
         except Exception as e:
             logger.warning(f"⚠️ Failed to rename output file with PID: {e}")
 
-        logger.info(f"✅ Augment CLI process started with PID: {process.pid}")
+        logger.info(f"✅ {provider_name} CLI process started with PID: {process.pid}")
 
         # Store process PID in context for monitoring
         if tool_context:

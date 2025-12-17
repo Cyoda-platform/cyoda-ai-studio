@@ -84,8 +84,15 @@ CLONE_REPO = os.getenv("CLONE_REPO", "false").lower() == "true"
 AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-exp")
 AI_SDK = os.getenv("AI_SDK", "google")  # "google" or "openai"
 
-# Augment Code Model Configuration (for code generation with Augment CLI)
+# Code Generation CLI Configuration
+CLI_PROVIDER = os.getenv("CLI_PROVIDER", "augment")  # "augment", "claude", or "gemini"
 AUGMENT_MODEL = os.getenv("AUGMENT_MODEL", "haiku4.5")  # Model for augment code generation
+CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "default")  # Model for Claude CLI (use "default" to let CLI choose)
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "default")  # Model for Gemini CLI (use "default" to let CLI choose)
+
+# Claude CLI execution limits
+CLAUDE_TIMEOUT_SECONDS = int(os.getenv("CLAUDE_TIMEOUT_SECONDS", "3600"))  # Default: 1 hour (3600s)
+CLAUDE_MAX_TOOL_CALLS = os.getenv("CLAUDE_MAX_TOOL_CALLS", "100")  # Default: 100 tool calls (use "0" or "unlimited" to disable)
 
 # Constants
 CYODA_ENTITY_TYPE_EDGE_MESSAGE = "EDGE_MESSAGE"
