@@ -2962,16 +2962,40 @@ async def generate_application(
             )
 
         # Load comprehensive build prompt template
-        template_name = f"build_{language.lower()}_instructions"
+        # Use optimized template if available, fallback to original
+        template_name = f"build_{language.lower()}_instructions_optimized"
         try:
             prompt_template = load_template(template_name)
-            logger.info(f"Loaded prompt template for {language} ({len(prompt_template)} chars)")
+            logger.info(f"Loaded optimized prompt template for {language} ({len(prompt_template)} chars)")
+        except FileNotFoundError:
+            # Fallback to original template
+            template_name = f"build_{language.lower()}_instructions"
+            try:
+                prompt_template = load_template(template_name)
+                logger.info(f"Loaded standard prompt template for {language} ({len(prompt_template)} chars)")
+            except Exception as e:
+                logger.error(f"Failed to load prompt template '{template_name}': {e}")
+                return f"ERROR: Failed to load prompt template for {language}: {str(e)}"
         except Exception as e:
             logger.error(f"Failed to load prompt template '{template_name}': {e}")
             return f"ERROR: Failed to load prompt template for {language}: {str(e)}"
 
-        # Combine template with user requirements
-        full_prompt = f"{prompt_template}\n\n## User Requirements:\n{requirements}"
+        # Load pattern catalogs and reference docs (for optimized prompt)
+        pattern_catalog = ""
+        if language.lower() == "python":
+            try:
+                pattern_catalog = load_template("python_patterns")
+                logger.info(f"Loaded pattern catalog ({len(pattern_catalog)} chars)")
+            except FileNotFoundError:
+                logger.warning("Pattern catalog not found, proceeding without it")
+            except Exception as e:
+                logger.warning(f"Failed to load pattern catalog: {e}")
+
+        # Combine template with catalogs and user requirements
+        if pattern_catalog:
+            full_prompt = f"{prompt_template}\n\n---\n\n{pattern_catalog}\n\n## User Requirements:\n{requirements}"
+        else:
+            full_prompt = f"{prompt_template}\n\n## User Requirements:\n{requirements}"
 
         # Get CLI configuration (script path and model) based on provider
         script_path, cli_model = _get_cli_config()
