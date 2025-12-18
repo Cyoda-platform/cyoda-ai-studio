@@ -138,7 +138,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             key = str(entity_id)
             if key in _edge_messages_cache:
                 return _edge_messages_cache[key]
-            path = f"message/get/{entity_id}"
+            path = f"message/{entity_id}"
             resp: Dict[str, Any] = await send_cyoda_request(
                 cyoda_auth_service=self._cyoda_auth_service, method="get", path=path
             )

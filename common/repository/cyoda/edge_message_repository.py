@@ -187,7 +187,7 @@ class EdgeMessageRepository:
             Exception: If the API request fails
         """
         try:
-            path = f"message/get/{message_id}"
+            path = f"message/{message_id}"
 
             logger.info(f"Retrieving edge message with ID: {message_id}")
 
