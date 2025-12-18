@@ -378,26 +378,6 @@ async def list_chats():
         cache_key = f"chats:{query_user_id or 'all'}"
         current_time = datetime.now(timezone.utc).timestamp()
 
-        if not before_time and limit == 100:  # Only cache first page with default limit
-            if cache_key in _chat_list_cache:
-                cached_chats, cache_time = _chat_list_cache[cache_key]
-                if current_time - cache_time < _CACHE_TTL_SECONDS:
-                    cache_age = current_time - cache_time
-                    logger.info(f"💾 CACHE HIT for {cache_key} (age: {cache_age:.1f}s, {len(cached_chats)} chats)")
-
-                    # Calculate next cursor (oldest chat's date in this page)
-                    next_cursor = cached_chats[-1]["date"] if len(cached_chats) == limit else None
-
-                    return APIResponse.success({
-                        "chats": cached_chats[:limit],
-                        "limit": limit,
-                        "next_cursor": next_cursor,
-                        "has_more": len(cached_chats) == limit,
-                        "cached": True
-                    })
-                else:
-                    logger.info(f"🗑️ Cache expired for {cache_key} (age: {current_time - cache_time:.1f}s > {_CACHE_TTL_SECONDS}s)")
-
         # Build search condition and execute search
         search_start = time.time()
 
