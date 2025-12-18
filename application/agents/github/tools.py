@@ -3341,10 +3341,14 @@ async def validate_workflow_against_schema(
 
     This tool validates that a generated workflow matches the required schema
     before saving it to the repository. It checks:
-    - Required fields (version, name, initialState, states)
+    - Required fields (name, initialState, states)
     - State structure and transitions
     - Processor and criterion configurations
     - Execution modes and retry policies
+
+    Supports two formats:
+    1. Individual workflow: {"name": "...", "initialState": "...", "states": {...}, "version": "1" (optional)}
+    2. Workflow wrapper: {"entityName": "...", "modelVersion": 1, "importMode": "...", "workflows": [...]}
 
     Args:
         workflow_json: The workflow JSON content as a string
@@ -3356,13 +3360,13 @@ async def validate_workflow_against_schema(
         - Detailed error messages if validation fails
 
     Examples:
-        >>> workflow = '{"version": "1", "name": "Customer", "initialState": "initial_state", "states": {...}}'
+        >>> workflow = '{"name": "Customer", "initialState": "CREATED", "states": {...}}'
         >>> await validate_workflow_against_schema(workflow)
         "✅ Workflow validation passed! The workflow matches the schema."
 
-        >>> invalid_workflow = '{"name": "Customer"}'
-        >>> await validate_workflow_against_schema(invalid_workflow)
-        "❌ Workflow validation failed: Missing required field 'version'"
+        >>> wrapper = '{"entityName": "nobel-prize", "modelVersion": 1, "importMode": "REPLACE", "workflows": [...]}'
+        >>> await validate_workflow_against_schema(wrapper)
+        "✅ Workflow validation passed! The workflow matches the schema."
     """
     try:
         import jsonschema
@@ -3384,32 +3388,54 @@ async def validate_workflow_against_schema(
         except json.JSONDecodeError as e:
             return f"❌ Workflow validation failed: Invalid JSON - {str(e)}"
 
-        # Validate against schema
-        try:
-            jsonschema.validate(instance=workflow, schema=schema)
-            logger.info("✅ Workflow validation passed")
-            return "✅ Workflow validation passed! The workflow matches the schema and is ready to save."
+        # Check if this is a wrapper format (with entityName, modelVersion, importMode, workflows)
+        if "workflows" in workflow and isinstance(workflow.get("workflows"), list):
+            # Validate wrapper format
+            if not all(key in workflow for key in ["entityName", "modelVersion", "importMode", "workflows"]):
+                return "❌ Workflow validation failed: Wrapper format must include entityName, modelVersion, importMode, and workflows"
 
-        except jsonschema.ValidationError as e:
-            # Provide detailed error message
-            error_path = ".".join(str(p) for p in e.absolute_path) if e.absolute_path else "root"
-            error_msg = f"❌ Workflow validation failed:\n"
-            error_msg += f"   Location: {error_path}\n"
-            error_msg += f"   Error: {e.message}\n"
+            # Validate each workflow in the array
+            for idx, wf in enumerate(workflow["workflows"]):
+                try:
+                    jsonschema.validate(instance=wf, schema=schema)
+                except jsonschema.ValidationError as e:
+                    error_path = ".".join(str(p) for p in e.absolute_path) if e.absolute_path else "root"
+                    error_msg = f"❌ Workflow validation failed in workflows[{idx}]:\n"
+                    error_msg += f"   Location: {error_path}\n"
+                    error_msg += f"   Error: {e.message}\n"
+                    error_msg += f"\n   Please fix the workflow and try again."
+                    logger.warning(f"Workflow validation failed: {e.message}")
+                    return error_msg
 
-            # Add helpful context
-            if "required" in str(e.message).lower():
-                error_msg += f"   Hint: Check that all required fields are present in your workflow.\n"
-            elif "enum" in str(e.message).lower():
-                error_msg += f"   Hint: Check that field values match the allowed options.\n"
+            logger.info("✅ Workflow wrapper validation passed")
+            return "✅ Workflow validation passed! The workflow wrapper matches the schema and is ready to save."
+        else:
+            # Validate individual workflow format
+            try:
+                jsonschema.validate(instance=workflow, schema=schema)
+                logger.info("✅ Workflow validation passed")
+                return "✅ Workflow validation passed! The workflow matches the schema and is ready to save."
 
-            error_msg += f"\n   Please fix the workflow and try again."
+            except jsonschema.ValidationError as e:
+                # Provide detailed error message
+                error_path = ".".join(str(p) for p in e.absolute_path) if e.absolute_path else "root"
+                error_msg = f"❌ Workflow validation failed:\n"
+                error_msg += f"   Location: {error_path}\n"
+                error_msg += f"   Error: {e.message}\n"
 
-            logger.warning(f"Workflow validation failed: {e.message}")
-            return error_msg
+                # Add helpful context
+                if "required" in str(e.message).lower():
+                    error_msg += f"   Hint: Check that all required fields are present in your workflow.\n"
+                elif "enum" in str(e.message).lower():
+                    error_msg += f"   Hint: Check that field values match the allowed options.\n"
 
-        except jsonschema.SchemaError as e:
-            return f"ERROR: Invalid schema file - {str(e)}.{STOP_ON_ERROR}"
+                error_msg += f"\n   Please fix the workflow and try again."
+
+                logger.warning(f"Workflow validation failed: {e.message}")
+                return error_msg
+
+            except jsonschema.SchemaError as e:
+                return f"ERROR: Invalid schema file - {str(e)}.{STOP_ON_ERROR}"
 
     except ImportError:
         return f"ERROR: jsonschema library not available. Install with: pip install jsonschema.{STOP_ON_ERROR}"

@@ -3,15 +3,20 @@ Repository routes for analyzing GitHub repositories.
 
 Provides endpoints to analyze Cyoda application repositories and extract
 entities, workflows, and functional requirements.
+
+REFACTORED: Uses APIResponse for consistent error handling.
 """
 
 import json
 import logging
 from typing import Dict, Any, List, Optional
 
-from quart import Blueprint, request, jsonify
+from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
 from pydantic import BaseModel, Field, ConfigDict
+
+# NEW: Use common infrastructure
+from application.routes.common.response import APIResponse
 
 from application.services import (
     get_github_service_for_public_repo,
@@ -184,7 +189,7 @@ async def analyze_repository() -> ResponseReturnValue:
             )
 
             if not conversation_response or not conversation_response.data:
-                return jsonify({"error": "Conversation not found"}), 404
+                return APIResponse.error("Conversation not found", 404)
 
             # Extract conversation data
             conversation_data = conversation_response.data
@@ -200,7 +205,7 @@ async def analyze_repository() -> ResponseReturnValue:
                 repository_owner = getattr(conversation_data, 'repository_owner', None)
 
             if not repository_path:
-                return jsonify({"error": "Repository not cloned yet. Please clone the repository first."}), 400
+                return APIResponse.error("Repository not cloned yet. Please clone the repository first.", 400)
 
             # Detect project type and scan resources
             try:
@@ -245,17 +250,17 @@ async def analyze_repository() -> ResponseReturnValue:
                 ]
 
                 # Convert to response format
-                return jsonify({
+                return APIResponse.success({
                     "repositoryName": repository_name,
                     "branch": repository_branch,
                     "appType": paths["type"],
                     "entities": entities,
                     "workflows": workflows_with_content,
                     "requirements": requirements
-                }), 200
+                })
 
             except ValueError as e:
-                return jsonify({"error": str(e)}), 400
+                return APIResponse.error(str(e), 400)
 
         # Legacy support: use RepositoryParser for direct GitHub API analysis
         req = AnalyzeRepositoryRequest(**data)
@@ -336,13 +341,14 @@ async def analyze_repository() -> ResponseReturnValue:
             f"{len(structure.workflows)} workflows, {len(structure.requirements)} requirements"
         )
 
-        return jsonify(response.model_dump(by_alias=True)), 200
+        return APIResponse.success(response.model_dump(by_alias=True))
 
     except Exception as e:
         logger.error(f"Error analyzing repository: {e}", exc_info=True)
-        return (
-            jsonify({"error": "Failed to analyze repository", "message": str(e)}),
+        return APIResponse.error(
+            "Failed to analyze repository",
             500,
+            details={"message": str(e)}
         )
 
 
@@ -373,14 +379,10 @@ async def get_file_content() -> ResponseReturnValue:
         owner = data.get("owner", "Cyoda-platform")
 
         if not repository_name or not file_path:
-            return (
-                jsonify(
-                    {
-                        "error": "Missing required fields",
-                        "message": "repository_name and file_path are required",
-                    }
-                ),
+            return APIResponse.error(
+                "Missing required fields",
                 400,
+                details={"message": "repository_name and file_path are required"}
             )
 
         logger.info(
@@ -396,21 +398,21 @@ async def get_file_content() -> ResponseReturnValue:
         )
 
         if content is None:
-            return (
-                jsonify(
-                    {
-                        "error": "File not found",
-                        "message": f"File {file_path} not found in repository",
-                    }
-                ),
+            return APIResponse.error(
+                "File not found",
                 404,
+                details={"message": f"File {file_path} not found in repository"}
             )
 
-        return jsonify({"content": content, "file_path": file_path}), 200
+        return APIResponse.success({"content": content, "file_path": file_path})
 
     except Exception as e:
         logger.error(f"Error getting file content: {e}", exc_info=True)
-        return jsonify({"error": "Failed to get file content", "message": str(e)}), 500
+        return APIResponse.error(
+            "Failed to get file content",
+            500,
+            details={"message": str(e)}
+        )
 
 
 @repository_bp.route("/diff", methods=["POST"])
@@ -438,14 +440,10 @@ async def get_repository_diff() -> ResponseReturnValue:
         repository_path = data.get("repository_path")
 
         if not repository_path:
-            return (
-                jsonify(
-                    {
-                        "error": "Missing required field",
-                        "message": "repository_path is required",
-                    }
-                ),
+            return APIResponse.error(
+                "Missing required field",
                 400,
+                details={"message": "repository_path is required"}
             )
 
         logger.info(f"Getting diff for repository: {repository_path}")
@@ -485,16 +483,17 @@ async def get_repository_diff() -> ResponseReturnValue:
         total_changes = sum(len(v) for v in changes.values())
         logger.info(f"Repository has {total_changes} uncommitted changes")
 
-        return jsonify(changes), 200
+        return APIResponse.success(changes)
 
     except subprocess.CalledProcessError as e:
         logger.error(f"Git command failed: {e}", exc_info=True)
-        return jsonify({"error": "Git command failed", "message": str(e)}), 500
+        return APIResponse.error("Git command failed", 500, details={"message": str(e)})
     except Exception as e:
         logger.error(f"Error getting repository diff: {e}", exc_info=True)
-        return (
-            jsonify({"error": "Failed to get repository diff", "message": str(e)}),
+        return APIResponse.error(
+            "Failed to get repository diff",
             500,
+            details={"message": str(e)}
         )
 
 
@@ -515,7 +514,7 @@ async def pull_repository() -> ResponseReturnValue:
         conversation_id = data.get("conversation_id")
 
         if not conversation_id:
-            return jsonify({"error": "conversation_id is required"}), 400
+            return APIResponse.error("conversation_id is required", 400)
 
         # Import here to avoid circular dependencies
         from application.agents.github.tools import pull_repository_changes
@@ -533,7 +532,7 @@ async def pull_repository() -> ResponseReturnValue:
         )
 
         if not conversation_response or not conversation_response.data:
-            return jsonify({"error": "Conversation not found"}), 404
+            return APIResponse.error("Conversation not found", 404)
 
         # Extract repository path and branch
         conversation_data = conversation_response.data
@@ -545,10 +544,10 @@ async def pull_repository() -> ResponseReturnValue:
             repository_branch = getattr(conversation_data, 'repository_branch', None)
 
         if not repository_path:
-            return jsonify({"error": "Repository not cloned yet. Please clone the repository first."}), 400
+            return APIResponse.error("Repository not cloned yet. Please clone the repository first.", 400)
 
         if not repository_branch:
-            return jsonify({"error": "No branch configured for this conversation"}), 400
+            return APIResponse.error("No branch configured for this conversation", 400)
 
         # Create a minimal tool context with the required state
         class SimpleToolContext:
@@ -566,20 +565,24 @@ async def pull_repository() -> ResponseReturnValue:
 
         # Check if error
         if result.startswith("ERROR:"):
-            return jsonify({"error": result}), 500
+            return APIResponse.error(result, 500)
 
-        return jsonify({
+        return APIResponse.success({
             "success": True,
             "message": result,
             "branch": repository_branch
-        }), 200
+        })
 
     except Exception as e:
         logger.error(f"Error pulling repository: {e}", exc_info=True)
-        return jsonify({"error": "Failed to pull repository", "message": str(e)}), 500
+        return APIResponse.error(
+            "Failed to pull repository",
+            500,
+            details={"message": str(e)}
+        )
 
 
 @repository_bp.route("/health", methods=["GET"])
-async def health_check() -> ResponseReturnValue:
+async def health_check():
     """Health check endpoint for repository service."""
-    return jsonify({"status": "healthy", "service": "repository"}), 200
+    return APIResponse.success({"status": "healthy", "service": "repository"})

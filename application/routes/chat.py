@@ -18,6 +18,14 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 from quart import Blueprint, Response, jsonify, request
 from quart_rate_limiter import rate_limit
 
+# NEW: Common infrastructure for refactored endpoints
+from application.routes.common.auth import get_authenticated_user
+from application.routes.common.rate_limiting import default_rate_limit_key
+from application.routes.common.response import APIResponse
+
+# Service layer
+from application.services.service_factory import get_service_factory
+
 from application.entity.conversation import Conversation
 from application.services import GoogleADKService
 from application.services.streaming_service import StreamingService
@@ -56,6 +64,12 @@ service = _ServiceProxy()
 # Initialize Google ADK service for AI responses (for canvas questions)
 google_adk_service = GoogleADKService()
 
+
+# NEW: Lazy-loaded chat service to avoid initialization errors
+def _get_chat_service():
+    """Get ChatService instance (lazy initialization)."""
+    return get_service_factory().chat_service
+
 # Simple in-memory cache for chat lists (30 second TTL)
 _chat_list_cache: Dict[str, tuple[List[Dict[str, Any]], float]] = {}
 _CACHE_TTL_SECONDS = 30
@@ -72,9 +86,14 @@ def _get_edge_message_persistence_service() -> EdgeMessagePersistenceService:
     return EdgeMessagePersistenceService(repository)
 
 
+# DEPRECATED: Use get_authenticated_user() from common.auth instead
+# Kept temporarily for non-refactored endpoints
 async def _get_user_info() -> tuple[str, bool]:
     """
     Extract user ID and superuser status from JWT token in Authorization header.
+
+    DEPRECATED: Use get_authenticated_user() from application.routes.common.auth instead.
+    This function is kept only for backward compatibility with non-refactored endpoints.
 
     Validates JWT tokens and extracts:
     - user_id from 'caas_org_id' claim
@@ -299,14 +318,9 @@ async def _validate_chat_ownership(
         )
 
 
-# Rate limit key function (simple IP-based for now)
-async def _rate_limit_key() -> str:
-    return request.remote_addr or "unknown"
-
-
 @chat_bp.route("", methods=["GET"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
-async def list_chats() -> tuple[Response, int]:
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
+async def list_chats():
     """
     List all chats for the current user.
 
@@ -320,7 +334,7 @@ async def list_chats() -> tuple[Response, int]:
     request_start = time.time()
 
     try:
-        user_id, is_superuser = await _get_user_info()
+        user_id, is_superuser = await get_authenticated_user()
 
         logger.info(f"📋 Chat list request from user: {user_id}")
 
@@ -374,13 +388,13 @@ async def list_chats() -> tuple[Response, int]:
                     # Calculate next cursor (oldest chat's date in this page)
                     next_cursor = cached_chats[-1]["date"] if len(cached_chats) == limit else None
 
-                    return jsonify({
+                    return APIResponse.success({
                         "chats": cached_chats[:limit],
                         "limit": limit,
                         "next_cursor": next_cursor,
                         "has_more": len(cached_chats) == limit,
                         "cached": True
-                    }), 200
+                    })
                 else:
                     logger.info(f"🗑️ Cache expired for {cache_key} (age: {current_time - cache_time:.1f}s > {_CACHE_TTL_SECONDS}s)")
 
@@ -506,21 +520,22 @@ async def list_chats() -> tuple[Response, int]:
         total_elapsed = time.time() - request_start
         logger.info(f"✅ Chat list request completed in {total_elapsed:.3f}s (returned {len(user_chats)} chats, has_more={has_more})")
 
-        return jsonify({
+        return APIResponse.success({
             "chats": user_chats,
             "limit": limit,
             "next_cursor": next_cursor,
             "has_more": has_more,
             "cached": False
-        }), 200
+        })
+
     except Exception as e:
         logger.exception(f"Error listing chats: {e}")
-        return jsonify({"error": str(e)}), 500
+        return APIResponse.error("Internal server error", 500)
 
 
 @chat_bp.route("", methods=["POST"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
-async def create_chat() -> tuple[Response, int]:
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
+async def create_chat():
     """
     Create a new chat conversation.
 
@@ -532,7 +547,7 @@ async def create_chat() -> tuple[Response, int]:
     - description: Chat description (optional)
     """
     try:
-        user_id, _ = await _get_user_info()
+        user_id, _ = await get_authenticated_user()
 
         # Get chat metadata from request
         if request.is_json:
@@ -546,30 +561,28 @@ async def create_chat() -> tuple[Response, int]:
 
         # Validate required fields
         if not name:
-            return jsonify({"error": "Chat name is required"}), 400
+            return APIResponse.error("Chat name is required", 400)
 
-        # Create conversation in Cyoda (no message processing)
-        conversation = await _create_conversation(
-            user_id, name, description, file_blob_ids=None
+        # ChatService handles creation and cache invalidation
+        conversation = await _get_chat_service().create_conversation(
+            user_id=user_id,
+            name=name,
+            description=description,
+            file_blob_ids=None
         )
-
-        # Invalidate cache for this user
-        cache_key = f"chats:{user_id}"
-        if cache_key in _chat_list_cache:
-            del _chat_list_cache[cache_key]
-            logger.debug(f"Cache invalidated for {cache_key}")
 
         logger.info(f"Created chat {conversation.technical_id} for user {user_id}")
 
-        return jsonify(conversation.to_api_response()), 201
+        return APIResponse.success(conversation.to_api_response(), status=201)
+
     except Exception as e:
         logger.exception(f"Error creating chat: {e}")
-        return jsonify({"error": str(e)}), 400
+        return APIResponse.error(str(e), 400)
 
 
 @chat_bp.route("/<technical_id>", methods=["GET"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
-async def get_chat(technical_id: str) -> tuple[Response, int]:
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
+async def get_chat(technical_id: str):
     """
     Get specific chat by ID.
 
@@ -577,21 +590,22 @@ async def get_chat(technical_id: str) -> tuple[Response, int]:
         - super: bool (optional) - Request super user access
     """
     try:
-        user_id, is_superuser = await _get_user_info()
+        user_id, is_superuser = await get_authenticated_user()
 
         # Check if superuser access is requested
         is_super_request = request.args.get("super", "false").lower() == "true"
         effective_super = is_super_request and is_superuser
 
+        # Get conversation
         conversation = await _get_conversation(technical_id)
         if not conversation:
-            return jsonify({"error": "Chat not found"}), 404
+            return APIResponse.error("Chat not found", 404)
 
-        # Validate ownership unless superuser
+        # Validate ownership
         try:
-            await _validate_chat_ownership(conversation, user_id, effective_super)
-        except PermissionError as e:
-            return jsonify({"error": "Access denied"}), 403
+            _get_chat_service().validate_ownership(conversation, user_id, effective_super)
+        except PermissionError:
+            return APIResponse.error("Access denied", 403)
 
         # Populate messages from edge messages
         edge_message_repository = get_repository()
@@ -628,85 +642,74 @@ async def get_chat(technical_id: str) -> tuple[Response, int]:
             "installation_id": conversation.installation_id,
         }
 
-        return jsonify({"chat_body": chat_body}), 200
+        return APIResponse.success({"chat_body": chat_body})
+
     except Exception as e:
         logger.exception(f"Error getting chat: {e}")
-        return jsonify({"error": str(e)}), 500
+        return APIResponse.error("Internal server error", 500)
 
 
 @chat_bp.route("/<technical_id>", methods=["PUT"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
-async def update_chat(technical_id: str) -> tuple[Response, int]:
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
+async def update_chat(technical_id: str):
     """Update chat name/description."""
     try:
-        user_id, is_superuser = await _get_user_info()
+        user_id, is_superuser = await get_authenticated_user()
 
+        # Get conversation to validate ownership
         conversation = await _get_conversation(technical_id)
         if not conversation:
-            return jsonify({"error": "Chat not found"}), 404
+            return APIResponse.error("Chat not found", 404)
 
         # Validate ownership
         try:
-            await _validate_chat_ownership(conversation, user_id, is_superuser)
+            _get_chat_service().validate_ownership(conversation, user_id, is_superuser)
         except PermissionError:
-            return jsonify({"error": "Access denied"}), 403
+            return APIResponse.error("Access denied", 403)
 
+        # Apply updates
         data = await request.get_json()
-
         if "chat_name" in data:
             conversation.name = data["chat_name"]
         if "chat_description" in data:
             conversation.description = data["chat_description"]
 
-        # Save updated conversation
-        await _update_conversation(conversation)
+        # ChatService handles update with retry and cache invalidation
+        updated = await _get_chat_service().update_conversation(conversation)
 
-        # Invalidate cache for this user
-        cache_key = f"chats:{user_id}"
-        if cache_key in _chat_list_cache:
-            del _chat_list_cache[cache_key]
-            logger.debug(f"Cache invalidated for {cache_key}")
+        return APIResponse.success({"message": "Chat updated successfully"})
 
-        return jsonify({"message": "Chat updated successfully"}), 200
     except Exception as e:
         logger.exception(f"Error updating chat: {e}")
-        return jsonify({"error": str(e)}), 500
+        return APIResponse.error("Internal server error", 500)
 
 
 @chat_bp.route("/<technical_id>", methods=["DELETE"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
-async def delete_chat(technical_id: str) -> tuple[Response, int]:
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
+async def delete_chat(technical_id: str):
     """Delete a chat."""
     try:
-        user_id, is_superuser = await _get_user_info()
+        user_id, is_superuser = await get_authenticated_user()
 
+        # Get conversation to validate ownership
         conversation = await _get_conversation(technical_id)
         if not conversation:
-            return jsonify({"error": "Chat not found"}), 404
+            return APIResponse.error("Chat not found", 404)
 
         # Validate ownership
         try:
-            await _validate_chat_ownership(conversation, user_id, is_superuser)
+            _get_chat_service().validate_ownership(conversation, user_id, is_superuser)
         except PermissionError:
-            return jsonify({"error": "Access denied"}), 403
+            return APIResponse.error("Access denied", 403)
 
-        # Delete from Cyoda
-        await service.delete_by_id(
-            entity_id=technical_id,
-            entity_class=Conversation.ENTITY_NAME,
-            entity_version=str(Conversation.ENTITY_VERSION),
-        )
+        # ChatService handles deletion and cache invalidation
+        await _get_chat_service().delete_conversation(technical_id, user_id)
 
-        # Invalidate cache for this user
-        cache_key = f"chats:{user_id}"
-        if cache_key in _chat_list_cache:
-            del _chat_list_cache[cache_key]
-            logger.debug(f"Cache invalidated for {cache_key}")
+        return APIResponse.success({"message": "Chat deleted successfully"})
 
-        return jsonify({"message": "Chat deleted successfully"}), 200
     except Exception as e:
         logger.exception(f"Error deleting chat: {e}")
-        return jsonify({"error": str(e)}), 500
+        return APIResponse.error("Internal server error", 500)
 
 
 @chat_bp.route("/test-sse", methods=["GET"])
@@ -864,7 +867,7 @@ async def _stream_openai_response(
 
 
 @chat_bp.route("/<technical_id>/stream", methods=["POST"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
 async def stream_chat_message(technical_id: str) -> Response:
     """
     Stream AI response in real-time using Server-Sent Events (SSE).
@@ -1362,7 +1365,7 @@ async def stream_chat_message(technical_id: str) -> Response:
 
 
 @chat_bp.route("/canvas-questions", methods=["POST"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
 async def submit_canvas_question() -> tuple[Response, int]:
     """
     Submit a canvas question for stateless AI generation.
@@ -1607,7 +1610,7 @@ def _generate_mock_canvas_response(
 
 
 @chat_bp.route("/<technical_id>/approve", methods=["POST"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
 async def approve(technical_id: str) -> tuple[Response, int]:
     """Approve current state and proceed (workflow control)."""
     try:
@@ -1623,7 +1626,7 @@ async def approve(technical_id: str) -> tuple[Response, int]:
 
 
 @chat_bp.route("/<technical_id>/rollback", methods=["POST"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
 async def rollback(technical_id: str) -> tuple[Response, int]:
     """Rollback to previous state (workflow control)."""
     try:
@@ -1668,8 +1671,8 @@ async def download_file(
 
 
 @chat_bp.route("/transfer", methods=["POST"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
-async def transfer_chats() -> tuple[Response, int]:
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
+async def transfer_chats():
     """
     Transfer guest chats to authenticated user.
 
@@ -1695,86 +1698,46 @@ async def transfer_chats() -> tuple[Response, int]:
     """
     try:
         # Get current authenticated user
-        current_user_id, _ = await _get_user_info()
+        current_user_id, _ = await get_authenticated_user()
 
         # Ensure we have an authenticated user (not a guest)
         if current_user_id.startswith("guest."):
-            return jsonify({"error": "Cannot transfer chats to guest user"}), 400
+            return APIResponse.error("Cannot transfer chats to guest user", 400)
 
         data = await request.get_json()
         guest_token = data.get("guest_token")
 
         if not guest_token:
-            return jsonify({"error": "guest_token is required"}), 400
+            return APIResponse.error("guest_token is required", 400)
 
         # Extract guest user ID from the guest token
         try:
             guest_user_id, _ = get_user_info_from_token(guest_token)
         except (TokenValidationError, TokenExpiredError) as e:
             logger.warning(f"Invalid guest token: {e}")
-            return jsonify({"error": "Invalid guest token"}), 400
+            return APIResponse.error("Invalid guest token", 400)
 
         # Ensure the token is actually a guest token
         if not guest_user_id.startswith("guest."):
-            return jsonify({"error": "Token is not a guest token"}), 400
+            return APIResponse.error("Token is not a guest token", 400)
 
-        logger.info(f"🔄 Starting chat transfer from {guest_user_id} to {current_user_id}")
+        # ChatService handles the entire transfer with retry logic and cache invalidation
+        try:
+            transferred_count = await _get_chat_service().transfer_guest_chats(
+                guest_user_id=guest_user_id,
+                authenticated_user_id=current_user_id
+            )
 
-        # Find all chats belonging to the guest user
-        search_condition = (
-            SearchConditionRequest.builder()
-            .equals("user_id", guest_user_id)
-            .build()
-        )
+            logger.info(f"✅ Chat transfer completed: {transferred_count} chats transferred from {guest_user_id} to {current_user_id}")
 
-        guest_chats = await service.search(
-            entity_class=Conversation.ENTITY_NAME,
-            condition=search_condition,
-            entity_version=str(Conversation.ENTITY_VERSION),
-        )
+            return APIResponse.success({
+                "message": "Chats transferred successfully",
+                "transferred_count": transferred_count
+            })
 
-        transferred_count = 0
-
-        if isinstance(guest_chats, list):
-            for chat_response in guest_chats:
-                if hasattr(chat_response, "data") and hasattr(chat_response, "metadata"):
-                    # Get the conversation entity
-                    conversation = await _get_conversation(chat_response.metadata.id)
-                    if conversation:
-                        # Update the user_id to the authenticated user
-                        conversation.user_id = current_user_id
-
-                        # Update the conversation in storage
-                        entity_data = conversation.model_dump(by_alias=False)
-                        await service.update(
-                            entity_id=chat_response.metadata.id,
-                            entity=entity_data,
-                            entity_class=Conversation.ENTITY_NAME,
-                            entity_version=str(Conversation.ENTITY_VERSION),
-                        )
-                        transferred_count += 1
-
-                        logger.debug(f"✅ Transferred chat {conversation.technical_id}")
-
-        # Invalidate cache for both users
-        guest_cache_key = f"chats:{guest_user_id}"
-        current_cache_key = f"chats:{current_user_id}"
-
-        if guest_cache_key in _chat_list_cache:
-            del _chat_list_cache[guest_cache_key]
-            logger.debug(f"Cache invalidated for guest user: {guest_cache_key}")
-
-        if current_cache_key in _chat_list_cache:
-            del _chat_list_cache[current_cache_key]
-            logger.debug(f"Cache invalidated for current user: {current_cache_key}")
-
-        logger.info(f"✅ Chat transfer completed: {transferred_count} chats transferred from {guest_user_id} to {current_user_id}")
-
-        return jsonify({
-            "message": "Chats transferred successfully",
-            "transferred_count": transferred_count
-        }), 200
+        except ValueError as e:
+            return APIResponse.error(str(e), 400)
 
     except Exception as e:
         logger.exception(f"Error transferring chats: {e}")
-        return jsonify({"error": str(e)}), 500
+        return APIResponse.error("Internal server error", 500)

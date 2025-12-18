@@ -3,22 +3,26 @@ Task Routes for AI Assistant Application
 
 Manages background task tracking API endpoints.
 Includes SSE streaming for real-time task progress updates.
+
+REFACTORED: Uses common infrastructure (auth, rate limiting, responses).
 """
 
 import json
 import logging
 from datetime import timedelta
-from typing import Any, Dict
+from typing import Any
 
-from quart import Blueprint, Response, jsonify, request
+from quart import Blueprint, Response, request
 from quart_rate_limiter import rate_limit
 
 from application.services.streaming_service import StreamingService
-from common.utils.jwt_utils import (
-    TokenExpiredError,
-    TokenValidationError,
-    get_user_info_from_header,
-)
+from common.utils.jwt_utils import TokenExpiredError, TokenValidationError
+
+# NEW: Use common infrastructure
+from application.routes.common.auth import get_authenticated_user
+from application.routes.common.rate_limiting import default_rate_limit_key
+from application.routes.common.response import APIResponse
+
 from services.services import get_entity_service, get_task_service
 
 logger = logging.getLogger(__name__)
@@ -35,44 +39,9 @@ class _ServiceProxy:
 service = _ServiceProxy()
 
 
-async def _rate_limit_key() -> str:
-    """Generate rate limit key (IP-based)."""
-    return request.remote_addr or "unknown"
-
-
-async def _get_user_info() -> tuple[str, bool]:
-    """
-    Extract user ID and superuser status from JWT token in Authorization header.
-
-    Returns:
-        Tuple of (user_id, is_superuser)
-
-    Raises:
-        TokenExpiredError: If token has expired
-        TokenValidationError: If token is invalid
-    """
-    auth_header = request.headers.get("Authorization", "")
-
-    if not auth_header:
-        # No auth header - return default guest session
-        return "guest.anonymous", False
-
-    try:
-        user_id, is_superuser = get_user_info_from_header(auth_header)
-        return user_id, is_superuser
-
-    except TokenExpiredError:
-        logger.warning("Token has expired")
-        raise
-
-    except TokenValidationError as e:
-        logger.warning(f"Invalid token: {e}")
-        raise
-
-
 @tasks_bp.route("/<task_id>", methods=["GET"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
-async def get_task(task_id: str) -> tuple[Response, int]:
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
+async def get_task(task_id: str):
     """
     Get background task status and progress.
 
@@ -84,18 +53,18 @@ async def get_task(task_id: str) -> tuple[Response, int]:
     - error (if failed)
     """
     try:
-        user_id, is_superuser = await _get_user_info()
+        user_id, is_superuser = await get_authenticated_user()
 
         # Get task from service
         task_service = get_task_service()
         task = await task_service.get_task(task_id)
 
         if not task:
-            return jsonify({"error": "Task not found"}), 404
+            return APIResponse.error("Task not found", 404)
 
         # Validate ownership (unless superuser)
         if not is_superuser and task.user_id != user_id:
-            return jsonify({"error": "Access denied"}), 403
+            return APIResponse.error("Access denied", 403)
 
         # Return task data in API format
         task_data = task.to_api_response()
@@ -119,20 +88,20 @@ async def get_task(task_id: str) -> tuple[Response, int]:
             "entities_data": entities_data,
         }
 
-        return jsonify(response_body), 200
+        return APIResponse.success(response_body)
 
     except TokenExpiredError:
-        return jsonify({"error": "Token expired"}), 401
+        return APIResponse.error("Token expired", 401)
     except TokenValidationError:
-        return jsonify({"error": "Invalid token"}), 401
+        return APIResponse.error("Invalid token", 401)
     except Exception as e:
         logger.exception(f"Error getting task: {e}")
-        return jsonify({"error": str(e)}), 500
+        return APIResponse.error(str(e), 500)
 
 
 @tasks_bp.route("", methods=["GET"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
-async def list_tasks() -> tuple[Response, int]:
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
+async def list_tasks():
     """
     List all background tasks for a conversation.
 
@@ -140,13 +109,13 @@ async def list_tasks() -> tuple[Response, int]:
         - conversation_id: str (required) - Conversation ID to get tasks for
     """
     try:
-        user_id, is_superuser = await _get_user_info()
+        user_id, is_superuser = await get_authenticated_user()
 
         # Get conversation_id from query params
         conversation_id = request.args.get("conversation_id")
 
         if not conversation_id:
-            return jsonify({"error": "conversation_id is required"}), 400
+            return APIResponse.error("conversation_id is required", 400)
 
         # Get conversation to access task IDs
         from application.entity.conversation import Conversation
@@ -158,14 +127,14 @@ async def list_tasks() -> tuple[Response, int]:
         )
 
         if not response:
-            return jsonify({"error": "Conversation not found"}), 404
+            return APIResponse.error("Conversation not found", 404)
 
         conversation_data = response.data if hasattr(response, "data") else response
         conversation = Conversation(**conversation_data)
 
         # Validate ownership (unless superuser)
         if not is_superuser and conversation.user_id != user_id:
-            return jsonify({"error": "Access denied"}), 403
+            return APIResponse.error("Access denied", 403)
 
         # Get all tasks by their IDs from background_task_ids field
         task_ids = conversation.background_task_ids or []
@@ -185,19 +154,19 @@ async def list_tasks() -> tuple[Response, int]:
                 logger.warning(f"Failed to get task {task_id}: {e}")
                 # Continue with other tasks
 
-        return jsonify({"tasks": tasks_data, "count": len(tasks_data)}), 200
+        return APIResponse.success({"tasks": tasks_data, "count": len(tasks_data)})
 
     except TokenExpiredError:
-        return jsonify({"error": "Token expired"}), 401
+        return APIResponse.error("Token expired", 401)
     except TokenValidationError:
-        return jsonify({"error": "Invalid token"}), 401
+        return APIResponse.error("Invalid token", 401)
     except Exception as e:
         logger.exception(f"Error listing tasks: {e}")
-        return jsonify({"error": str(e)}), 500
+        return APIResponse.error(str(e), 500)
 
 
 @tasks_bp.route("/<task_id>/stream", methods=["GET"])
-@rate_limit(100, timedelta(minutes=1), key_function=_rate_limit_key)
+@rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
 async def stream_task_progress(task_id: str) -> Response:
     """
     Stream background task progress updates in real-time using SSE.
@@ -216,7 +185,7 @@ async def stream_task_progress(task_id: str) -> Response:
         SSE stream with events: start, progress, done, error
     """
     try:
-        user_id, is_superuser = await _get_user_info()
+        user_id, is_superuser = await get_authenticated_user()
 
         # Get task to validate ownership
         task_service = get_task_service()

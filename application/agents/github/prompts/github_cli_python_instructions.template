@@ -39,9 +39,10 @@ Every Python entity **must** have a companion JSON instance.
 
 Workflows are the "engine" of the entity.
 
-* **Initial State:** Must be `"initial_state"`.
+* **Initial State:** Can be any valid state name (e.g., `"initial_state"`, `"CREATED"`, `"initial"`, etc.).
+* **Version:** Optional field. If provided, can be any string value.
 * **Transition Types:**
-* `"manual": false` (Auto): Use only for the very first step from `initial_state`.
+* `"manual": false` (Auto): Use only for the very first step from the initial state.
 * `"manual": true`: Use for all user-triggered updates or loops.
 
 * **Processors:** The `name` string in JSON must match the Python class name exactly.

@@ -2,11 +2,15 @@
 Labels configuration routes for AI Assistant.
 
 Provides UI labels and text configuration for the frontend.
+
+REFACTORED: Uses APIResponse for consistent error handling.
 """
 
 import logging
-from quart import Blueprint, jsonify
+from quart import Blueprint
 from typing import Dict, Any
+
+from application.routes.common.response import APIResponse
 
 logger = logging.getLogger(__name__)
 
@@ -59,63 +63,64 @@ MOCK_LABELS_CONFIG: Dict[str, Any] = {
 
 
 @labels_config_bp.route("", methods=["GET"])
-async def get_labels_config() -> tuple[Dict[str, Any], int]:
+async def get_labels_config():
     """
     Return the entire labels configuration as JSON.
-    
+
     This provides UI text labels and configuration for the frontend.
     """
     try:
-        return jsonify(MOCK_LABELS_CONFIG), 200
+        return APIResponse.success(MOCK_LABELS_CONFIG)
     except Exception as e:
         logger.exception(f"Error getting labels config: {e}")
-        return jsonify({"error": str(e)}), 500
+        return APIResponse.error(str(e), 500)
 
 
 @labels_config_bp.route("/<path:key>", methods=["GET"])
-async def get_labels_config_item(key: str) -> tuple[Dict[str, Any], int]:
+async def get_labels_config_item(key: str):
     """
     Return a single entry from labels config.
-    
+
     Key should be dot-separated, e.g.:
       /api/v1/labels_config/sidebar.links.home
     """
     try:
         # Normalize URL segment into our key format
         identifier = key.replace('-', '_')
-        
+
         # Navigate through nested dict
         current: Any = MOCK_LABELS_CONFIG
         for part in identifier.split('.'):
             if isinstance(current, dict) and part in current:
                 current = current[part]
             else:
-                return jsonify({"error": f"Key '{key}' not found"}), 404
-        
-        return jsonify({key: current}), 200
+                return APIResponse.error(f"Key '{key}' not found", 404)
+
+        return APIResponse.success({key: current})
     except Exception as e:
         logger.exception(f"Error getting labels config item: {e}")
-        return jsonify({"error": str(e)}), 500
+        return APIResponse.error(str(e), 500)
 
 
 @labels_config_bp.route("/refresh", methods=["POST"])
-async def refresh_labels_config() -> tuple[Dict[str, Any], int]:
+async def refresh_labels_config():
     """
     Refresh labels configuration.
-    
+
     In Phase 1, this is a no-op since we use mock data.
     In Phase 2, this could reload from a config file or remote service.
     """
     try:
         # Mock implementation - nothing to refresh
-        return jsonify({
+        return APIResponse.success({
             "success": True,
             "message": "Labels configuration refreshed successfully (mock)."
-        }), 200
+        })
     except Exception as e:
         logger.exception(f"Error refreshing labels config: {e}")
-        return jsonify({
-            "success": False,
-            "message": "Unable to refresh labels configuration at this time."
-        }), 502
+        return APIResponse.error(
+            "Unable to refresh labels configuration at this time.",
+            502,
+            details={"success": False}
+        )
 

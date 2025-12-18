@@ -25,7 +25,7 @@
 ### 2. The Workflow (The Engine)
 
 * **State Machine:** Defined entirely in JSON.
-* **Initial State:** Must be named `"initial"`.
+* **Initial State:** Can be any valid state name (e.g., `"initial"`, `"CREATED"`, `"initial_state"`, etc.).
 * **🚨 THE CROSS-CHECK RULE**: Open your Java Processor and Workflow JSON. The `"name"` string in the JSON **must match** the `@Component` class name exactly.
 
 ### 3. The Processor (The Logic)
@@ -49,7 +49,7 @@
 | --- | --- |
 | Adding a `status` field to the Java class | Reading `getMetadata().getState()` |
 | Using Java Reflection for mapping | Using Interface-based implementation |
-| Setting Workflow to `"initialState": "none"` | Setting Workflow to `"initialState": "initial"` |
+| Setting Workflow to `"initialState": "none"` | Setting Workflow to any valid state name (e.g., `"initial"`, `"CREATED"`) |
 | Hardcoded version strings in logic | Using `Entity.ENTITY_VERSION` constant |
 | Creating "Automatic" transitions for updates | Using `"manual": true` for all update transitions |
 
