@@ -45,6 +45,24 @@ class ChatService:
         self.persistence_service = persistence_service
         self._chat_list_cache: Dict[str, tuple[List[Dict], float]] = {}
 
+    async def count_user_chats(self, user_id: str) -> int:
+        """
+        Count total number of chats for a user.
+
+        Args:
+            user_id: User ID to count chats for
+
+        Returns:
+            Number of chats owned by user
+
+        Example:
+            >>> count = await service.count_user_chats("alice")
+            >>> print(f"User has {count} chats")
+        """
+        response_list = await self.conversation_repo.search(user_id=user_id, limit=10000)
+        user_chats = self._extract_conversations_from_response(response_list)
+        return len(user_chats)
+
     async def create_conversation(
         self,
         user_id: str,
@@ -167,26 +185,6 @@ class ChatService:
         # Check cache
         cache_key = f"chats:{user_id or 'all'}"
         current_time = datetime.now(timezone.utc).timestamp()
-
-        if use_cache and not before and limit == CHAT_LIST_DEFAULT_LIMIT:
-            if cache_key in self._chat_list_cache:
-                cached_chats, cache_time = self._chat_list_cache[cache_key]
-                if current_time - cache_time < CACHE_TTL_SECONDS:
-                    cache_age = current_time - cache_time
-                    logger.info(
-                        f"💾 CACHE HIT for {cache_key} (age: {cache_age:.1f}s, "
-                        f"{len(cached_chats)} chats)"
-                    )
-                    return {
-                        "chats": cached_chats[:limit],
-                        "limit": limit,
-                        "next_cursor": (
-                            cached_chats[-1]["date"] if len(cached_chats) == limit else None
-                        ),
-                        "has_more": len(cached_chats) == limit,
-                        "cached": True,
-                    }
-
         # Fetch from repository
         response_list = await self.conversation_repo.search(
             user_id=user_id, limit=limit + 1, point_in_time=before

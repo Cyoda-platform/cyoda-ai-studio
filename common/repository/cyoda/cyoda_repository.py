@@ -230,8 +230,12 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
 
         logger.info(f"🔍 Final search criteria: {json.dumps(search_criteria, indent=2)}")
 
+        search_data = json.dumps(search_criteria, default=custom_serializer)
+        logger.info(f"🔍 Sending request to: POST /{search_path}")
+        logger.info(f"🔍 Request body: {search_data}")
+
         resp = await self._send_search_request(
-            method="post", path=search_path, data=json.dumps(search_criteria)
+            method="post", path=search_path, data=search_data
         )
 
         elapsed_time = time.time() - start_time
@@ -277,6 +281,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             # Prepare headers for search endpoint
             headers: Dict[str, str] = {
                 "Content-Type": "application/json",
+                "Accept": "application/x-ndjson, application/json",
                 "Authorization": (
                     f"Bearer {token}" if not token.startswith("Bearer") else token
                 ),

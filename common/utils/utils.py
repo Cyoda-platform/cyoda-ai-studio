@@ -451,7 +451,7 @@ async def send_request(
     url: str,
     method: str,
     data: Optional[Any] = None,
-    json: Optional[Any] = None,
+    json_data: Optional[Any] = None,
 ) -> Any:
     from common.exception.exceptions import InvalidTokenException
 
@@ -469,14 +469,17 @@ async def send_request(
             else:
                 content = None
         elif method == "POST":
-            response = await client.post(url, headers=headers, data=data, json=json)
-            content = (
-                response.json()
-                if "application/json" in response.headers.get("Content-Type", "")
-                else response.text
-            )
+            response = await client.post(url, headers=headers, data=data, json=json_data)
+            content_type = response.headers.get("Content-Type", "")
+            if "application/json" in content_type:
+                content = response.json()
+            elif "application/x-ndjson" in content_type:
+                # Parse NDJSON (newline-delimited JSON) into a list
+                content = [json.loads(line) for line in response.text.strip().split('\n') if line]
+            else:
+                content = response.text
         elif method == "PUT":
-            response = await client.put(url, headers=headers, data=data, json=json)
+            response = await client.put(url, headers=headers, data=data, json=json_data)
             content = (
                 response.json()
                 if "application/json" in response.headers.get("Content-Type", "")

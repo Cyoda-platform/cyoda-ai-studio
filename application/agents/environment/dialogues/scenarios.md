@@ -13,4 +13,3 @@
 - As a user, I want to get the metrics of a specific application deployed in a Cyoda environment.
 - As a user, I want to get the pods of a specific application deployed in a Cyoda environment.
 - As a user, I want to get the logs of a specific application deployed in a Cyoda environment.
-

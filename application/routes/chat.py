@@ -562,9 +562,30 @@ async def create_chat():
     Accepts:
     - name: Chat name (required)
     - description: Chat description (optional)
+
+    Guest users are limited to 2 chats. Attempting to create more returns a 403 error
+    with a modal suggestion to login.
     """
     try:
         user_id, _ = await get_authenticated_user()
+
+        # Check guest chat limit (max 2 chats for guests)
+        if user_id.startswith("guest."):
+            chat_count = await _get_chat_service().count_user_chats(user_id)
+            if chat_count >= 2:
+                logger.warning(f"Guest user {user_id} attempted to create chat #{chat_count + 1} (limit: 2)")
+                return APIResponse.error(
+                    "Guest users can create a maximum of 2 chats. Please login to create more.",
+                    403,
+                    error_code="GUEST_CHAT_LIMIT_EXCEEDED",
+                    modal={
+                        "title": "Chat Limit Reached",
+                        "message": "Guest users can create a maximum of 2 chats.",
+                        "description": "Sign in to your account to create unlimited chats and save your conversations.",
+                        "action": "login",
+                        "action_label": "Sign In"
+                    }
+                )
 
         # Get chat metadata from request
         if request.is_json:

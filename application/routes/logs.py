@@ -149,11 +149,11 @@ async def search_logs():
         if error_msg == "ELK_API_KEY_EXPIRED":
             logger.warning("ELK API key has expired")
             return APIResponse.error(
-                "ELK API key has expired. Please regenerate the API key using /api/v1/logs/elk-token endpoint.",
+                "ELK API key has expired. Please regenerate the API key using /api/v1/logs/api-key endpoint.",
                 500,
                 details={
                     "error_code": "ELK_API_KEY_EXPIRED",
-                    "regenerate_endpoint": "/api/v1/logs/elk-token",
+                    "regenerate_endpoint": "/v1/logs/api-key",
                     "regenerate_method": "POST"
                 }
             )
