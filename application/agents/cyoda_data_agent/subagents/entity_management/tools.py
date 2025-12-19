@@ -15,7 +15,8 @@ from google.adk.tools.tool_context import ToolContext
 from application.agents.cyoda_data_agent.user_service_container import (
     UserServiceContainer,
 )
-from common.service.entity_service import SearchCondition, SearchConditionRequest, SearchOperator
+from common.service.entity_service import SearchCondition, SearchConditionRequest
+from common.search import CyodaOperator
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ async def search_entities(
 
         # Convert dict conditions to SearchConditionRequest
         conditions = [
-            SearchCondition(field=k, operator=SearchOperator.EQUALS, value=v)
+            SearchCondition(field=k, operator=CyodaOperator.EQUALS, value=v)
             for k, v in search_conditions.items()
         ]
         search_request = SearchConditionRequest(conditions=conditions)

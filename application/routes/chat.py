@@ -35,6 +35,7 @@ from application.services.edge_message_persistence_service import (
 from application.services.sdk_factory import is_using_openai_sdk
 from common.exception import is_not_found
 from common.service.entity_service import SearchConditionRequest
+from common.search import CyodaOperator
 from common.utils.jwt_utils import (
     TokenExpiredError,
     TokenValidationError,
@@ -322,13 +323,14 @@ async def _validate_chat_ownership(
 @rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
 async def list_chats():
     """
-    List all chats for the current user.
+    List all chats for the current user with daily pagination.
 
     Query params:
         - super: bool (optional) - Request super user access
         - target_user_id: str (optional) - Target user ID for super users
         - limit: int (optional) - Maximum number of chats to return (default: 100, max: 1000)
-        - before: str (optional) - ISO 8601 timestamp for cursor-based pagination (get chats before this time)
+        - window_start: str (optional) - ISO 8601 timestamp for window start (date >= window_start)
+        - window_end: str (optional) - ISO 8601 timestamp for window end (date < window_end)
     """
     import time
     request_start = time.time()
@@ -348,17 +350,47 @@ async def list_chats():
         except (ValueError, TypeError):
             limit = 100
 
-        # Parse cursor (clientPointTime) for pagination
-        before_time = request.args.get("before")  # ISO 8601 timestamp
-        point_in_time = None
-        if before_time:
+        # Parse window_start and window_end for range-based pagination
+        window_start_str = request.args.get("window_start")
+        window_end_str = request.args.get("window_end")
+
+        window_start = None
+        window_end = None
+
+        # Parse window_start
+        if window_start_str:
             try:
                 from dateutil import parser as date_parser
-                point_in_time = date_parser.isoparse(before_time)
-                logger.info(f"📅 Using cursor-based pagination: before={before_time}")
+                window_start = date_parser.isoparse(window_start_str)
+                logger.info(f"📅 Using window_start: {window_start_str}")
             except (ValueError, TypeError) as e:
-                logger.warning(f"Invalid 'before' timestamp: {before_time}, error: {e}")
-                before_time = None
+                logger.warning(f"Invalid 'window_start' timestamp: {window_start_str}, error: {e}")
+                window_start = None
+
+        # Parse window_end
+        if window_end_str:
+            try:
+                from dateutil import parser as date_parser
+                window_end = date_parser.isoparse(window_end_str)
+                logger.info(f"📅 Using window_end: {window_end_str}")
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid 'window_end' timestamp: {window_end_str}, error: {e}")
+                window_end = None
+
+        # If no window_start provided, use today's date at midnight UTC
+        if not window_start:
+            now = datetime.now(timezone.utc)
+            window_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            logger.info(f"📅 No window_start provided, using today at midnight: {window_start.isoformat()}")
+
+        # If no window_end provided, calculate as window_start - 1 day
+        if not window_end:
+            window_end = window_start - timedelta(days=1)
+            logger.info(f"📅 No window_end provided, calculated as: {window_end.isoformat()}")
+
+        window_start_str = window_start.isoformat()
+        window_end_str = window_end.isoformat()
+        logger.info(f"📅 Searching chats in range: {window_end_str} < date <= {window_start_str}")
 
         # Determine effective superuser status
         effective_super = is_super_request and is_superuser
@@ -375,38 +407,36 @@ async def list_chats():
             query_user_id = user_id
 
         # Check cache first (only for first page requests with default limit)
-        cache_key = f"chats:{query_user_id or 'all'}"
+        cache_key = f"chats:{query_user_id or 'all'}:{window_end.strftime('%Y-%m-%d')}"
         current_time = datetime.now(timezone.utc).timestamp()
 
         # Build search condition and execute search
         search_start = time.time()
 
         if query_user_id:
-            # Search for specific user's chats using snake_case field name
-            # Use cursor-based pagination with clientPointTime
-            logger.info(f"🔎 Searching chats for user_id={query_user_id}, limit={limit}, before={before_time or 'none'}")
+            # Search for specific user's chats within date range
+            logger.info(f"🔎 Searching chats for user_id={query_user_id}, range: {window_end_str} < date <= {window_start_str}, limit={limit}")
+
+            # Build search condition with date range (window_end < date <= window_start) and user_id filter
             search_condition = (
                 SearchConditionRequest.builder()
+                .add_condition("date", CyodaOperator.GREATER_THAN, window_end_str)
+                .add_condition("date", CyodaOperator.LESS_OR_EQUAL, window_start_str)
                 .equals("user_id", query_user_id)
                 .limit(limit + 1)  # Fetch one extra to determine if there are more results
                 .build()
             )
 
-            # Only pass point_in_time if we have a cursor (for pagination)
-            # Don't pass it on first request to get latest chats
-            if point_in_time:
-                response_list = await service.search_at_time(
-                    entity_class=Conversation.ENTITY_NAME,
-                    condition=search_condition,
-                    point_in_time=point_in_time,
-                    entity_version=str(Conversation.ENTITY_VERSION),
-                )
-            else:
-                response_list = await service.search(
-                    entity_class=Conversation.ENTITY_NAME,
-                    condition=search_condition,
-                    entity_version=str(Conversation.ENTITY_VERSION),
-                )
+            logger.info(f"📋 Search condition: {search_condition.conditions}")
+            logger.info(f"📋 Operator: {search_condition.operator}")
+
+            response_list = await service.search(
+                entity_class=Conversation.ENTITY_NAME,
+                condition=search_condition,
+                entity_version=str(Conversation.ENTITY_VERSION),
+            )
+
+            logger.info(f"📋 Search returned {len(response_list) if isinstance(response_list, list) else 0} results")
         else:
             # Superuser viewing all chats - use find_all instead of search
             logger.info(f"🔎 Fetching ALL chats (superuser mode), limit={limit}")
@@ -481,30 +511,37 @@ async def list_chats():
         if has_more:
             user_chats = user_chats[:limit]  # Remove the extra item
 
-        # Calculate next cursor (oldest chat's date in this page)
-        next_cursor = user_chats[-1]["date"] if has_more and len(user_chats) > 0 else None
-
         # For superuser mode (all chats), apply limit client-side
         if query_user_id is None:
             # Superuser mode - simple limit without cursor pagination
             user_chats = user_chats[:limit]
-            next_cursor = None
             has_more = False
 
-        # Update cache for first page requests (no cursor, default limit)
+        # Always calculate next window for pagination (even if no more chats)
+        # The UI will show "No more chats" message if the next window returns empty
+        next_window_start = None
+        next_window_end = None
+        if window_start and window_end:
+            next_window_start = (window_start - timedelta(days=1)).isoformat()
+            next_window_end = (window_end - timedelta(days=1)).isoformat()
+            logger.info(f"📅 Next window: {next_window_end} < date <= {next_window_start}")
+
+        # Update cache for first page requests (no window_start, default limit)
         # Only cache for regular users (not superuser mode)
-        if not before_time and limit == 100 and query_user_id is not None:
+        if not window_start_str and limit == 100 and query_user_id is not None:
             _chat_list_cache[cache_key] = (user_chats, current_time)
             logger.info(f"💾 Cache updated for {cache_key} with {len(user_chats)} chats")
 
         total_elapsed = time.time() - request_start
-        logger.info(f"✅ Chat list request completed in {total_elapsed:.3f}s (returned {len(user_chats)} chats, has_more={has_more})")
+        logger.info(f"✅ Chat list request completed in {total_elapsed:.3f}s (returned {len(user_chats)} chats)")
 
         return APIResponse.success({
             "chats": user_chats,
             "limit": limit,
-            "next_cursor": next_cursor,
-            "has_more": has_more,
+            "window_start": window_start.isoformat(),
+            "window_end": window_end.isoformat(),
+            "next_window_start": next_window_start,
+            "next_window_end": next_window_end,
             "cached": False
         })
 

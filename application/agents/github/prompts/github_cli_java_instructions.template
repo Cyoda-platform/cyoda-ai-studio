@@ -27,6 +27,11 @@
 * **State Machine:** Defined entirely in JSON.
 * **Initial State:** Can be any valid state name (e.g., `"initial"`, `"CREATED"`, `"initial_state"`, etc.).
 * **🚨 THE CROSS-CHECK RULE**: Open your Java Processor and Workflow JSON. The `"name"` string in the JSON **must match** the `@Component` class name exactly.
+The workflow configuration schema is defined in:
+```
+src/main/resources/schema/common/statemachine/conf/WorkflowConfiguration.json
+```
+This schema defines the structure for workflow definitions, including states, transitions, processors, and criteria.
 
 ### 3. The Processor (The Logic)
 

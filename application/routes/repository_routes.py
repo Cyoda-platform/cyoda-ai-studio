@@ -9,7 +9,10 @@ REFACTORED: Uses APIResponse for consistent error handling.
 
 import json
 import logging
-from typing import Dict, Any, List, Optional
+import os
+import subprocess
+from pathlib import Path
+from typing import Dict, Any, List, Optional, Tuple
 
 from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
@@ -23,7 +26,8 @@ from application.services import (
     get_github_service_for_private_repo,
 )
 from application.services.repository_parser import RepositoryParser
-from common.config.config import CLIENT_GIT_BRANCH
+from application.services.github.auth.installation_token_manager import InstallationTokenManager
+from common.config.config import CLIENT_GIT_BRANCH, GITHUB_PUBLIC_REPO_INSTALLATION_ID
 from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
@@ -76,6 +80,138 @@ def _is_textual_file(filename: str) -> bool:
         return True
 
     return False
+
+
+async def _ensure_repository_cloned(
+    repository_url: str,
+    repository_branch: str,
+    installation_id: Optional[str] = None,
+    repository_name: Optional[str] = None,
+    repository_owner: Optional[str] = None,
+    use_env_installation_id: bool = True,
+) -> Tuple[bool, str, Optional[str]]:
+    """
+    Ensure repository is cloned. If not, clone it using installation_id and repository_url.
+
+    Args:
+        repository_url: GitHub repository URL (e.g., https://github.com/owner/repo)
+        repository_branch: Branch name to checkout
+        installation_id: GitHub App installation ID for authentication (optional)
+        repository_name: Repository name (extracted from URL if not provided)
+        repository_owner: Repository owner (extracted from URL if not provided)
+        use_env_installation_id: If True and installation_id is None, use GITHUB_PUBLIC_REPO_INSTALLATION_ID from env
+
+    Returns:
+        Tuple of (success: bool, message: str, repository_path: Optional[str])
+    """
+    try:
+        # Determine repository path
+        if not repository_name:
+            # Extract from URL
+            import re
+            match = re.search(r'/([^/]+?)(\.git)?$', repository_url)
+            if match:
+                repository_name = match.group(1)
+            else:
+                return False, "Could not extract repository name from URL", None
+
+        # Use persistent location for cloned repositories
+        builds_dir = Path("/tmp/cyoda_builds")
+        builds_dir.mkdir(parents=True, exist_ok=True)
+        repository_path = str(builds_dir / repository_branch)
+
+        repo_path_obj = Path(repository_path)
+
+        # Check if repository already exists and is valid
+        if repo_path_obj.exists() and (repo_path_obj / ".git").exists():
+            logger.info(f"✅ Repository already cloned at {repository_path}")
+            return True, f"Repository already exists at {repository_path}", repository_path
+
+        # Repository doesn't exist, need to clone it
+        logger.info(f"📦 Repository not found at {repository_path}, cloning from {repository_url}")
+
+        # Determine which installation_id to use
+        effective_installation_id = installation_id
+        if not effective_installation_id and use_env_installation_id and GITHUB_PUBLIC_REPO_INSTALLATION_ID:
+            effective_installation_id = GITHUB_PUBLIC_REPO_INSTALLATION_ID
+            logger.info(f"Using GITHUB_PUBLIC_REPO_INSTALLATION_ID from environment")
+
+        # Get authenticated URL if installation_id is provided
+        if effective_installation_id:
+            try:
+                token_manager = InstallationTokenManager()
+                token = await token_manager.get_installation_token(int(effective_installation_id))
+                # Create authenticated URL with token
+                authenticated_url = repository_url.replace(
+                    "https://github.com/",
+                    f"https://x-access-token:{token}@github.com/"
+                )
+                clone_url = authenticated_url
+                logger.info(f"🔐 Using authenticated URL for cloning")
+            except Exception as e:
+                logger.warning(f"Failed to get installation token: {e}, using public URL")
+                clone_url = repository_url
+        else:
+            clone_url = repository_url
+            logger.info(f"Using public URL for cloning (no installation_id provided)")
+
+        # Create parent directory
+        repo_path_obj.mkdir(parents=True, exist_ok=True)
+
+        # Clone repository
+        logger.info(f"🔄 Cloning repository from {repository_url}...")
+        result = subprocess.run(
+            ["git", "clone", clone_url, str(repo_path_obj)],
+            capture_output=True,
+            text=True,
+            timeout=300,  # 5 minutes timeout
+        )
+
+        if result.returncode != 0:
+            error_msg = result.stderr or result.stdout
+            logger.error(f"❌ Git clone failed: {error_msg}")
+            return False, f"Failed to clone repository: {error_msg}", None
+
+        # Checkout the specified branch
+        logger.info(f"🔄 Checking out branch {repository_branch}...")
+        result = subprocess.run(
+            ["git", "checkout", repository_branch],
+            cwd=str(repo_path_obj),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+        if result.returncode != 0:
+            # Try to fetch and checkout
+            logger.warning(f"Branch {repository_branch} not found locally, fetching from remote...")
+            subprocess.run(
+                ["git", "fetch", "origin"],
+                cwd=str(repo_path_obj),
+                capture_output=True,
+                timeout=300,
+            )
+            result = subprocess.run(
+                ["git", "checkout", repository_branch],
+                cwd=str(repo_path_obj),
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+
+            if result.returncode != 0:
+                error_msg = result.stderr or result.stdout
+                logger.error(f"❌ Failed to checkout branch {repository_branch}: {error_msg}")
+                return False, f"Failed to checkout branch {repository_branch}: {error_msg}", None
+
+        logger.info(f"✅ Repository cloned successfully at {repository_path}")
+        return True, f"Repository cloned successfully at {repository_path}", repository_path
+
+    except subprocess.TimeoutExpired:
+        return False, "Repository clone operation timed out", None
+    except Exception as e:
+        logger.error(f"❌ Error ensuring repository is cloned: {e}", exc_info=True)
+        return False, f"Error cloning repository: {str(e)}", None
 
 
 class AnalyzeRepositoryRequest(BaseModel):
@@ -198,14 +334,41 @@ async def analyze_repository() -> ResponseReturnValue:
                 repository_name = conversation_data.get('repository_name')
                 repository_branch = conversation_data.get('repository_branch')
                 repository_owner = conversation_data.get('repository_owner')
+                repository_url = conversation_data.get('repository_url')
+                installation_id = conversation_data.get('installation_id')
             else:
                 repository_path = getattr(conversation_data, 'workflow_cache', {}).get('adk_session_state', {}).get('repository_path')
                 repository_name = getattr(conversation_data, 'repository_name', None)
                 repository_branch = getattr(conversation_data, 'repository_branch', None)
                 repository_owner = getattr(conversation_data, 'repository_owner', None)
+                repository_url = getattr(conversation_data, 'repository_url', None)
+                installation_id = getattr(conversation_data, 'installation_id', None)
 
-            if not repository_path:
-                return APIResponse.error("Repository not cloned yet. Please clone the repository first.", 400)
+            # Check if repository needs to be cloned (either not set or directory doesn't exist)
+            repo_path_obj = Path(repository_path) if repository_path else None
+            repo_exists = repo_path_obj and repo_path_obj.exists() and (repo_path_obj / ".git").exists()
+
+            if not repo_exists:
+                if repository_url and repository_branch:
+                    logger.info(f"Repository not available at {repository_path}, attempting to clone from {repository_url}")
+                    success, message, cloned_path = await _ensure_repository_cloned(
+                        repository_url=repository_url,
+                        repository_branch=repository_branch,
+                        installation_id=installation_id,
+                        repository_name=repository_name,
+                        repository_owner=repository_owner,
+                        use_env_installation_id=True,
+                    )
+                    if not success:
+                        return APIResponse.error(f"Failed to clone repository: {message}", 400)
+                    repository_path = cloned_path
+                    logger.info(f"✅ Repository cloned successfully at {repository_path}")
+                else:
+                    return APIResponse.error(
+                        "Repository not available and insufficient information to clone. "
+                        "Please ensure the conversation has repository_url and repository_branch configured.",
+                        400
+                    )
 
             # Detect project type and scan resources
             try:
@@ -534,20 +697,51 @@ async def pull_repository() -> ResponseReturnValue:
         if not conversation_response or not conversation_response.data:
             return APIResponse.error("Conversation not found", 404)
 
-        # Extract repository path and branch
+        # Extract repository info from conversation
         conversation_data = conversation_response.data
         if isinstance(conversation_data, dict):
             repository_path = conversation_data.get('workflow_cache', {}).get('adk_session_state', {}).get('repository_path')
             repository_branch = conversation_data.get('repository_branch')
+            repository_url = conversation_data.get('repository_url')
+            installation_id = conversation_data.get('installation_id')
+            repository_name = conversation_data.get('repository_name')
+            repository_owner = conversation_data.get('repository_owner')
         else:
             repository_path = getattr(conversation_data, 'workflow_cache', {}).get('adk_session_state', {}).get('repository_path')
             repository_branch = getattr(conversation_data, 'repository_branch', None)
-
-        if not repository_path:
-            return APIResponse.error("Repository not cloned yet. Please clone the repository first.", 400)
+            repository_url = getattr(conversation_data, 'repository_url', None)
+            installation_id = getattr(conversation_data, 'installation_id', None)
+            repository_name = getattr(conversation_data, 'repository_name', None)
+            repository_owner = getattr(conversation_data, 'repository_owner', None)
 
         if not repository_branch:
             return APIResponse.error("No branch configured for this conversation", 400)
+
+        # Check if repository needs to be cloned (either not set or directory doesn't exist)
+        repo_path_obj = Path(repository_path) if repository_path else None
+        repo_exists = repo_path_obj and repo_path_obj.exists() and (repo_path_obj / ".git").exists()
+
+        if not repo_exists:
+            if repository_url:
+                logger.info(f"Repository not available at {repository_path}, attempting to clone from {repository_url}")
+                success, message, cloned_path = await _ensure_repository_cloned(
+                    repository_url=repository_url,
+                    repository_branch=repository_branch,
+                    installation_id=installation_id,
+                    repository_name=repository_name,
+                    repository_owner=repository_owner,
+                    use_env_installation_id=True,
+                )
+                if not success:
+                    return APIResponse.error(f"Failed to clone repository: {message}", 400)
+                repository_path = cloned_path
+                logger.info(f"✅ Repository cloned successfully at {repository_path}")
+            else:
+                return APIResponse.error(
+                    "Repository not available and repository_url not configured. "
+                    "Please ensure the conversation has repository_url configured.",
+                    400
+                )
 
         # Create a minimal tool context with the required state
         class SimpleToolContext:

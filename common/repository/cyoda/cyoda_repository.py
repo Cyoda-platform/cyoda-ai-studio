@@ -228,7 +228,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         # Convert criteria to Cyoda-native format if needed
         search_criteria: Dict[str, Any] = self._ensure_cyoda_format(criteria)
 
-        logger.debug(f"Search criteria: {json.dumps(search_criteria, indent=2)}")
+        logger.info(f"🔍 Final search criteria: {json.dumps(search_criteria, indent=2)}")
 
         resp = await self._send_search_request(
             method="post", path=search_path, data=json.dumps(search_criteria)
@@ -248,6 +248,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         logger.info(f"✅ Direct search completed: found {len(result)} entities in {elapsed_time:.3f}s")
 
         return result
+
 
     # -----------------------
     # Internal HTTP utilities
@@ -307,6 +308,13 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
     @staticmethod
     def _ensure_cyoda_format(criteria: Any) -> Dict[str, Any]:
         """Ensure criteria is in Cyoda-native format."""
+        from common.search.condition_builder import SearchConditionRequest
+        from common.search.condition_converter import SearchConditionConverter
+
+        # If it's a SearchConditionRequest, use the unified converter
+        if isinstance(criteria, SearchConditionRequest):
+            return SearchConditionConverter.to_cyoda_format(criteria)
+
         if not isinstance(criteria, dict):
             # If it's not a dict, assume it's already acceptable
             return cast(Dict[str, Any], criteria)
@@ -319,81 +327,8 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         if criteria.get("type") in ["simple", "lifecycle"]:
             return {"type": "group", "operator": "AND", "conditions": [criteria]}
 
-        # If it's a simple field-value dictionary, convert to Cyoda group format
-        conditions: List[Dict[str, Any]] = []
-        for field, value in criteria.items():
-            if field in ["state", "current_state"]:
-                conditions.append(
-                    {
-                        "type": "lifecycle",
-                        "field": field,
-                        "operatorType": "EQUALS",
-                        "value": value,
-                    }
-                )
-            else:
-                # Handle complex field-operator-value format
-                if isinstance(value, dict) and len(value) == 1:
-                    # Format: {"field": {"operator": "value"}}
-                    operator, actual_value = next(iter(value.items()))
-
-                    # Map internal operators back to Cyoda operators
-                    operator_mapping: Dict[str, str] = {
-                        "eq": "EQUALS",
-                        "ieq": "IEQUALS",
-                        "ne": "NOT_EQUALS",
-                        "contains": "CONTAINS",
-                        "icontains": "ICONTAINS",
-                        "gt": "GREATER_THAN",
-                        "lt": "LESS_THAN",
-                        "gte": "GREATER_THAN_OR_EQUAL",
-                        "lte": "LESS_THAN_OR_EQUAL",
-                        "startswith": "STARTS_WITH",
-                        "endswith": "ENDS_WITH",
-                        "in": "IN",
-                        "not_in": "NOT_IN",
-                    }
-
-                    cyoda_operator = operator_mapping.get(str(operator), "EQUALS")
-
-                    # Special handling for state/current_state fields with IN operator
-                    if field in ["state", "current_state"] and operator == "in":
-                        conditions.append(
-                            {
-                                "type": "lifecycle",
-                                "field": field,
-                                "operatorType": cyoda_operator,
-                                "value": actual_value,
-                            }
-                        )
-                    else:
-                        # Convert field to jsonPath format
-                        json_path = (
-                            f"$.{field}" if not str(field).startswith("$.") else str(field)
-                        )
-                        conditions.append(
-                            {
-                                "type": "simple",
-                                "jsonPath": json_path,
-                                "operatorType": cyoda_operator,
-                                "value": actual_value,
-                            }
-                        )
-                else:
-                    # Simple field-value format: {"field": "value"}
-                    json_path = (
-                        f"$.{field}" if not str(field).startswith("$.") else str(field)
-                    )
-                    conditions.append(
-                        {
-                            "type": "simple",
-                            "jsonPath": json_path,
-                            "operatorType": "EQUALS",
-                            "value": value,
-                        }
-                    )
-
-        return {"type": "group", "operator": "AND", "conditions": conditions}
+        # For any other dict format, assume it's already in Cyoda format
+        return cast(Dict[str, Any], criteria)
 
     # -----------------------
     # Mutations

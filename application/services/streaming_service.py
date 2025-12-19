@@ -830,6 +830,8 @@ class StreamingService:
                                 "repository_owner"
                             ),
                             "repository_branch": final_session_state.get("branch_name"),
+                            "repository_url": final_session_state.get("repository_url"),
+                            "installation_id": final_session_state.get("installation_id"),
                         }
 
                     # Extract build task ID

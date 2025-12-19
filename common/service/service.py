@@ -453,6 +453,7 @@ class EntityServiceImpl(EntityService):
 
             # Convert SearchConditionRequest to repository format
             criteria = self._convert_search_condition(condition)
+            logger.info(f"🔍 Searching {entity_class} with criteria: {criteria}")
 
             # Pass limit and offset to repository for server-side pagination
             data = await self._repository.find_all_by_criteria(
@@ -461,6 +462,7 @@ class EntityServiceImpl(EntityService):
                 limit=condition.limit,
                 offset=condition.offset
             )
+            logger.info(f"🔍 Repository returned {len(data) if isinstance(data, list) else 0} results")
 
             # Handle repository errors
             data = self._handle_repository_error(data, "search", entity_class)
@@ -487,44 +489,21 @@ class EntityServiceImpl(EntityService):
 
     def _convert_search_condition(
         self, condition: SearchConditionRequest
-    ) -> Dict[str, Any]:
+    ) -> SearchConditionRequest:
         """
-        Convert SearchConditionRequest to repository-compatible format.
+        Return the SearchConditionRequest as-is.
+
+        The unified converter will handle all conversion to Cyoda format.
+        This method is kept for backward compatibility.
 
         Args:
             condition: Search condition request
 
         Returns:
-            Repository-compatible criteria dictionary
+            The same SearchConditionRequest object
         """
-        if len(condition.conditions) == 1:
-            # Single condition - simple format
-            cond: SearchCondition = condition.conditions[0]
-            operator_value = (
-                cond.operator.value
-                if hasattr(cond.operator, "value")
-                else cond.operator
-            )
-            if operator_value == "eq":
-                return {cond.field: cond.value}
-            else:
-                return {cond.field: {operator_value: cond.value}}
-        else:
-            # Multiple conditions - complex format
-            criteria: Dict[str, List[Dict[str, Any]]] = {condition.operator: []}
-            for cond in condition.conditions:
-                operator_value = (
-                    cond.operator.value
-                    if hasattr(cond.operator, "value")
-                    else cond.operator
-                )
-                if operator_value == "eq":
-                    criteria[condition.operator].append({cond.field: cond.value})
-                else:
-                    criteria[condition.operator].append(
-                        {cond.field: {operator_value: cond.value}}
-                    )
-            return criteria
+        logger.debug(f"🔍 Using unified search converter for {len(condition.conditions)} conditions")
+        return condition
 
     # ========================================
     # PRIMARY MUTATION METHODS

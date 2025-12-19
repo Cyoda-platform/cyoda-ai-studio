@@ -13,28 +13,10 @@ from common.service.entity_service import (
     EntityService,
     LogicalOperator,
     SearchConditionRequest,
-    SearchOperator,
 )
+from common.search import CyodaOperator
 
 logger = logging.getLogger(__name__)
-
-
-def _get_search_operator(op_str: str) -> SearchOperator:
-    """Convert string operator to SearchOperator enum."""
-    op_mapping = {
-        "eq": SearchOperator.EQUALS,
-        "ne": SearchOperator.NOT_EQUALS,
-        "gt": SearchOperator.GREATER_THAN,
-        "lt": SearchOperator.LESS_THAN,
-        "gte": SearchOperator.GREATER_OR_EQUAL,
-        "lte": SearchOperator.LESS_OR_EQUAL,
-        "contains": SearchOperator.CONTAINS,
-        "icontains": SearchOperator.ICONTAINS,
-        "startswith": SearchOperator.STARTS_WITH,
-        "endswith": SearchOperator.ENDS_WITH,
-        "in": SearchOperator.IN,
-    }
-    return op_mapping.get(op_str, SearchOperator.EQUALS)
 
 
 class SearchService:
@@ -133,15 +115,8 @@ class SearchService:
             builder = SearchConditionRequest.builder()
 
             for field, value in search_conditions.items():
-                if isinstance(value, dict) and "operator" in value:
-                    # Advanced condition format: {"operator": "contains", "value": "text"}
-                    op_str = value.get("operator", "eq")
-                    val = value.get("value")
-                    search_op = _get_search_operator(op_str)
-                    builder.add_condition(field, search_op, val)
-                else:
-                    # Simple condition format: field: value (defaults to equals)
-                    builder.equals(field, value)
+                # Simple condition format: field: value (defaults to equals)
+                builder.equals(field, value)
 
             # Set additional parameters
             if operator.lower() == "and":

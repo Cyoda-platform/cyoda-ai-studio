@@ -40,8 +40,8 @@ from application.entity.adk_session import AdkSession
 from common.service.entity_service import (
     EntityService,
     SearchConditionRequest,
-    SearchOperator,
 )
+from common.search import CyodaOperator
 from common.service.service import EntityServiceError
 
 logger = logging.getLogger(__name__)
@@ -263,9 +263,9 @@ class CyodaSessionService(BaseSessionService):
             ListSessionsResponse with sessions (without events)
         """
         builder = SearchConditionRequest.builder()
-        builder.add_condition("app_name", SearchOperator.EQUALS, app_name)
+        builder.add_condition("app_name", CyodaOperator.EQUALS, app_name)
         if user_id:
-            builder.add_condition("user_id", SearchOperator.EQUALS, user_id)
+            builder.add_condition("user_id", CyodaOperator.EQUALS, user_id)
 
         responses = await self.entity_service.search(
             entity_class=self.ENTITY_NAME,
@@ -626,7 +626,7 @@ class CyodaSessionService(BaseSessionService):
         try:
             # Use search with session_id filter
             builder = SearchConditionRequest.builder()
-            builder.add_condition("session_id", SearchOperator.EQUALS, session_id)
+            builder.add_condition("session_id", CyodaOperator.EQUALS, session_id)
 
             responses = await self.entity_service.search(
                 entity_class=self.ENTITY_NAME,

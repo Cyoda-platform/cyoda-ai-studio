@@ -12,11 +12,10 @@ from typing import Any, Dict, Optional
 from fastmcp import Context, FastMCP
 
 from common.config.config import ENTITY_VERSION
-from common.service.entity_service import (
-    CYODA_OPERATOR_MAPPING,
+from common.search import (
     LogicalOperator,
     SearchConditionRequest,
-    SearchOperator,
+    CyodaOperator,
 )
 from services.services import get_entity_service
 
@@ -222,11 +221,9 @@ def _process_cyoda_condition(condition: Dict[str, Any], builder: Any) -> None:
         operator_type = condition.get("operatorType", "EQUALS")
         value = condition.get("value")
 
-        # Map Cyoda operators to internal operators using enum mapping
-        search_operator = CYODA_OPERATOR_MAPPING.get(
-            operator_type, SearchOperator.EQUALS
-        )
-        builder.add_condition(field, search_operator, value)
+        # Use CyodaOperator directly
+        cyoda_operator = CyodaOperator(operator_type)
+        builder.add_condition(field, cyoda_operator, value)
 
     elif condition_type == "simple":
         # Handle simple JSON path conditions
@@ -237,11 +234,9 @@ def _process_cyoda_condition(condition: Dict[str, Any], builder: Any) -> None:
         # Convert JSON path to field name (remove $. prefix)
         field = json_path.replace("$.", "") if json_path.startswith("$.") else json_path
 
-        # Map Cyoda operators to internal operators using enum mapping
-        search_operator = CYODA_OPERATOR_MAPPING.get(
-            operator_type, SearchOperator.EQUALS
-        )
-        builder.add_condition(field, search_operator, value)
+        # Use CyodaOperator directly
+        cyoda_operator = CyodaOperator(operator_type)
+        builder.add_condition(field, cyoda_operator, value)
 
 
 # Export the MCP server

@@ -43,9 +43,15 @@ Build a **workflow-driven** Spring Boot client. Reference `src/test/java/com/exa
 ### 3. Workflow Configuration
 
 * **Path:** `src/main/resources/workflow/{name}/version_1/{Name}.json`.
-* **Initial State:** **Must** be `"initial"` (never `"none"`).
+* **Initial State:** Can be any valid state name (e.g., `"initial"`, `"CREATED"`, `"initial_state"`, etc.).
 * **Manual Flags:** Set `true` for updates/loops, `false` for initial creation.
 🚨 THE CROSS-CHECK RULE: Always cross-check your Java code against the workflow JSON.
+The workflow configuration schema is defined in:
+```
+src/main/resources/schema/common/statemachine/conf/WorkflowConfiguration.json
+```
+This schema defines the structure for workflow definitions, including states, transitions, processors, and criteria.
+
 The name in the JSON processors array must match the @Component class name in Java exactly (case-sensitive).
 The transition string used in entityService.update(entity, "transition_name") must match a manual transition name in the JSON.
 The ENTITY_NAME constant in your Java Entity must match the "name" field in the workflow JSON.

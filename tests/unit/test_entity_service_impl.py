@@ -15,8 +15,8 @@ from common.service.entity_service import (
     EntityResponse,
     LogicalOperator,
     SearchConditionRequest,
-    SearchOperator,
 )
+from common.search import CyodaOperator
 from common.service.service import EntityServiceError, EntityServiceImpl
 
 
@@ -957,7 +957,7 @@ class TestEntityServiceImpl:
         """Test converting search condition with non-equals operator."""
         search_request = (
             SearchConditionRequest.builder()
-            .add_condition("value", SearchOperator.GREATER_THAN, 10)
+            .add_condition("value", CyodaOperator.GREATER_THAN, 10)
             .build()
         )
 
@@ -970,8 +970,8 @@ class TestEntityServiceImpl:
         """Test converting multiple search conditions with non-equals operators."""
         search_request = (
             SearchConditionRequest.builder()
-            .add_condition("value", SearchOperator.GREATER_THAN, 10)
-            .add_condition("name", SearchOperator.CONTAINS, "Test")
+            .add_condition("value", CyodaOperator.GREATER_THAN, 10)
+            .add_condition("name", CyodaOperator.CONTAINS, "Test")
             .build()
         )
 
@@ -1183,7 +1183,7 @@ class TestEntityServiceImpl:
         """Test converting search condition with LESS_THAN operator."""
         search_request = (
             SearchConditionRequest.builder()
-            .add_condition("value", SearchOperator.LESS_THAN, 100)
+            .add_condition("value", CyodaOperator.LESS_THAN, 100)
             .build()
         )
 
@@ -1196,7 +1196,7 @@ class TestEntityServiceImpl:
         """Test converting search condition with GREATER_OR_EQUAL operator."""
         search_request = (
             SearchConditionRequest.builder()
-            .add_condition("value", SearchOperator.GREATER_OR_EQUAL, 50)
+            .add_condition("value", CyodaOperator.GREATER_OR_EQUAL, 50)
             .build()
         )
 
@@ -1209,7 +1209,7 @@ class TestEntityServiceImpl:
         """Test converting search condition with LESS_OR_EQUAL operator."""
         search_request = (
             SearchConditionRequest.builder()
-            .add_condition("value", SearchOperator.LESS_OR_EQUAL, 75)
+            .add_condition("value", CyodaOperator.LESS_OR_EQUAL, 75)
             .build()
         )
 
@@ -1235,7 +1235,7 @@ class TestEntityServiceImpl:
         """Test converting search condition with NOT_EQUALS operator."""
         search_request = (
             SearchConditionRequest.builder()
-            .add_condition("status", SearchOperator.NOT_EQUALS, "deleted")
+            .add_condition("status", CyodaOperator.NOT_EQUAL, "deleted")
             .build()
         )
 
@@ -1249,8 +1249,8 @@ class TestEntityServiceImpl:
         search_request = (
             SearchConditionRequest.builder()
             .equals("name", "Test")
-            .add_condition("value", SearchOperator.GREATER_THAN, 10)
-            .add_condition("status", SearchOperator.CONTAINS, "active")
+            .add_condition("value", CyodaOperator.GREATER_THAN, 10)
+            .add_condition("status", CyodaOperator.CONTAINS, "active")
             .build()
         )
 
@@ -1865,7 +1865,7 @@ class TestSearchConditionRequestBuilder:
 
         assert len(request.conditions) == 1
         assert request.conditions[0].field == "name"
-        assert request.conditions[0].operator == SearchOperator.CONTAINS
+        assert request.conditions[0].operator == CyodaOperator.CONTAINS
         assert request.conditions[0].value == "test"
 
     def test_builder_in_values_method(self):
@@ -1876,7 +1876,7 @@ class TestSearchConditionRequestBuilder:
 
         assert len(request.conditions) == 1
         assert request.conditions[0].field == "status"
-        assert request.conditions[0].operator == SearchOperator.IN
+        assert request.conditions[0].operator == CyodaOperator.EQUALS
         assert request.conditions[0].value == ["active", "pending"]
 
     def test_builder_operator_method(self):
