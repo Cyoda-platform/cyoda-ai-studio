@@ -39,7 +39,7 @@ from common.search import CyodaOperator
 from common.utils.jwt_utils import (
     TokenExpiredError,
     TokenValidationError,
-    get_user_info_from_header,
+    get_user_info_from_header_async,
     get_user_info_from_token,
 )
 from services.services import (
@@ -100,8 +100,8 @@ async def _get_user_info() -> tuple[str, bool]:
     - user_id from 'caas_org_id' claim
     - is_superuser from 'caas_cyoda_employee' claim
 
-    Guest tokens (user_id starts with 'guest.') are signature-verified.
-    Other tokens are decoded without verification (assumes external auth).
+    Guest tokens (user_id starts with 'guest.') are signature-verified with local key.
+    Auth0 tokens are signature-verified with Auth0's public key (JWKS).
 
     Returns:
         tuple: (user_id, is_superuser)
@@ -116,7 +116,7 @@ async def _get_user_info() -> tuple[str, bool]:
         return "guest.anonymous", False
 
     try:
-        user_id, is_superuser = get_user_info_from_header(auth_header)
+        user_id, is_superuser = await get_user_info_from_header_async(auth_header)
         return user_id, is_superuser
 
     except TokenExpiredError:
@@ -323,14 +323,16 @@ async def _validate_chat_ownership(
 @rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
 async def list_chats():
     """
-    List all chats for the current user with daily pagination.
+    List all chats for the current user with keyset pagination.
+
+    Uses Cyoda's point-in-time pagination to ensure consistent ordering.
+    Results are sorted by last_modified (most recent activity first).
 
     Query params:
         - super: bool (optional) - Request super user access
         - target_user_id: str (optional) - Target user ID for super users
         - limit: int (optional) - Maximum number of chats to return (default: 100, max: 1000)
-        - window_start: str (optional) - ISO 8601 timestamp for window start (date >= window_start)
-        - window_end: str (optional) - ISO 8601 timestamp for window end (date < window_end)
+        - point_in_time: str (optional) - ISO 8601 timestamp for point-in-time pagination
     """
     import time
     request_start = time.time()
@@ -350,47 +352,20 @@ async def list_chats():
         except (ValueError, TypeError):
             limit = 100
 
-        # Parse window_start and window_end for range-based pagination
-        window_start_str = request.args.get("window_start")
-        window_end_str = request.args.get("window_end")
+        # Parse point_in_time for Cyoda's point-in-time pagination
+        point_in_time_str = request.args.get("point_in_time")
+        point_in_time = None
 
-        window_start = None
-        window_end = None
-
-        # Parse window_start
-        if window_start_str:
+        if point_in_time_str:
             try:
                 from dateutil import parser as date_parser
-                window_start = date_parser.isoparse(window_start_str)
-                logger.info(f"📅 Using window_start: {window_start_str}")
+                point_in_time = date_parser.isoparse(point_in_time_str)
+                logger.info(f"📋 Using point_in_time: {point_in_time_str}")
             except (ValueError, TypeError) as e:
-                logger.warning(f"Invalid 'window_start' timestamp: {window_start_str}, error: {e}")
-                window_start = None
+                logger.warning(f"Invalid 'point_in_time' timestamp: {point_in_time_str}, error: {e}")
+                point_in_time = None
 
-        # Parse window_end
-        if window_end_str:
-            try:
-                from dateutil import parser as date_parser
-                window_end = date_parser.isoparse(window_end_str)
-                logger.info(f"📅 Using window_end: {window_end_str}")
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Invalid 'window_end' timestamp: {window_end_str}, error: {e}")
-                window_end = None
-
-        # If no window_start provided, use today's date at midnight UTC
-        if not window_start:
-            now = datetime.now(timezone.utc)
-            window_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            logger.info(f"📅 No window_start provided, using today at midnight: {window_start.isoformat()}")
-
-        # If no window_end provided, calculate as window_start - 1 day
-        if not window_end:
-            window_end = window_start - timedelta(days=1)
-            logger.info(f"📅 No window_end provided, calculated as: {window_end.isoformat()}")
-
-        window_start_str = window_start.isoformat()
-        window_end_str = window_end.isoformat()
-        logger.info(f"📅 Searching chats in range: {window_end_str} < date <= {window_start_str}")
+        logger.info(f"📋 Point-in-time pagination: {point_in_time_str or 'None (first page)'}")
 
         # Determine effective superuser status
         effective_super = is_super_request and is_superuser
@@ -406,22 +381,20 @@ async def list_chats():
             # Regular user requesting their own chats
             query_user_id = user_id
 
-        # Check cache first (only for first page requests with default limit)
-        cache_key = f"chats:{query_user_id or 'all'}:{window_end.strftime('%Y-%m-%d')}"
+        # Check cache first (only for first page requests with default limit and no point_in_time)
+        cache_key = f"chats:{query_user_id or 'all'}:latest"
         current_time = datetime.now(timezone.utc).timestamp()
 
         # Build search condition and execute search
         search_start = time.time()
 
         if query_user_id:
-            # Search for specific user's chats within date range
-            logger.info(f"🔎 Searching chats for user_id={query_user_id}, range: {window_end_str} < date <= {window_start_str}, limit={limit}")
+            # Search for specific user's chats using point-in-time pagination
+            logger.info(f"🔎 Searching chats for user_id={query_user_id}, limit={limit}, point_in_time={point_in_time_str}")
 
-            # Build search condition with date range (window_end < date <= window_start) and user_id filter
+            # Build search condition with user_id filter
             search_condition = (
                 SearchConditionRequest.builder()
-                .add_condition("date", CyodaOperator.GREATER_THAN, window_end_str)
-                .add_condition("date", CyodaOperator.LESS_OR_EQUAL, window_start_str)
                 .equals("user_id", query_user_id)
                 .limit(limit + 1)  # Fetch one extra to determine if there are more results
                 .build()
@@ -430,11 +403,20 @@ async def list_chats():
             logger.info(f"📋 Search condition: {search_condition.conditions}")
             logger.info(f"📋 Operator: {search_condition.operator}")
 
-            response_list = await service.search(
-                entity_class=Conversation.ENTITY_NAME,
-                condition=search_condition,
-                entity_version=str(Conversation.ENTITY_VERSION),
-            )
+            # Use point-in-time pagination if provided
+            if point_in_time:
+                response_list = await service.search_at_time(
+                    entity_class=Conversation.ENTITY_NAME,
+                    condition=search_condition,
+                    point_in_time=point_in_time,
+                    entity_version=str(Conversation.ENTITY_VERSION),
+                )
+            else:
+                response_list = await service.search(
+                    entity_class=Conversation.ENTITY_NAME,
+                    condition=search_condition,
+                    entity_version=str(Conversation.ENTITY_VERSION),
+                )
 
             logger.info(f"📋 Search returned {len(response_list) if isinstance(response_list, list) else 0} results")
         else:
@@ -467,11 +449,21 @@ async def list_chats():
                         name = entity_data.get("name", "")
                         description = entity_data.get("description", "")
                         date = entity_data.get("date", "") or entity_data.get("created_at", "")
+
+                        # Calculate last_modified from the last message in chat_flow
+                        last_modified = date  # Default to creation date
+                        chat_flow = entity_data.get("chat_flow", {})
+                        finished_flow = chat_flow.get("finished_flow", [])
+                        if finished_flow and len(finished_flow) > 0:
+                            # Get the timestamp from the last message
+                            last_message = finished_flow[-1]
+                            last_modified = last_message.get("timestamp", date)
                     else:
                         # Fallback: try to extract directly (shouldn't happen with Cyoda repository)
                         name = ""
                         description = ""
                         date = ""
+                        last_modified = date
 
                     user_chats.append(
                         {
@@ -479,6 +471,7 @@ async def list_chats():
                             "name": name,
                             "description": description,
                             "date": date,
+                            "last_modified": last_modified,
                         }
                     )
                 # Legacy dict format (for backward compatibility)
@@ -490,19 +483,29 @@ async def list_chats():
                     description = conv_data.get("description", "")
                     date = conv_data.get("date", "") or conv_data.get("created_at", "")
 
+                    # Calculate last_modified from the last message in chat_flow
+                    last_modified = date  # Default to creation date
+                    chat_flow = conv_data.get("chat_flow", {})
+                    finished_flow = chat_flow.get("finished_flow", [])
+                    if finished_flow and len(finished_flow) > 0:
+                        # Get the timestamp from the last message
+                        last_message = finished_flow[-1]
+                        last_modified = last_message.get("timestamp", date)
+
                     user_chats.append(
                         {
                             "technical_id": tech_id,
                             "name": name,
                             "description": description,
                             "date": date,
+                            "last_modified": last_modified,
                         }
                     )
 
-        # Sort by date descending (most recent first)
+        # Sort by last_modified descending (most recently active first)
         # Note: Cyoda doesn't support ORDER BY, so we sort client-side
         sort_start = time.time()
-        user_chats.sort(key=lambda x: x.get("date", ""), reverse=True)
+        user_chats.sort(key=lambda x: x.get("last_modified", x.get("date", "")), reverse=True)
         sort_elapsed = time.time() - sort_start
         logger.debug(f"⏱️ Sorted {len(user_chats)} chats in {sort_elapsed:.3f}s")
 
@@ -517,18 +520,18 @@ async def list_chats():
             user_chats = user_chats[:limit]
             has_more = False
 
-        # Always calculate next window for pagination (even if no more chats)
-        # The UI will show "No more chats" message if the next window returns empty
-        next_window_start = None
-        next_window_end = None
-        if window_start and window_end:
-            next_window_start = (window_start - timedelta(days=1)).isoformat()
-            next_window_end = (window_end - timedelta(days=1)).isoformat()
-            logger.info(f"📅 Next window: {next_window_end} < date <= {next_window_start}")
+        # Calculate next point_in_time for pagination (if there are more results)
+        # Cyoda's point-in-time is used to maintain consistent ordering across paginated requests
+        next_point_in_time = None
+        if has_more and len(user_chats) > 0:
+            # Use the last chat's date as the next point_in_time
+            # This ensures we get the next batch of chats from that point forward
+            next_point_in_time = user_chats[-1].get("date")
+            logger.info(f"📅 Next point_in_time: {next_point_in_time}")
 
-        # Update cache for first page requests (no window_start, default limit)
+        # Update cache for first page requests (no point_in_time, default limit)
         # Only cache for regular users (not superuser mode)
-        if not window_start_str and limit == 100 and query_user_id is not None:
+        if not point_in_time_str and limit == 100 and query_user_id is not None:
             _chat_list_cache[cache_key] = (user_chats, current_time)
             logger.info(f"💾 Cache updated for {cache_key} with {len(user_chats)} chats")
 
@@ -538,10 +541,9 @@ async def list_chats():
         return APIResponse.success({
             "chats": user_chats,
             "limit": limit,
-            "window_start": window_start.isoformat(),
-            "window_end": window_end.isoformat(),
-            "next_window_start": next_window_start,
-            "next_window_end": next_window_end,
+            "point_in_time": point_in_time_str,
+            "next_point_in_time": next_point_in_time,
+            "has_more": has_more,
             "cached": False
         })
 

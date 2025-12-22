@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 # NEW: Use common infrastructure
 from application.routes.common.response import APIResponse
+from common.middleware.auth_middleware import require_auth
 
 from application.services import (
     get_github_service_for_public_repo,
@@ -276,6 +277,7 @@ class AnalyzeRepositoryResponse(BaseModel):
 
 
 @repository_bp.route("/analyze", methods=["POST"])
+@require_auth
 async def analyze_repository() -> ResponseReturnValue:
     """
     Analyze a GitHub repository to extract Cyoda application structure.
@@ -516,6 +518,7 @@ async def analyze_repository() -> ResponseReturnValue:
 
 
 @repository_bp.route("/file-content", methods=["POST"])
+@require_auth
 async def get_file_content() -> ResponseReturnValue:
     """
     Get file content from GitHub repository.
@@ -579,6 +582,7 @@ async def get_file_content() -> ResponseReturnValue:
 
 
 @repository_bp.route("/diff", methods=["POST"])
+@require_auth
 async def get_repository_diff() -> ResponseReturnValue:
     """
     Get diff of uncommitted changes in a repository.
@@ -661,6 +665,7 @@ async def get_repository_diff() -> ResponseReturnValue:
 
 
 @repository_bp.route("/pull", methods=["POST"])
+@require_auth
 async def pull_repository() -> ResponseReturnValue:
     """Pull latest changes from remote repository.
 

@@ -1195,6 +1195,37 @@ async def analyze_repository_structure(tool_context: ToolContext) -> str:
         if not repository_path:
             return f"ERROR: repository_path not found in context. Repository must be cloned first.{STOP_ON_ERROR}"
 
+        # Check if repository exists locally, clone if necessary (resilient to container restarts)
+        repo_path_obj = Path(repository_path)
+        repo_exists = repo_path_obj.exists() and (repo_path_obj / ".git").exists()
+
+        if not repo_exists:
+            logger.info(f"📦 Repository not found at {repository_path}, attempting to clone...")
+            # Get repository URL and installation ID from context
+            repository_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+            installation_id = tool_context.state.get("installation_id")
+
+            if repository_url and repository_branch:
+                # Import the clone function from routes
+                from application.routes.repository_routes import _ensure_repository_cloned
+
+                success, message, cloned_path = await _ensure_repository_cloned(
+                    repository_url=repository_url,
+                    repository_branch=repository_branch,
+                    installation_id=installation_id,
+                    repository_name=repository_name,
+                    repository_owner=repository_owner,
+                    use_env_installation_id=True,
+                )
+
+                if not success:
+                    return f"ERROR: Failed to clone repository: {message}{STOP_ON_ERROR}"
+
+                repository_path = cloned_path
+                logger.info(f"✅ Repository cloned successfully at {repository_path}")
+            else:
+                return f"ERROR: Repository not available and insufficient information to clone. Please ensure repository_url and branch are configured.{STOP_ON_ERROR}"
+
         # Detect project type and paths
         try:
             paths = _detect_project_type(repository_path)
@@ -1333,6 +1364,40 @@ async def save_file_to_repository(
         if not repository_path:
             return f"ERROR: repository_path not found in context. Repository must be cloned first.{STOP_ON_ERROR}"
 
+        # Check if repository exists locally, clone if necessary (resilient to container restarts)
+        repo_path_obj = Path(repository_path)
+        repo_exists = repo_path_obj.exists() and (repo_path_obj / ".git").exists()
+
+        if not repo_exists:
+            logger.info(f"📦 Repository not found at {repository_path}, attempting to clone...")
+            # Get repository URL and installation ID from context
+            repository_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+            installation_id = tool_context.state.get("installation_id")
+            branch_name = tool_context.state.get("branch_name")
+            repository_name = tool_context.state.get("repository_name")
+            repository_owner = tool_context.state.get("repository_owner")
+
+            if repository_url and branch_name:
+                # Import the clone function from routes
+                from application.routes.repository_routes import _ensure_repository_cloned
+
+                success, message, cloned_path = await _ensure_repository_cloned(
+                    repository_url=repository_url,
+                    repository_branch=branch_name,
+                    installation_id=installation_id,
+                    repository_name=repository_name,
+                    repository_owner=repository_owner,
+                    use_env_installation_id=True,
+                )
+
+                if not success:
+                    return f"ERROR: Failed to clone repository: {message}{STOP_ON_ERROR}"
+
+                repository_path = cloned_path
+                logger.info(f"✅ Repository cloned successfully at {repository_path}")
+            else:
+                return f"ERROR: Repository not available and insufficient information to clone. Please ensure repository_url and branch are configured.{STOP_ON_ERROR}"
+
         # Construct full path
         full_path = Path(repository_path) / file_path
 
@@ -1442,6 +1507,37 @@ async def commit_and_push_changes(
             return f"ERROR: No branch configured for this conversation.{STOP_ON_ERROR}"
         if not repository_name:
             return f"ERROR: No repository configured for this conversation.{STOP_ON_ERROR}"
+
+        # Check if repository exists locally, clone if necessary (resilient to container restarts)
+        repo_path_obj = Path(repository_path)
+        repo_exists = repo_path_obj.exists() and (repo_path_obj / ".git").exists()
+
+        if not repo_exists:
+            logger.info(f"📦 Repository not found at {repository_path}, attempting to clone...")
+            # Get repository URL and installation ID from context
+            repository_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+            installation_id = tool_context.state.get("installation_id")
+
+            if repository_url and branch_name:
+                # Import the clone function from routes
+                from application.routes.repository_routes import _ensure_repository_cloned
+
+                success, message, cloned_path = await _ensure_repository_cloned(
+                    repository_url=repository_url,
+                    repository_branch=branch_name,
+                    installation_id=installation_id,
+                    repository_name=repository_name,
+                    repository_owner=repository_owner,
+                    use_env_installation_id=True,
+                )
+
+                if not success:
+                    return f"ERROR: Failed to clone repository: {message}{STOP_ON_ERROR}"
+
+                repository_path = cloned_path
+                logger.info(f"✅ Repository cloned successfully at {repository_path}")
+            else:
+                return f"ERROR: Repository not available and insufficient information to clone. Please ensure repository_url and branch are configured.{STOP_ON_ERROR}"
 
         # Get GitHub service
         github_service = await _get_github_service_from_context(tool_context)
@@ -1681,6 +1777,39 @@ async def pull_repository_changes(tool_context: ToolContext) -> str:
         if not branch_name:
             return f"ERROR: No branch configured for this conversation.{STOP_ON_ERROR}"
 
+        # Check if repository exists locally, clone if necessary (resilient to container restarts)
+        repo_path_obj = Path(repository_path)
+        repo_exists = repo_path_obj.exists() and (repo_path_obj / ".git").exists()
+
+        if not repo_exists:
+            logger.info(f"📦 Repository not found at {repository_path}, attempting to clone...")
+            # Get repository URL and installation ID from context
+            repository_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+            installation_id = tool_context.state.get("installation_id")
+            repository_name = tool_context.state.get("repository_name")
+            repository_owner = tool_context.state.get("repository_owner")
+
+            if repository_url and branch_name:
+                # Import the clone function from routes
+                from application.routes.repository_routes import _ensure_repository_cloned
+
+                success, message, cloned_path = await _ensure_repository_cloned(
+                    repository_url=repository_url,
+                    repository_branch=branch_name,
+                    installation_id=installation_id,
+                    repository_name=repository_name,
+                    repository_owner=repository_owner,
+                    use_env_installation_id=True,
+                )
+
+                if not success:
+                    return f"ERROR: Failed to clone repository: {message}{STOP_ON_ERROR}"
+
+                repository_path = cloned_path
+                logger.info(f"✅ Repository cloned successfully at {repository_path}")
+            else:
+                return f"ERROR: Repository not available and insufficient information to clone. Please ensure repository_url and branch are configured.{STOP_ON_ERROR}"
+
         logger.info(f"🔄 Pulling changes from origin/{branch_name} in {repository_path}")
 
         # Execute git pull using subprocess directly (not execute_unix_command which is read-only)
@@ -1728,6 +1857,40 @@ async def get_repository_diff(tool_context: ToolContext) -> str:
         repository_path = tool_context.state.get("repository_path")
         if not repository_path:
             return "ERROR: repository_path not found in context. Repository must be cloned first."
+
+        # Check if repository exists locally, clone if necessary (resilient to container restarts)
+        repo_path_obj = Path(repository_path)
+        repo_exists = repo_path_obj.exists() and (repo_path_obj / ".git").exists()
+
+        if not repo_exists:
+            logger.info(f"📦 Repository not found at {repository_path}, attempting to clone...")
+            # Get repository URL and installation ID from context
+            repository_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+            installation_id = tool_context.state.get("installation_id")
+            branch_name = tool_context.state.get("branch_name")
+            repository_name = tool_context.state.get("repository_name")
+            repository_owner = tool_context.state.get("repository_owner")
+
+            if repository_url and branch_name:
+                # Import the clone function from routes
+                from application.routes.repository_routes import _ensure_repository_cloned
+
+                success, message, cloned_path = await _ensure_repository_cloned(
+                    repository_url=repository_url,
+                    repository_branch=branch_name,
+                    installation_id=installation_id,
+                    repository_name=repository_name,
+                    repository_owner=repository_owner,
+                    use_env_installation_id=True,
+                )
+
+                if not success:
+                    return f"ERROR: Failed to clone repository: {message}"
+
+                repository_path = cloned_path
+                logger.info(f"✅ Repository cloned successfully at {repository_path}")
+            else:
+                return f"ERROR: Repository not available and insufficient information to clone. Please ensure repository_url and branch are configured."
 
         # Use git to get status
         import subprocess
@@ -1800,6 +1963,48 @@ async def _commit_and_push_changes(
     try:
         repository_path_str = str(repository_path)
         logger.info(f"📝 _commit_and_push_changes START - repo: {repository_path_str}, branch: {branch_name}")
+
+        # Check if repository exists locally, clone if necessary (resilient to container restarts)
+        repo_path_obj = Path(repository_path_str)
+        repo_exists = repo_path_obj.exists() and (repo_path_obj / ".git").exists()
+
+        if not repo_exists:
+            logger.info(f"📦 Repository not found at {repository_path_str}, attempting to clone...")
+
+            # Extract authentication info from tool_context if not provided directly
+            if tool_context and not (repo_url and installation_id and repository_type):
+                logger.info(f"📝 Extracting auth info from tool_context for clone")
+                repository_type = repository_type or tool_context.state.get("repository_type")
+                repo_url = repo_url or tool_context.state.get("user_repository_url")
+                installation_id = installation_id or tool_context.state.get("installation_id")
+
+            if repo_url and installation_id and branch_name:
+                # Import the clone function from routes
+                from application.routes.repository_routes import _ensure_repository_cloned
+
+                repository_name = tool_context.state.get("repository_name") if tool_context else None
+                repository_owner = tool_context.state.get("repository_owner") if tool_context else None
+
+                success, message, cloned_path = await _ensure_repository_cloned(
+                    repository_url=repo_url,
+                    repository_branch=branch_name,
+                    installation_id=installation_id,
+                    repository_name=repository_name,
+                    repository_owner=repository_owner,
+                    use_env_installation_id=True,
+                )
+
+                if not success:
+                    error_msg = f"❌ Failed to clone repository: {message}"
+                    logger.error(error_msg)
+                    return {"status": "error", "message": error_msg}
+
+                repository_path_str = cloned_path
+                logger.info(f"✅ Repository cloned successfully at {repository_path_str}")
+            else:
+                error_msg = f"❌ Repository not available and insufficient information to clone. repo_url: {repo_url}, inst_id: {installation_id}, branch: {branch_name}"
+                logger.error(error_msg)
+                return {"status": "error", "message": error_msg}
 
         # Extract authentication info from tool_context if not provided directly
         if tool_context and not (repo_url and installation_id and repository_type):

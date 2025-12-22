@@ -14,8 +14,11 @@ class TestSaveFileToRepository:
 
     @pytest.fixture
     def temp_repo(self):
-        """Create a temporary repository directory."""
+        """Create a temporary repository directory with .git folder."""
         temp_dir = tempfile.mkdtemp()
+        # Create .git directory to mark it as a git repository
+        git_dir = Path(temp_dir) / ".git"
+        git_dir.mkdir(parents=True, exist_ok=True)
         yield temp_dir
         shutil.rmtree(temp_dir, ignore_errors=True)
 

@@ -7,6 +7,7 @@ import logging
 from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
+from pydantic import ValidationError
 
 # Make ToolContext available for type hint evaluation by Google ADK
 # This is needed because 'from __future__ import annotations' makes all annotations strings,
@@ -15,6 +16,7 @@ from google.adk.tools.tool_context import ToolContext
 __all__ = ["ToolContext"]
 
 from application.agents.shared.hook_decorator import creates_hook
+from application.agents.canvas.models import WorkflowSchema, EntitySchema
 
 logger = logging.getLogger(__name__)
 
@@ -33,47 +35,14 @@ async def validate_workflow_schema(
         Validation result with any errors
     """
     try:
-        workflow = json.loads(workflow_json)
-        
-        # Check required fields
-        required_fields = ["version", "name", "desc", "initialState", "active", "states"]
-        missing_fields = [f for f in required_fields if f not in workflow]
-        
-        if missing_fields:
-            return json.dumps({
-                "valid": False,
-                "errors": [f"Missing required fields: {', '.join(missing_fields)}"]
-            })
-        
-        # Validate states
-        if not isinstance(workflow.get("states"), list):
-            return json.dumps({
-                "valid": False,
-                "errors": ["states must be an array"]
-            })
-        
-        # Validate transitions in each state
-        errors = []
-        for state in workflow.get("states", []):
-            if "transitions" not in state:
-                errors.append(f"State '{state.get('name')}' missing transitions array")
-            else:
-                for transition in state.get("transitions", []):
-                    if "name" not in transition or "next" not in transition or "manual" not in transition:
-                        errors.append(
-                            f"Transition in state '{state.get('name')}' missing required fields: "
-                            f"name, next, manual"
-                        )
-        
-        if errors:
-            return json.dumps({"valid": False, "errors": errors})
-        
+        # Validate against Pydantic model
+        WorkflowSchema.model_validate_json(workflow_json)
         return json.dumps({"valid": True, "message": "Workflow schema is valid"})
         
-    except json.JSONDecodeError as e:
+    except ValidationError as e:
         return json.dumps({
             "valid": False,
-            "errors": [f"Invalid JSON: {str(e)}"]
+            "errors": [f"Validation error: {str(e)}"]
         })
     except Exception as e:
         logger.error(f"Error validating workflow schema: {e}", exc_info=True)
@@ -97,40 +66,14 @@ async def validate_entity_schema(
         Validation result with any errors
     """
     try:
-        entity = json.loads(entity_json)
-        
-        # Check required fields
-        required_fields = ["name", "fields"]
-        missing_fields = [f for f in required_fields if f not in entity]
-        
-        if missing_fields:
-            return json.dumps({
-                "valid": False,
-                "errors": [f"Missing required fields: {', '.join(missing_fields)}"]
-            })
-        
-        # Validate fields
-        if not isinstance(entity.get("fields"), list):
-            return json.dumps({
-                "valid": False,
-                "errors": ["fields must be an array"]
-            })
-        
-        # Validate each field
-        errors = []
-        for field in entity.get("fields", []):
-            if "name" not in field or "type" not in field:
-                errors.append("Each field must have 'name' and 'type'")
-        
-        if errors:
-            return json.dumps({"valid": False, "errors": errors})
-        
+        # Validate against Pydantic model
+        EntitySchema.model_validate_json(entity_json)
         return json.dumps({"valid": True, "message": "Entity schema is valid"})
         
-    except json.JSONDecodeError as e:
+    except ValidationError as e:
         return json.dumps({
             "valid": False,
-            "errors": [f"Invalid JSON: {str(e)}"]
+            "errors": [f"Validation error: {str(e)}"]
         })
     except Exception as e:
         logger.error(f"Error validating entity schema: {e}", exc_info=True)
@@ -200,4 +143,3 @@ async def create_canvas_refresh_hook(
     except Exception as e:
         logger.error(f"Error creating canvas_open hook: {e}", exc_info=True)
         return f"ERROR: Failed to create canvas hook: {str(e)}"
-
