@@ -40,68 +40,116 @@ def validate_test_config(file_path: Path) -> tuple[bool, str]:
         return False, f"Error: {e}"
 
 
+def _validate_eval_cases_structure(eval_cases: any) -> tuple[bool, str]:
+    """Validate eval_cases structure.
+
+    Args:
+        eval_cases: eval_cases data
+
+    Returns:
+        Tuple of (valid, error_message)
+    """
+    if not isinstance(eval_cases, list):
+        return False, "eval_cases must be a list"
+
+    if len(eval_cases) == 0:
+        return False, "eval_cases is empty"
+
+    return True, ""
+
+
+def _validate_tool_uses(intermediate: dict, case_idx: int, inv_idx: int) -> tuple[bool, str]:
+    """Validate tool_uses in intermediate data.
+
+    Args:
+        intermediate: Intermediate data
+        case_idx: Case index
+        inv_idx: Invocation index
+
+    Returns:
+        Tuple of (valid, error_message)
+    """
+    if "tool_uses" not in intermediate:
+        return False, f"Case {case_idx}, invocation {inv_idx}: missing tool_uses"
+
+    if not isinstance(intermediate["tool_uses"], list):
+        return False, f"Case {case_idx}, invocation {inv_idx}: tool_uses must be a list"
+
+    for k, tool_use in enumerate(intermediate["tool_uses"]):
+        if "name" not in tool_use:
+            return False, f"Case {case_idx}, invocation {inv_idx}, tool {k}: missing tool name"
+
+        if "args" not in tool_use:
+            return False, f"Case {case_idx}, invocation {inv_idx}, tool {k}: missing tool args"
+
+    return True, ""
+
+
+def _validate_invocation(invocation: dict, case_idx: int, inv_idx: int) -> tuple[bool, str]:
+    """Validate single invocation.
+
+    Args:
+        invocation: Invocation data
+        case_idx: Case index
+        inv_idx: Invocation index
+
+    Returns:
+        Tuple of (valid, error_message)
+    """
+    required_keys = ["user_content", "final_response", "intermediate_data"]
+    for key in required_keys:
+        if key not in invocation:
+            return False, f"Case {case_idx}, invocation {inv_idx}: missing {key}"
+
+    return _validate_tool_uses(invocation["intermediate_data"], case_idx, inv_idx)
+
+
+def _validate_eval_case(case: dict, case_idx: int) -> tuple[bool, str]:
+    """Validate single eval case.
+
+    Args:
+        case: Case data
+        case_idx: Case index
+
+    Returns:
+        Tuple of (valid, error_message)
+    """
+    if "eval_id" not in case:
+        return False, f"Case {case_idx}: missing eval_id"
+
+    if "conversation" not in case:
+        return False, f"Case {case_idx}: missing conversation"
+
+    if not isinstance(case["conversation"], list):
+        return False, f"Case {case_idx}: conversation must be a list"
+
+    for j, invocation in enumerate(case["conversation"]):
+        valid, error = _validate_invocation(invocation, case_idx, j)
+        if not valid:
+            return False, error
+
+    return True, ""
+
+
 def validate_test_file(file_path: Path) -> tuple[bool, str]:
     """Validate .test.json file."""
     try:
         with open(file_path) as f:
             data = json.load(f)
 
-        # Check required top-level keys
         required_keys = ["eval_set_id", "name", "eval_cases"]
         for key in required_keys:
             if key not in data:
                 return False, f"Missing required key: {key}"
 
-        # Check eval_cases
-        if not isinstance(data["eval_cases"], list):
-            return False, "eval_cases must be a list"
+        valid, error = _validate_eval_cases_structure(data["eval_cases"])
+        if not valid:
+            return False, error
 
-        if len(data["eval_cases"]) == 0:
-            return False, "eval_cases is empty"
-
-        # Validate each eval case
         for i, case in enumerate(data["eval_cases"]):
-            if "eval_id" not in case:
-                return False, f"Case {i}: missing eval_id"
-
-            if "conversation" not in case:
-                return False, f"Case {i}: missing conversation"
-
-            if not isinstance(case["conversation"], list):
-                return False, f"Case {i}: conversation must be a list"
-
-            # Validate each invocation
-            for j, invocation in enumerate(case["conversation"]):
-                if "user_content" not in invocation:
-                    return False, f"Case {i}, invocation {j}: missing user_content"
-
-                if "final_response" not in invocation:
-                    return False, f"Case {i}, invocation {j}: missing final_response"
-
-                if "intermediate_data" not in invocation:
-                    return False, f"Case {i}, invocation {j}: missing intermediate_data"
-
-                # Check tool_uses
-                intermediate = invocation["intermediate_data"]
-                if "tool_uses" not in intermediate:
-                    return False, f"Case {i}, invocation {j}: missing tool_uses"
-
-                if not isinstance(intermediate["tool_uses"], list):
-                    return False, f"Case {i}, invocation {j}: tool_uses must be a list"
-
-                # Validate each tool use
-                for k, tool_use in enumerate(intermediate["tool_uses"]):
-                    if "name" not in tool_use:
-                        return (
-                            False,
-                            f"Case {i}, invocation {j}, tool {k}: missing tool name",
-                        )
-
-                    if "args" not in tool_use:
-                        return (
-                            False,
-                            f"Case {i}, invocation {j}, tool {k}: missing tool args",
-                        )
+            valid, error = _validate_eval_case(case, i)
+            if not valid:
+                return False, error
 
         num_cases = len(data["eval_cases"])
         return True, f"Valid ({num_cases} cases)"
@@ -110,6 +158,97 @@ def validate_test_file(file_path: Path) -> tuple[bool, str]:
         return False, f"Invalid JSON: {e}"
     except Exception as e:
         return False, f"Error: {e}"
+
+
+def _validate_test_config_file(evals_dir: Path) -> tuple[bool, int]:
+    """Validate test_config.json file.
+
+    Args:
+        evals_dir: Evaluation directory
+
+    Returns:
+        Tuple of (all_valid, total_files)
+    """
+    test_config = evals_dir / "test_config.json"
+    total_files = 0
+
+    if test_config.exists():
+        valid, message = validate_test_config(test_config)
+        status = "✅" if valid else "❌"
+        print(f"  {status} test_config.json - {message}")
+        total_files = 1
+        return valid, total_files
+
+    print("  ⚠️  test_config.json - Missing")
+    return False, 0
+
+
+def _validate_test_files(evals_dir: Path) -> tuple[bool, int, int]:
+    """Validate all .test.json files.
+
+    Args:
+        evals_dir: Evaluation directory
+
+    Returns:
+        Tuple of (all_valid, total_files, total_cases)
+    """
+    all_valid = True
+    total_files = 0
+    total_cases = 0
+
+    for test_file in sorted(evals_dir.glob("*.test.json")):
+        valid, message = validate_test_file(test_file)
+        status = "✅" if valid else "❌"
+        print(f"  {status} {test_file.name} - {message}")
+        total_files += 1
+
+        if valid and "cases)" in message:
+            num_cases = int(message.split("(")[1].split()[0])
+            total_cases += num_cases
+
+        if not valid:
+            all_valid = False
+
+    return all_valid, total_files, total_cases
+
+
+def _validate_agent_evals(agents_dir: Path) -> tuple[bool, int, int]:
+    """Validate all evaluation files in agents directory.
+
+    Args:
+        agents_dir: Agents directory
+
+    Returns:
+        Tuple of (all_valid, total_files, total_cases)
+    """
+    all_valid = True
+    total_files = 0
+    total_cases = 0
+
+    for agent_dir in agents_dir.iterdir():
+        if not agent_dir.is_dir():
+            continue
+
+        evals_dir = agent_dir / "evals"
+        if not evals_dir.exists():
+            continue
+
+        print(f"📁 {agent_dir.name}/evals/")
+
+        config_valid, config_files = _validate_test_config_file(evals_dir)
+        total_files += config_files
+        if not config_valid:
+            all_valid = False
+
+        test_valid, test_files, test_cases = _validate_test_files(evals_dir)
+        total_files += test_files
+        total_cases += test_cases
+        if not test_valid:
+            all_valid = False
+
+        print()
+
+    return all_valid, total_files, total_cases
 
 
 def main():
@@ -122,50 +261,7 @@ def main():
 
     print("🔍 Validating evaluation files...\n")
 
-    all_valid = True
-    total_files = 0
-    total_cases = 0
-
-    # Find all eval directories
-    for agent_dir in agents_dir.iterdir():
-        if not agent_dir.is_dir():
-            continue
-
-        evals_dir = agent_dir / "evals"
-        if not evals_dir.exists():
-            continue
-
-        print(f"📁 {agent_dir.name}/evals/")
-
-        # Validate test_config.json
-        test_config = evals_dir / "test_config.json"
-        if test_config.exists():
-            valid, message = validate_test_config(test_config)
-            status = "✅" if valid else "❌"
-            print(f"  {status} test_config.json - {message}")
-            total_files += 1
-            if not valid:
-                all_valid = False
-        else:
-            print("  ⚠️  test_config.json - Missing")
-            all_valid = False
-
-        # Validate .test.json files
-        for test_file in sorted(evals_dir.glob("*.test.json")):
-            valid, message = validate_test_file(test_file)
-            status = "✅" if valid else "❌"
-            print(f"  {status} {test_file.name} - {message}")
-            total_files += 1
-
-            if valid and "cases)" in message:
-                # Extract number of cases
-                num_cases = int(message.split("(")[1].split()[0])
-                total_cases += num_cases
-
-            if not valid:
-                all_valid = False
-
-        print()
+    all_valid, total_files, total_cases = _validate_agent_evals(agents_dir)
 
     print(f"\n📊 Summary:")
     print(f"  Total files: {total_files}")

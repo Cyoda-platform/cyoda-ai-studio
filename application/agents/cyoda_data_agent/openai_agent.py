@@ -44,7 +44,10 @@ def create_openai_cyoda_data_agent() -> Agent:
     cyoda_data_agent = Agent(
         name="cyoda_data_agent",
         instructions=cyoda_data_instructions,
-        handoff_description="Multi-tenant Cyoda data agent. Accepts user credentials and interacts with their Cyoda environment.",
+        handoff_description=(
+            "Multi-tenant Cyoda data agent. Accepts user credentials and interacts "
+            "with their Cyoda environment."
+        ),
         tools=openai_tools,
     )
 

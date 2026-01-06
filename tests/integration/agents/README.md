@@ -10,8 +10,7 @@ This directory contains comprehensive evaluation tests for the Cyoda AI Assistan
 
 ### Unit Tests (`.test.json` files)
 Located in `evals/` directory:
-- `qa_agent.test.json` - Tests QA agent's ability to answer Cyoda platform questions
-- `guidelines_agent.test.json` - Tests Guidelines agent's best practices guidance
+- `qa_agent.test.json` - Tests QA agent's ability to answer Cyoda platform questions and provide best practices
 - `setup_agent.test.json` - Tests Setup agent's project configuration help
 - `coordinator.test.json` - Tests coordinator's delegation to correct sub-agents
 
@@ -31,7 +30,6 @@ pytest tests/integration/agents/test_agent_evaluation.py -v
 
 # Run specific agent tests
 pytest tests/integration/agents/test_agent_evaluation.py::TestQAAgent -v
-pytest tests/integration/agents/test_agent_evaluation.py::TestGuidelinesAgent -v
 pytest tests/integration/agents/test_agent_evaluation.py::TestSetupAgent -v
 pytest tests/integration/agents/test_agent_evaluation.py::TestCoordinatorAgent -v
 

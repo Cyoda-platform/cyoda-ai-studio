@@ -10,12 +10,13 @@ from typing import Optional
 
 from application.repositories.conversation_repository import ConversationRepository
 from application.repositories.task_repository import TaskRepository
-from application.services.chat_service import ChatService
-from application.services.config_service import ConfigService, get_config_service
+from application.services.chat.service import ChatService
+from application.services.chat.stream_service import ChatStreamService
+from application.services.core.config_service import ConfigService, get_config_service
 from application.services.edge_message_persistence_service import (
     EdgeMessagePersistenceService,
 )
-from application.services.logs_service import LogsService
+from application.services.core.logs_service import LogsService
 from application.services.metrics_service import MetricsService
 from services.services import get_entity_service, get_task_service
 
@@ -35,6 +36,7 @@ class ServiceFactory:
     # Service instances (lazy-loaded)
     _config_service: Optional[ConfigService] = None
     _chat_service: Optional[ChatService] = None
+    _chat_stream_service: Optional[ChatStreamService] = None
     _logs_service: Optional[LogsService] = None
     _metrics_service: Optional[MetricsService] = None
     _conversation_repository: Optional[ConversationRepository] = None
@@ -141,6 +143,22 @@ class ServiceFactory:
             )
             logger.debug("ChatService initialized")
         return self._chat_service
+
+    @property
+    def chat_stream_service(self) -> ChatStreamService:
+        """
+        Get ChatStreamService instance.
+
+        Returns:
+            ChatStreamService: Chat streaming orchestration service
+        """
+        if self._chat_stream_service is None:
+            self._chat_stream_service = ChatStreamService(
+                chat_service=self.chat_service,
+                persistence_service=self.persistence_service,
+            )
+            logger.debug("ChatStreamService initialized")
+        return self._chat_stream_service
 
     @property
     def logs_service(self) -> LogsService:

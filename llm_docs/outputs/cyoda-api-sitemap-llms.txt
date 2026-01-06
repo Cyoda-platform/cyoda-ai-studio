@@ -1,0 +1,123 @@
+# Cyoda API Reference
+
+Base URL: `https://docs.cyoda.net/api-reference/scalar/`
+OpenAPI Spec: `https://docs.cyoda.net/openapi/openapi.json`
+
+## CQL Execution Statistics
+
+- [GET /platform-common/cql-exec-stats/all-tables](https://docs.cyoda.net/api-reference/scalar/#tag/CQL-Execution-Statistics/GET/platform-common/cql-exec-stats/all-tables) - Get full statistics for all tables
+- [GET /platform-common/cql-exec-stats/all-tables-brief](https://docs.cyoda.net/api-reference/scalar/#tag/CQL-Execution-Statistics/GET/platform-common/cql-exec-stats/all-tables-brief) - Get brief statistics for all tables
+- [GET /platform-common/cql-exec-stats/clear-cql-exec-stats](https://docs.cyoda.net/api-reference/scalar/#tag/CQL-Execution-Statistics/GET/platform-common/cql-exec-stats/clear-cql-exec-stats) - Clear all execution statistics
+- [GET /platform-common/cql-exec-stats/table/{table}](https://docs.cyoda.net/api-reference/scalar/#tag/CQL-Execution-Statistics/GET/platform-common/cql-exec-stats/table/%7Btable%7D) - Get statistics for a specific table
+- [GET /platform-common/cql-exec-stats/tables](https://docs.cyoda.net/api-reference/scalar/#tag/CQL-Execution-Statistics/GET/platform-common/cql-exec-stats/tables) - Get list of tracked tables
+
+## Edge message
+
+- [DELETE /message](https://docs.cyoda.net/api-reference/scalar/#tag/Edge-message/DELETE/message) - Delete multiple edge messages by IDs
+- [POST /message/new/{subject}](https://docs.cyoda.net/api-reference/scalar/#tag/Edge-message/POST/message/new/%7Bsubject%7D) - Send a new edge message
+- [GET /message/{messageId}](https://docs.cyoda.net/api-reference/scalar/#tag/Edge-message/GET/message/%7BmessageId%7D) - Retrieve an edge message by ID
+- [DELETE /message/{messageId}](https://docs.cyoda.net/api-reference/scalar/#tag/Edge-message/DELETE/message/%7BmessageId%7D) - Delete a single edge message by ID
+
+## Entity Management
+
+- [GET /entity/stats](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/GET/entity/stats) - Retrieve entity statistics
+- [GET /entity/stats/states](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/GET/entity/stats/states) - Retrieve entity statistics by state
+- [GET /entity/stats/states/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/GET/entity/stats/states/%7BentityName%7D/%7BmodelVersion%7D) - Retrieve entity statistics by state for a specific model
+- [GET /entity/stats/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/GET/entity/stats/%7BentityName%7D/%7BmodelVersion%7D) - Retrieve entity statistics for a specific model
+- [GET /entity/{entityId}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/GET/entity/%7BentityId%7D) - Get a  single entity
+- [DELETE /entity/{entityId}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/DELETE/entity/%7BentityId%7D) - Delete a single entity
+- [GET /entity/{entityId}/changes](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/GET/entity/%7BentityId%7D/changes) - Get Entity Changes Metadata
+- [GET /entity/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/GET/entity/%7BentityName%7D/%7BmodelVersion%7D) - Get All Entities
+- [DELETE /entity/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/DELETE/entity/%7BentityName%7D/%7BmodelVersion%7D) - Delete entities of a model and version
+- [POST /entity/{format}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/POST/entity/%7Bformat%7D) - Create Collection
+- [PUT /entity/{format}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/PUT/entity/%7Bformat%7D) - Update Collection
+- [PUT /entity/{format}/{entityId}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/PUT/entity/%7Bformat%7D/%7BentityId%7D) - Update Single with a loopback transition
+- [PUT /entity/{format}/{entityId}/{transition}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/PUT/entity/%7Bformat%7D/%7BentityId%7D/%7Btransition%7D) - Update Single
+- [POST /entity/{format}/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Management/POST/entity/%7Bformat%7D/%7BentityName%7D/%7BmodelVersion%7D) - Create New
+
+## Entity Model, Workflow
+
+- [GET /model/{entityName}/{modelVersion}/workflow/export](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Model-Workflow/GET/model/%7BentityName%7D/%7BmodelVersion%7D/workflow/export) - Export entity workflows
+- [POST /model/{entityName}/{modelVersion}/workflow/import](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Model-Workflow/POST/model/%7BentityName%7D/%7BmodelVersion%7D/workflow/import) - Import entity workflow
+
+## Entity model
+
+- [GET /model/](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-model/GET/model/) - List Available Entity Models
+- [GET /model/export/{converter}/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-model/GET/model/export/%7Bconverter%7D/%7BentityName%7D/%7BmodelVersion%7D) - Export Entity Model Metadata
+- [POST /model/import/{dataFormat}/{converter}/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-model/POST/model/import/%7BdataFormat%7D/%7Bconverter%7D/%7BentityName%7D/%7BmodelVersion%7D) - Import Entity Model
+- [DELETE /model/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-model/DELETE/model/%7BentityName%7D/%7BmodelVersion%7D) - Delete Entity Model
+- [POST /model/{entityName}/{modelVersion}/changeLevel/{changeLevel}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-model/POST/model/%7BentityName%7D/%7BmodelVersion%7D/changeLevel/%7BchangeLevel%7D) - Set Entity Model Change Level
+- [PUT /model/{entityName}/{modelVersion}/lock](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-model/PUT/model/%7BentityName%7D/%7BmodelVersion%7D/lock) - Lock Entity Model
+- [PUT /model/{entityName}/{modelVersion}/unlock](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-model/PUT/model/%7BentityName%7D/%7BmodelVersion%7D/unlock) - Unlock Entity Model
+
+## Entity, Audit
+
+- [GET /audit/entity/{entityId}](https://docs.cyoda.net/api-reference/scalar/#tag/Entity-Audit/GET/audit/entity/%7BentityId%7D) - Search audit events for entity
+
+## OAuth, Keys
+
+- [POST /oauth/keys/keypair](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-Keys/POST/oauth/keys/keypair) - Issue new JWT signing key-pair
+- [GET /oauth/keys/keypair/current](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-Keys/GET/oauth/keys/keypair/current) - Get current active JWT signing key-pair
+- [DELETE /oauth/keys/keypair/{keyId}](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-Keys/DELETE/oauth/keys/keypair/%7BkeyId%7D) - Delete JWT signing key-pair
+- [POST /oauth/keys/keypair/{keyId}/invalidate](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-Keys/POST/oauth/keys/keypair/%7BkeyId%7D/invalidate) - Invalidate JWT signing key-pair
+- [POST /oauth/keys/keypair/{keyId}/reactivate](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-Keys/POST/oauth/keys/keypair/%7BkeyId%7D/reactivate) - Reactivate JWT signing key-pair
+
+## OAuth, OIDC Providers
+
+- [GET /oauth/oidc/providers](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-OIDC-Providers/GET/oauth/oidc/providers) - List all registered OIDC providers
+- [POST /oauth/oidc/providers](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-OIDC-Providers/POST/oauth/oidc/providers) - Register a new trusted OIDC provider
+- [POST /oauth/oidc/providers/reload](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-OIDC-Providers/POST/oauth/oidc/providers/reload) - Force to reload all OIDC providers and synchronize keys with remote JWKS
+- [PATCH /oauth/oidc/providers/{id}](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-OIDC-Providers/PATCH/oauth/oidc/providers/%7Bid%7D) - Update OIDC provider
+- [DELETE /oauth/oidc/providers/{id}](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-OIDC-Providers/DELETE/oauth/oidc/providers/%7Bid%7D) - Delete OIDC provider
+- [POST /oauth/oidc/providers/{id}/invalidate](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-OIDC-Providers/POST/oauth/oidc/providers/%7Bid%7D/invalidate) - Invalidate OIDC provider
+- [POST /oauth/oidc/providers/{id}/reactivate](https://docs.cyoda.net/api-reference/scalar/#tag/OAuth-OIDC-Providers/POST/oauth/oidc/providers/%7Bid%7D/reactivate) - Reactivate OIDC provider
+
+## SQL-Schema
+
+- [GET /sql/schema/](https://docs.cyoda.net/api-reference/scalar/#tag/SQL-Schema/GET/sql/schema/) - Get schema by name
+- [POST /sql/schema/](https://docs.cyoda.net/api-reference/scalar/#tag/SQL-Schema/POST/sql/schema/) - Save schema
+- [DELETE /sql/schema/](https://docs.cyoda.net/api-reference/scalar/#tag/SQL-Schema/DELETE/sql/schema/) - Delete schema by name
+- [GET /sql/schema/genTables/{entityModelId}](https://docs.cyoda.net/api-reference/scalar/#tag/SQL-Schema/GET/sql/schema/genTables/%7BentityModelId%7D) - Generate SQL tables from an entity model
+- [GET /sql/schema/listAll](https://docs.cyoda.net/api-reference/scalar/#tag/SQL-Schema/GET/sql/schema/listAll) - List all schemas
+- [PUT /sql/schema/putDefault/{schemaName}](https://docs.cyoda.net/api-reference/scalar/#tag/SQL-Schema/PUT/sql/schema/putDefault/%7BschemaName%7D) - Create default schema
+- [POST /sql/schema/updateTables/{entityModelId}](https://docs.cyoda.net/api-reference/scalar/#tag/SQL-Schema/POST/sql/schema/updateTables/%7BentityModelId%7D) - Synchronize given SQL table configurations with the current entity model
+- [GET /sql/schema/{schemaId}](https://docs.cyoda.net/api-reference/scalar/#tag/SQL-Schema/GET/sql/schema/%7BschemaId%7D) - Get schema by ID
+- [DELETE /sql/schema/{schemaId}](https://docs.cyoda.net/api-reference/scalar/#tag/SQL-Schema/DELETE/sql/schema/%7BschemaId%7D) - Delete schema by ID
+
+## Search
+
+- [POST /search/snapshot/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Search/POST/search/snapshot/%7BentityName%7D/%7BmodelVersion%7D) - Create Search Snapshot
+- [GET /search/snapshot/{snapshotId}](https://docs.cyoda.net/api-reference/scalar/#tag/Search/GET/search/snapshot/%7BsnapshotId%7D) - Retrieve paginated results from a search snapshot
+- [PUT /search/snapshot/{snapshotId}/cancel](https://docs.cyoda.net/api-reference/scalar/#tag/Search/PUT/search/snapshot/%7BsnapshotId%7D/cancel) - Cancel a running snapshot creation
+- [GET /search/snapshot/{snapshotId}/status](https://docs.cyoda.net/api-reference/scalar/#tag/Search/GET/search/snapshot/%7BsnapshotId%7D/status) - Get snapshot search status
+- [POST /search/{entityName}/{modelVersion}](https://docs.cyoda.net/api-reference/scalar/#tag/Search/POST/search/%7BentityName%7D/%7BmodelVersion%7D) - Perform synchronous entity search
+
+## Stream Data
+
+- [GET /platform-api/stream-data/config](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/GET/platform-api/stream-data/config) - Get a stream data configuration by ID
+- [POST /platform-api/stream-data/config](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/POST/platform-api/stream-data/config) - Save a new stream data configuration
+- [PUT /platform-api/stream-data/config](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/PUT/platform-api/stream-data/config) - Update an existing stream data configuration
+- [DELETE /platform-api/stream-data/config](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/DELETE/platform-api/stream-data/config) - Delete a stream data configuration
+- [GET /platform-api/stream-data/config/list](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/GET/platform-api/stream-data/config/list) - List all stream data configurations
+- [DELETE /platform-api/stream-data/delete](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/DELETE/platform-api/stream-data/delete) - Delete stream data
+- [GET /platform-api/stream-data/export-all](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/GET/platform-api/stream-data/export-all) - Export all stream data configurations
+- [GET /platform-api/stream-data/export-by-class](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/GET/platform-api/stream-data/export-by-class) - Export stream data configurations by entity class
+- [GET /platform-api/stream-data/export-by-ids](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/GET/platform-api/stream-data/export-by-ids) - Export stream data configurations by IDs
+- [POST /platform-api/stream-data/get](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/POST/platform-api/stream-data/get) - Fetch stream data
+- [POST /platform-api/stream-data/import](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/POST/platform-api/stream-data/import) - Import stream data configurations
+- [GET /platform-api/stream-data/index/list](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/GET/platform-api/stream-data/index/list) - List index configurations for an entity class
+- [POST /platform-api/stream-data/query-plan](https://docs.cyoda.net/api-reference/scalar/#tag/Stream-Data/POST/platform-api/stream-data/query-plan) - Get query execution plan
+
+## User, Account
+
+- [GET /account](https://docs.cyoda.net/api-reference/scalar/#tag/User-Account/GET/account) - Retrieve information about the current user's account, including current subscription.
+- [GET /account/subscriptions](https://docs.cyoda.net/api-reference/scalar/#tag/User-Account/GET/account/subscriptions) - Retrieve all subscriptions available for the current user's legal entity.
+
+## User, Machine
+
+- [GET /clients](https://docs.cyoda.net/api-reference/scalar/#tag/User-Machine/GET/clients) - List all M2M clients
+- [POST /clients](https://docs.cyoda.net/api-reference/scalar/#tag/User-Machine/POST/clients) - Create M2M client
+- [DELETE /clients/{clientId}](https://docs.cyoda.net/api-reference/scalar/#tag/User-Machine/DELETE/clients/%7BclientId%7D) - Delete a M2M client
+- [PUT /clients/{clientId}/secret](https://docs.cyoda.net/api-reference/scalar/#tag/User-Machine/PUT/clients/%7BclientId%7D/secret) - Reset M2M client secret
+- [POST /oauth/token](https://docs.cyoda.net/api-reference/scalar/#tag/User-Machine/POST/oauth/token) - Obtain access token for M2M client
+

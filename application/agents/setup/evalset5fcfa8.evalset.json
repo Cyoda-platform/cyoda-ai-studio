@@ -1,0 +1,118 @@
+{
+  "eval_set_id": "evalset5fcfa8",
+  "name": "evalset5fcfa8",
+  "eval_cases": [
+    {
+      "eval_id": "case522be9",
+      "conversation": [
+        {
+          "invocation_id": "e-85b0ae3b-36fa-454d-bfb3-4aab8b0038b0",
+          "user_content": {
+            "parts": [
+              {
+                "text": "launch setup assistnat"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Hi! I'm your Cyoda Setup Assistant.\n\nYou can use the Canvas (local) or Cloud panels — Canvas for local development, Cloud for deployed environments.\n\nPlease choose an option from the menu."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "setup_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_4dPlmPNQRvGwq5UDrCG9mWHU",
+                        "args": {
+                          "question": "How can I help you get started?",
+                          "options": [
+                            {
+                              "value": "check_env",
+                              "label": "🌐 Check Environment Status",
+                              "description": "Verify if your Cyoda cloud is ready"
+                            },
+                            {
+                              "value": "local_setup",
+                              "label": "🚀 Local Setup Guide",
+                              "description": "Step-by-step commands to run your app"
+                            },
+                            {
+                              "value": "get_credentials",
+                              "label": "🔑 Get Credentials",
+                              "description": "Generate Client ID and Secret"
+                            },
+                            {
+                              "value": "generate_resources",
+                              "label": "🛠️ Generate Resources",
+                              "description": "Generate workflows/entities, code"
+                            }
+                          ]
+                        },
+                        "name": "show_setup_options"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "setup_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_4dPlmPNQRvGwq5UDrCG9mWHU",
+                        "name": "show_setup_options",
+                        "response": {
+                          "result": "{\n  \"message\": \"How can I help you get started?\\n\\nPlease select your choice from the options above.\",\n  \"hook\": {\n    \"type\": \"option_selection\",\n    \"action\": \"show_selection_ui\",\n    \"data\": {\n      \"conversation_id\": \"a3c58355-3afa-4f2b-96d3-4db095d26968\",\n      \"question\": \"How can I help you get started?\",\n      \"options\": [\n        {\n          \"value\": \"check_env\",\n          \"label\": \"\\ud83c\\udf10 Check Environment Status\",\n          \"description\": \"Verify if your Cyoda cloud is ready\"\n        },\n        {\n          \"value\": \"local_setup\",\n          \"label\": \"\\ud83d\\ude80 Local Setup Guide\",\n          \"description\": \"Step-by-step commands to run your app\"\n        },\n        {\n          \"value\": \"get_credentials\",\n          \"label\": \"\\ud83d\\udd11 Get Credentials\",\n          \"description\": \"Generate Client ID and Secret\"\n        },\n        {\n          \"value\": \"generate_resources\",\n          \"label\": \"\\ud83d\\udee0\\ufe0f Generate Resources\",\n          \"description\": \"Generate workflows/entities, code\"\n        }\n      ],\n      \"selection_type\": \"single\",\n      \"context\": null\n    }\n  }\n}"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1767649970.985223
+        },
+        {
+          "invocation_id": "e-388c53af-96ec-4fa2-a31b-e05283308078",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Local Setup Guide"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Great — here are the local setup steps.\n\nPython Setup (Path B)\n- Init: mv .env.template .env\n- Venv: python3 -m venv .venv && source .venv/bin/activate\n- Deps: pip install -r requirements.txt\n- Run: python app.py (Default port: 8000)\n- Import: python common/repository/cyoda/cyoda_init.py\n\nJava Setup (Path A)\n- Init: Rename .env.template to .env\n- Config: Update CYODA_HOST and ensure ENTITY_VERSION is unique\n- Import: ./gradlew importWorkflows\n- Run: Test at http://localhost:8080\n\nNeed anything else — e.g., help with one of these commands, troubleshooting an error, or do you want me to check your cloud environment or generate credentials/resources? (If you ask to check env or generate credentials/resources I’ll hand that off to the appropriate agent.)"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {},
+          "creation_timestamp": 1767650024.216261
+        }
+      ],
+      "session_input": {
+        "app_name": "setup",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767650170.6451855
+    }
+  ],
+  "creation_timestamp": 1767650166.3718667
+}

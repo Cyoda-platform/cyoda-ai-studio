@@ -820,8 +820,6 @@ class TestCyodaRepository:
         assert len(result["conditions"]) == 1
         assert result["conditions"][0]["type"] == "lifecycle"
 
-
-
     @pytest.mark.asyncio
     async def test_find_by_id_with_state_in_meta(self, repository, sample_meta):
         """Test finding entity by ID with state in meta."""
@@ -914,7 +912,15 @@ class TestCyodaRepository:
         assert len(result["conditions"]) == 1
         assert result["conditions"][0]["type"] == "lifecycle"
 
+    @pytest.mark.asyncio
+    async def test_ensure_cyoda_format_non_dict(self, repository):
+        """Test _ensure_cyoda_format with non-dict input."""
+        criteria = "not a dict"
 
+        result = repository._ensure_cyoda_format(criteria)
+
+        # Should return as-is
+        assert result == criteria
 
     # Edge Message Tests
 

@@ -60,7 +60,11 @@ class CLIProcessManager:
                 )
                 return False
             self.active_pids.add(pid)
-            logger.info(f"Registered CLI process PID {pid}. Active: {len(self.active_pids)}/{self.max_concurrent_processes}")
+            active_count = len(self.active_pids)
+            logger.info(
+                f"Registered CLI process PID {pid}. "
+                f"Active: {active_count}/{self.max_concurrent_processes}"
+            )
             return True
 
     async def unregister_process(self, pid: int) -> None:
@@ -73,7 +77,11 @@ class CLIProcessManager:
         async with self._lock:
             if pid in self.active_pids:
                 self.active_pids.discard(pid)
-                logger.info(f"Unregistered CLI process PID {pid}. Active: {len(self.active_pids)}/{self.max_concurrent_processes}")
+                active_count = len(self.active_pids)
+                logger.info(
+                    f"Unregistered CLI process PID {pid}. "
+                    f"Active: {active_count}/{self.max_concurrent_processes}"
+                )
 
     async def get_active_count(self) -> int:
         """Get current count of active processes."""

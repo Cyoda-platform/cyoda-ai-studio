@@ -3,11 +3,13 @@ Shared tools for all agents.
 
 Includes:
 - Web page loading for documentation retrieval
+- Local documentation file reading
 - Future: Cyoda entity search, code example lookup
 """
 
 import asyncio
 import logging
+from pathlib import Path
 
 import httpx
 from bs4 import BeautifulSoup
@@ -81,5 +83,56 @@ async def load_web_page(tool_context: ToolContext, url: str) -> str:
         return error_msg
     except Exception as e:
         error_msg = f"Unexpected error loading {url}: {str(e)}"
+        logger.exception(error_msg)
+        return error_msg
+
+
+async def read_documentation(tool_context: ToolContext, filename: str) -> str:
+    """
+    Read local documentation file from llm_docs/outputs/.
+
+    This tool reads pre-generated documentation files that contain
+    API references, platform concepts, and guides.
+
+    Args:
+        tool_context: The ADK tool context
+        filename: The filename to read. Available files:
+                  - 'cyoda-api-sitemap-llms.txt' - API endpoint reference
+                  - 'cyoda-api-descriptions-llms.txt' - API section descriptions
+                  - 'cyoda-docs-llms.txt' - Platform concepts & guides
+
+    Returns:
+        File content, or error message if file not found
+
+    Example:
+        >>> content = await read_documentation(tool_context, 'cyoda-api-sitemap-llms.txt')
+    """
+    try:
+        logger.info(f"Reading documentation file: {filename}")
+
+        # Resolve path relative to project root
+        project_root = Path(__file__).parent.parent.parent.parent
+        file_path = project_root / "llm_docs" / "outputs" / filename
+
+        if not file_path.exists():
+            available_files = [
+                "cyoda-api-sitemap-llms.txt",
+                "cyoda-api-descriptions-llms.txt",
+                "cyoda-docs-llms.txt"
+            ]
+            error_msg = (
+                f"File not found: {filename}\n"
+                f"Available files: {', '.join(available_files)}"
+            )
+            logger.error(error_msg)
+            return error_msg
+
+        # Read file content
+        content = file_path.read_text(encoding='utf-8')
+        logger.info(f"Successfully read {len(content)} characters from {filename}")
+        return content
+
+    except Exception as e:
+        error_msg = f"Error reading {filename}: {str(e)}"
         logger.exception(error_msg)
         return error_msg

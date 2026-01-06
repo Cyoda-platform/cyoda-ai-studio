@@ -7,7 +7,7 @@ import os
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
-from application.services.openai_vision_service import VisionService
+from application.services.openai.vision_service import VisionService
 
 
 @pytest.fixture
@@ -88,7 +88,7 @@ class TestDownloadImage:
     @pytest.mark.asyncio
     async def test_download_image_success(self, sample_image_bytes):
         """Test successful image download."""
-        with patch('application.services.openai_vision_service.httpx.AsyncClient') as mock_client:
+        with patch('application.services.openai.vision_service.httpx.AsyncClient') as mock_client:
             mock_response = MagicMock()
             mock_response.content = sample_image_bytes
             mock_response.raise_for_status = MagicMock()
@@ -105,7 +105,7 @@ class TestDownloadImage:
     @pytest.mark.asyncio
     async def test_download_image_failure(self):
         """Test image download failure."""
-        with patch('application.services.openai_vision_service.httpx.AsyncClient') as mock_client:
+        with patch('application.services.openai.vision_service.httpx.AsyncClient') as mock_client:
             mock_client_instance = AsyncMock()
             mock_client_instance.get = AsyncMock(side_effect=Exception("Connection error"))
             mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)

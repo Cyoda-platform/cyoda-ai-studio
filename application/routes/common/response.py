@@ -35,13 +35,7 @@ class APIResponse:
         return jsonify(data), status
 
     @staticmethod
-    def error(
-        message: str,
-        status: int = 400,
-        details: Any = None,
-        error_code: str = None,
-        modal: Dict[str, Any] = None,
-    ) -> Tuple[Response, int]:
+    def error(message: str, status: int = 400, details: Any = None) -> Tuple[Response, int]:
         """
         Create an error response.
 
@@ -49,8 +43,6 @@ class APIResponse:
             message: Error message
             status: HTTP status code (default: 400)
             details: Additional error details (optional)
-            error_code: Error code for client-side handling (optional)
-            modal: Modal configuration for UI display (optional)
 
         Returns:
             tuple: (Response object, status code)
@@ -58,15 +50,10 @@ class APIResponse:
         Example:
             >>> return APIResponse.error("Invalid request", 400)
             >>> return APIResponse.error("Validation failed", 422, details=validation_errors)
-            >>> return APIResponse.error("Limit exceeded", 403, error_code="LIMIT_EXCEEDED", modal={...})
         """
         error_data: Dict[str, Any] = {"error": message}
         if details is not None:
             error_data["details"] = details
-        if error_code is not None:
-            error_data["error_code"] = error_code
-        if modal is not None:
-            error_data["modal"] = modal
         return jsonify(error_data), status
 
     @staticmethod

@@ -46,7 +46,10 @@ Always validate URLs and handle errors gracefully."""
 api_data_fetcher_agent = LlmAgent(
     name="api_data_fetcher_agent",
     model=get_model_config(),
-    description="Fetches data from external REST APIs like Petstore Swagger. Can search API documentation and retrieve data from specified endpoints.",
+    description=(
+        "Fetches data from external REST APIs like Petstore Swagger. Can search "
+        "API documentation and retrieve data from specified endpoints."
+    ),
     instruction=_get_instruction(),
     tools=[
         fetch_api_data,

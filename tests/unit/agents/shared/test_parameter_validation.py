@@ -11,7 +11,7 @@ from application.agents.shared.repository_tools import (
     generate_application,
     save_files_to_branch,
 )
-from application.agents.shared.hook_utils import create_option_selection_hook
+from application.agents.shared.hooks import create_option_selection_hook
 
 
 class TestAskUserToSelectOptionValidation:
@@ -35,53 +35,44 @@ class TestAskUserToSelectOptionValidation:
             )
 
     @pytest.mark.asyncio
-    async def test_missing_options_returns_guidance(self, mock_tool_context):
-        """Test that missing options parameter returns helpful guidance message."""
-        result = await ask_user_to_select_option(
-            question="Choose one",
-            options=None,
-            tool_context=mock_tool_context,
-        )
-        assert isinstance(result, str)
-        assert "options" in result.lower()
-        assert "value" in result.lower()
-        assert "label" in result.lower()
+    async def test_missing_options_raises_error(self, mock_tool_context):
+        """Test that missing options parameter raises ValueError."""
+        with pytest.raises(ValueError, match="options.*required"):
+            await ask_user_to_select_option(
+                question="Choose one",
+                options=None,
+                tool_context=mock_tool_context,
+            )
 
     @pytest.mark.asyncio
-    async def test_empty_options_returns_guidance(self, mock_tool_context):
-        """Test that empty options list returns helpful guidance message."""
-        result = await ask_user_to_select_option(
-            question="Choose one",
-            options=[],
-            tool_context=mock_tool_context,
-        )
-        assert isinstance(result, str)
-        assert "options" in result.lower()
-        assert "example" in result.lower()
+    async def test_empty_options_raises_error(self, mock_tool_context):
+        """Test that empty options list raises ValueError."""
+        with pytest.raises(ValueError, match="options.*required"):
+            await ask_user_to_select_option(
+                question="Choose one",
+                options=[],
+                tool_context=mock_tool_context,
+            )
 
     @pytest.mark.asyncio
-    async def test_option_missing_value_returns_guidance(self, mock_tool_context):
-        """Test that option missing 'value' field returns helpful guidance."""
-        result = await ask_user_to_select_option(
-            question="Choose one",
-            options=[{"label": "Option A"}],
-            tool_context=mock_tool_context,
-        )
-        assert isinstance(result, str)
-        assert "value" in result.lower()
-        assert "required" in result.lower()
+    async def test_option_missing_value_raises_error(self, mock_tool_context):
+        """Test that option missing 'value' field raises ValueError."""
+        with pytest.raises(ValueError, match="missing required 'value' field"):
+            await ask_user_to_select_option(
+                question="Choose one",
+                options=[{"label": "Option A"}],
+                tool_context=mock_tool_context,
+            )
 
     @pytest.mark.asyncio
-    async def test_option_missing_label_returns_guidance(self, mock_tool_context):
-        """Test that option missing 'label' field returns helpful guidance."""
-        result = await ask_user_to_select_option(
-            question="Choose one",
-            options=[{"value": "a"}],
-            tool_context=mock_tool_context,
-        )
-        assert isinstance(result, str)
-        assert "label" in result.lower()
-        assert "required" in result.lower()
+    async def test_option_missing_label_raises_error(self, mock_tool_context):
+        """Test that option missing 'label' field raises ValueError."""
+        with pytest.raises(ValueError, match="missing required 'label' field"):
+            await ask_user_to_select_option(
+                question="Choose one",
+                options=[{"value": "a"}],
+                tool_context=mock_tool_context,
+            )
 
 
 class TestSetRepositoryConfigValidation:

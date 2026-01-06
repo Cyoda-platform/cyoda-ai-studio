@@ -1,0 +1,10 @@
+{
+  "criteria": {
+    "tool_trajectory_avg_score": 0.6,
+    "response_match_score": 0.3
+  },
+  "user_simulator_config": {
+    "max_allowed_invocations": 50,
+    "model": "openai/gpt-5-mini"
+  }
+}

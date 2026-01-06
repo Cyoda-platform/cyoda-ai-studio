@@ -80,6 +80,9 @@ JAVA_REPOSITORY_NAME = os.getenv("JAVA_REPOSITORY_NAME", "java-client-template")
 CLIENT_GIT_BRANCH = os.getenv("CLIENT_GIT_BRANCH", "main")
 CLONE_REPO = os.getenv("CLONE_REPO", "false").lower() == "true"
 
+# Testing Configuration
+ADK_TEST_MODE = os.getenv("ADK_TEST_MODE", "false").lower() == "true"
+
 # AI Model Configuration
 AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-exp")
 AI_SDK = os.getenv("AI_SDK", "google")  # "google" or "openai"

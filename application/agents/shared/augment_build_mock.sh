@@ -37,18 +37,18 @@ echo "Mock Build Started at $(date)" > "$TEST_FILE"
 echo "Branch: $BRANCH_ID" >> "$TEST_FILE"
 echo "---" >> "$TEST_FILE"
 
-# Simulate 3 commits with 30-second intervals
-for i in {1..3}; do
-    log "Mock build iteration $i/3..."
-    
+# Simulate 4 commits with 30-second intervals (120 seconds total = 2 minutes)
+for i in {1..4}; do
+    log "Mock build iteration $i/4..."
+
     # Add test content
     echo "Build iteration $i completed at $(date)" >> "$TEST_FILE"
     echo "  - Generated test files" >> "$TEST_FILE"
     echo "  - Compiled successfully" >> "$TEST_FILE"
     echo "" >> "$TEST_FILE"
-    
+
     # Wait 30 seconds before next iteration (except on last iteration)
-    if [[ $i -lt 3 ]]; then
+    if [[ $i -lt 4 ]]; then
         log "Waiting 30 seconds before next iteration..."
         sleep 30
     fi

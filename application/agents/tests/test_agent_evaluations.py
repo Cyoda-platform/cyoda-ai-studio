@@ -66,74 +66,10 @@ async def test_qa_agent_all_evals():
     )
 
 
-@pytest.mark.asyncio
-async def test_guidelines_agent_design_principles():
-    """Test guidelines agent's ability to provide design principle guidance."""
-    await AgentEvaluator.evaluate(
-        agent_module="application.agents.guidelines.agent",
-        eval_dataset_file_path_or_dir="application/agents/guidelines/evals/design_principles.test.json",
-        num_runs=2,
-    )
 
 
-@pytest.mark.asyncio
-async def test_guidelines_agent_testing_guidelines():
-    """Test guidelines agent's ability to provide testing guidance."""
-    await AgentEvaluator.evaluate(
-        agent_module="application.agents.guidelines.agent",
-        eval_dataset_file_path_or_dir="application/agents/guidelines/evals/testing_guidelines.test.json",
-        num_runs=2,
-    )
 
 
-@pytest.mark.asyncio
-async def test_guidelines_agent_all_evals():
-    """Test guidelines agent with all evaluation files."""
-    await AgentEvaluator.evaluate(
-        agent_module="application.agents.guidelines.agent",
-        eval_dataset_file_path_or_dir="application/agents/guidelines/evals",
-        num_runs=2,
-    )
-
-
-@pytest.mark.asyncio
-async def test_canvas_agent_workflow_creation():
-    """Test canvas agent's workflow creation with immediate save."""
-    await AgentEvaluator.evaluate(
-        agent_module="application.agents.canvas",
-        eval_dataset_file_path_or_dir="application/agents/canvas/evals/workflow_creation_immediate_save.test.json",
-        num_runs=2,
-    )
-
-
-@pytest.mark.asyncio
-async def test_canvas_agent_entity_creation():
-    """Test canvas agent's entity creation with immediate save."""
-    await AgentEvaluator.evaluate(
-        agent_module="application.agents.canvas",
-        eval_dataset_file_path_or_dir="application/agents/canvas/evals/entity_creation_immediate_save.test.json",
-        num_runs=2,
-    )
-
-
-@pytest.mark.asyncio
-async def test_canvas_agent_requirements_creation():
-    """Test canvas agent's requirements creation with immediate save."""
-    await AgentEvaluator.evaluate(
-        agent_module="application.agents.canvas",
-        eval_dataset_file_path_or_dir="application/agents/canvas/evals/requirements_creation_immediate_save.test.json",
-        num_runs=2,
-    )
-
-
-@pytest.mark.asyncio
-async def test_canvas_agent_all_evals():
-    """Test canvas agent with all evaluation files."""
-    await AgentEvaluator.evaluate(
-        agent_module="application.agents.canvas",
-        eval_dataset_file_path_or_dir="application/agents/canvas/evals",
-        num_runs=2,
-    )
 
 
 

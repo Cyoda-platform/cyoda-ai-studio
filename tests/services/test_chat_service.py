@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from datetime import datetime, timezone
 
 from application.entity.conversation import Conversation
-from application.services.chat_service import ChatService
+from application.services.chat.service import ChatService
 from tests.fixtures.conversation_fixtures import (
     create_test_conversation,
     create_test_conversation_with_messages,
@@ -62,13 +62,13 @@ class TestChatServiceCreate:
         service = ChatService(mock_repo, mock_persistence)
 
         # Pre-populate cache
-        service._chat_list_cache["chats:alice"] = ([], datetime.now(timezone.utc).timestamp())
+        service.cache_manager._chat_list_cache["chats:alice"] = ([], datetime.now(timezone.utc).timestamp())
 
         # Act
         await service.create_conversation(user_id="alice", name="New")
 
         # Assert - cache should be invalidated
-        assert "chats:alice" not in service._chat_list_cache
+        assert "chats:alice" not in service.cache_manager._chat_list_cache
 
 
 class TestChatServiceUpdate:
@@ -107,13 +107,13 @@ class TestChatServiceUpdate:
         service = ChatService(mock_repo, mock_persistence)
 
         # Pre-populate cache
-        service._chat_list_cache["chats:alice"] = ([], datetime.now(timezone.utc).timestamp())
+        service.cache_manager._chat_list_cache["chats:alice"] = ([], datetime.now(timezone.utc).timestamp())
 
         # Act
         await service.update_conversation(conversation)
 
         # Assert
-        assert "chats:alice" not in service._chat_list_cache
+        assert "chats:alice" not in service.cache_manager._chat_list_cache
 
 
 class TestChatServiceValidation:
@@ -210,24 +210,30 @@ class TestChatServiceCaching:
     async def test_list_conversations_uses_cache(self):
         """Test that list uses cache when available."""
         # Arrange
+        from common.constants import CHAT_LIST_DEFAULT_LIMIT
         cached_chats = [
             {"technical_id": "conv-1", "name": "Chat 1", "date": "2025-01-01"}
         ]
 
         mock_repo = Mock()
+        mock_repo.search = AsyncMock()
         mock_persistence = Mock()
 
         service = ChatService(mock_repo, mock_persistence)
 
         # Pre-populate cache with recent timestamp
         cache_key = "chats:alice"
-        service._chat_list_cache[cache_key] = (
+        service.cache_manager._chat_list_cache[cache_key] = (
             cached_chats,
             datetime.now(timezone.utc).timestamp()
         )
 
-        # Act
-        result = await service.list_conversations(user_id="alice", use_cache=True)
+        # Act - use default limit to match cache key constraint
+        result = await service.list_conversations(
+            user_id="alice",
+            limit=CHAT_LIST_DEFAULT_LIMIT,
+            use_cache=True
+        )
 
         # Assert
         assert result["cached"] is True
@@ -238,6 +244,7 @@ class TestChatServiceCaching:
     async def test_list_conversations_bypasses_cache_when_disabled(self):
         """Test that cache can be bypassed."""
         # Arrange
+        from common.constants import CHAT_LIST_DEFAULT_LIMIT
         mock_repo = Mock()
         mock_repo.search = AsyncMock(return_value=[])
         mock_persistence = Mock()
@@ -245,7 +252,7 @@ class TestChatServiceCaching:
         service = ChatService(mock_repo, mock_persistence)
 
         # Pre-populate cache
-        service._chat_list_cache["chats:alice"] = (
+        service.cache_manager._chat_list_cache["chats:alice"] = (
             [{"technical_id": "cached"}],
             datetime.now(timezone.utc).timestamp()
         )
@@ -253,6 +260,7 @@ class TestChatServiceCaching:
         # Act
         result = await service.list_conversations(
             user_id="alice",
+            limit=CHAT_LIST_DEFAULT_LIMIT,
             use_cache=False
         )
 
@@ -264,15 +272,15 @@ class TestChatServiceCaching:
         """Test cache invalidation."""
         # Arrange
         service = ChatService(Mock(), Mock())
-        service._chat_list_cache["chats:alice"] = ([], 0)
-        service._chat_list_cache["chats:bob"] = ([], 0)
+        service.cache_manager._chat_list_cache["chats:alice"] = ([], 0)
+        service.cache_manager._chat_list_cache["chats:bob"] = ([], 0)
 
         # Act
         service.invalidate_cache("alice")
 
         # Assert
-        assert "chats:alice" not in service._chat_list_cache
-        assert "chats:bob" in service._chat_list_cache  # Other users unaffected
+        assert "chats:alice" not in service.cache_manager._chat_list_cache
+        assert "chats:bob" in service.cache_manager._chat_list_cache  # Other users unaffected
 
 
 if __name__ == "__main__":

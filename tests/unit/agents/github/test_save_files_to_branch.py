@@ -75,17 +75,57 @@ class TestSaveFilesToBranch:
         assert (func_req_dir / "api.yaml").exists()
 
     @pytest.mark.asyncio
-    async def test_save_files_no_context(self):
-        """Test saving files without tool context."""
-        result = await save_files_to_branch(files=[], tool_context=None)
-        assert "ERROR" in result
-        assert "tool_context" in result
+    async def test_save_files_to_branch_empty_files(self, mock_tool_context):
+        """Test saving empty file list raises ValueError."""
+        files = []
+
+        with pytest.raises(ValueError, match="files parameter is required"):
+            await save_files_to_branch(files=files, tool_context=mock_tool_context)
 
     @pytest.mark.asyncio
-    async def test_save_files_no_repository_path(self):
-        """Test saving files without repository path."""
-        context = MagicMock()
-        context.state = {}
-        result = await save_files_to_branch(files=[], tool_context=context)
-        assert "ERROR" in result
+    async def test_save_files_to_branch_invalid_file_format(self, mock_tool_context):
+        """Test saving files with invalid format raises ValueError."""
+        files = [
+            "not a dict",  # Invalid format
+        ]
 
+        with pytest.raises(ValueError, match="missing required 'filename' field"):
+            await save_files_to_branch(files=files, tool_context=mock_tool_context)
+
+    @pytest.mark.asyncio
+    async def test_save_files_to_branch_missing_filename(self, mock_tool_context):
+        """Test saving file without filename raises ValueError."""
+        files = [
+            {"content": "some content"},  # Missing filename
+        ]
+
+        with pytest.raises(ValueError, match="missing required 'filename' field"):
+            await save_files_to_branch(files=files, tool_context=mock_tool_context)
+
+    @pytest.mark.asyncio
+    async def test_save_files_to_branch_missing_content(self, mock_tool_context):
+        """Test saving file without content raises ValueError."""
+        files = [
+            {"filename": "test.txt"},  # Missing content
+        ]
+
+        with pytest.raises(ValueError, match="missing required 'content' field"):
+            await save_files_to_branch(files=files, tool_context=mock_tool_context)
+
+    @pytest.mark.asyncio
+    async def test_save_files_to_branch_directory_traversal_prevention(self, mock_tool_context):
+        """Test that directory traversal attempts are prevented."""
+        files = [
+            {"filename": "../../../etc/passwd", "content": "malicious"},
+        ]
+
+        result = await save_files_to_branch(files=files, tool_context=mock_tool_context)
+
+        # Should save only the filename, not the path
+        repo_path = Path(mock_tool_context.state["repository_path"])
+        func_req_dir = repo_path / "application" / "resources" / "functional_requirements"
+
+        # Should not create files outside functional_requirements
+        assert not (repo_path / "etc" / "passwd").exists()
+        # Should save with just the filename
+        assert (func_req_dir / "passwd").exists() or "SUCCESS" in result

@@ -34,3 +34,4 @@ root_agent = LlmAgent(
     after_agent_callback=accumulate_streaming_response,
 )
 
+agent = root_agent

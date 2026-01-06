@@ -1,0 +1,132 @@
+## 🎯 Core Mission
+
+Build a **workflow-driven** Spring Boot client. Reference `src/test/java/com/example/application/` and `src/test/resources` for all implementation patterns.
+
+---
+
+## 🛑 Immutable Laws (Critical Constraints)
+
+* **No Reflection:** Do not use Java reflection API.
+* **Directory Isolation:** Never modify `src/main/java/com/java_template/common/`.
+* **Read-Only Processors:** In `process()`, you **cannot** update the current entity. Changes are saved automatically via the return value. Use `EntityService` only for *other* entities.
+* **Transition Rules:** * Creation = Automatic transition from `"initial"`.
+* Updates = **Manual transitions ONLY**.
+
+
+* **Type Safety:** Use `List<QueryCondition>` for searches (not `SimpleCondition`).
+
+---
+
+## 📂 Architecture & Component Flow
+
+---
+
+## 🛠 Step-by-Step Implementation
+
+### 1. Planning & Environment
+
+* **Requirements:** Read ALL files in `src/main/resources/functional_requirements/`.
+* **Code Gen:** Run `./gradlew build` to ensure `org.cyoda.cloud.api.event` classes are present.
+
+### 2. Entity Definition (Java + JSON)
+
+* **Java:** Implement in `application/entity/{name}/version_1/{Name}.java`.
+* Use Lombok `@Data`.
+* Map "status/state" requirements to `metadata().getState()`.
+
+
+* **JSON:** **Mandatory** concrete instance in `src/main/resources/entity/{name}/version_1/{Name}.json`.
+* *Rules:* No technical IDs; use camelCase; realistic data only.
+
+
+
+### 3. Workflow Configuration
+
+* **Path:** `src/main/resources/workflow/{name}/version_1/{Name}.json`.
+* **Initial State:** Can be any valid state name (e.g., `"initial"`, `"CREATED"`, `"initial_state"`, etc.).
+* **Manual Flags:** Set `true` for updates/loops, `false` for initial creation.
+🚨 THE CROSS-CHECK RULE: Always cross-check your Java code against the workflow JSON.
+The workflow configuration schema is defined in:
+```
+src/main/resources/schema/common/statemachine/conf/WorkflowConfiguration.json
+```
+This schema defines the structure for workflow definitions, including states, transitions, processors, and criteria.
+
+The name in the JSON processors array must match the @Component class name in Java exactly (case-sensitive).
+The transition string used in entityService.update(entity, "transition_name") must match a manual transition name in the JSON.
+The ENTITY_NAME constant in your Java Entity must match the "name" field in the workflow JSON.
+
+### 4. Logic (Processors & Criteria)
+
+* **Processors:** Extend `CyodaProcessor`. Names must match JSON definitions exactly.
+* **Criteria:** Keep logic minimal and boolean-based.
+
+### 5. Controller (The Thin Proxy)
+
+* **Prefix:** Always use `/ui/{entity_name}/**`.
+* **Rule:** No business logic. Just map RequestBody to `EntityService`.
+
+---
+
+## 📝 Code Templates
+
+### **The Entity Template**
+
+```java
+@Data
+public class EntityName implements CyodaEntity {
+    public static final String ENTITY_NAME = "EntityName";
+    public static final Integer ENTITY_VERSION = 1;
+    private String entityId; // Business ID
+
+    @Override
+    public OperationSpecification getModelKey() {
+        ModelSpec ms = new ModelSpec().withName(ENTITY_NAME).withVersion(ENTITY_VERSION);
+        return new OperationSpecification.Entity(ms, ENTITY_NAME);
+    }
+
+    @Override
+    public boolean isValid() {
+        return entityId != null && !entityId.isBlank();
+    }
+}
+
+```
+
+### **The Search Template (Controller)**
+
+```java
+List<QueryCondition> conditions = new ArrayList<>();
+conditions.add(new SimpleCondition()
+    .withJsonPath("$.id")
+    .withOperation(Operation.EQUALS)
+    .withValue(objectMapper.valueToTree(id)));
+
+GroupCondition group = new GroupCondition()
+    .withOperator(GroupCondition.Operator.AND)
+    .withConditions(conditions);
+
+return entityService.search(modelSpec, group, Entity.class);
+
+```
+
+---
+
+## 🧪 Verification & Quality Gate
+
+Run these commands in order. **Zero-failure policy.**
+
+1. **Compile:** `./gradlew clean compileJava`
+2. **Validate Links:** `./gradlew validateWorkflowImplementations`
+3. **Check Requirement:** Verify against `user_requirement.md`.
+
+---
+
+## ✅ Completion Checklist
+
+* [ ] Entities/Processors/Criteria/Controllers match ALL requirements.
+* [ ] Workflow uses `"initial"` state and correct `"manual"` flags.
+* [ ] Every Java Entity has a corresponding Example JSON file.
+* [ ] No changes to `common/` or use of Reflection.
+* [ ] **Full Build succeeds:** `./gradlew build`.
+* [ ] Summary documentation added to the project root.

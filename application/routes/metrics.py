@@ -156,7 +156,10 @@ async def query_metrics():
             if not env_name:
                 return APIResponse.error("env_name parameter required when using query_type", 400)
 
-            logger.info(f"Querying Prometheus (query_type mode) for user {user_id} (org_id: {org_id}, env_name: {env_name}, app_name: {app_name}, query_type: {query_type})")
+            logger.info(
+                f"Querying Prometheus (query_type mode) for user {user_id} "
+                f"(org_id: {org_id}, env_name: {env_name}, app_name: {app_name}, query_type: {query_type})"
+            )
 
             try:
                 result = await metrics_service.query_prometheus(
@@ -176,7 +179,10 @@ async def query_metrics():
             deployment_type = data.get('type', 'environment')
             deployment_id = data.get('id', 'start' if deployment_type == 'application' else 'develop')
 
-            logger.info(f"Querying Prometheus (legacy mode) for user {user_id} (org_id: {org_id}, type: {deployment_type}, id: {deployment_id})")
+            logger.info(
+                f"Querying Prometheus (legacy mode) for user {user_id} "
+                f"(org_id: {org_id}, type: {deployment_type}, id: {deployment_id})"
+            )
 
             result = await metrics_service.query_prometheus_custom(
                 org_id=org_id,
@@ -258,7 +264,10 @@ async def query_range_metrics():
             if not env_name:
                 return APIResponse.error("env_name parameter required when using query_type", 400)
 
-            logger.info(f"Range querying Prometheus (query_type mode) for user {user_id} (org_id: {org_id}, env_name: {env_name}, app_name: {app_name}, query_type: {query_type})")
+            logger.info(
+                f"Range querying Prometheus (query_type mode) for user {user_id} "
+                f"(org_id: {org_id}, env_name: {env_name}, app_name: {app_name}, query_type: {query_type})"
+            )
 
             try:
                 result = await metrics_service.query_prometheus_range(
@@ -319,8 +328,17 @@ async def metrics_health():
         overall_healthy = health_status["status"] == "healthy"
         status_code = 200 if overall_healthy else 500
 
-        return APIResponse.success(health_status) if overall_healthy else \
-               (APIResponse.error(health_status.get("error", "Services degraded"), status_code, details=health_status), status_code)
+        if overall_healthy:
+            return APIResponse.success(health_status)
+        else:
+            return (
+                APIResponse.error(
+                    health_status.get("error", "Services degraded"),
+                    status_code,
+                    details=health_status
+                ),
+                status_code
+            )
 
     except Exception as e:
         logger.exception(f"Error checking metrics health: {e}")

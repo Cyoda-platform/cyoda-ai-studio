@@ -41,7 +41,6 @@
         "description": "Individual agent functionality tests",
         "files": [
           "tests/integration/agents/evals/qa_agent.test.json",
-          "tests/integration/agents/evals/guidelines_agent.test.json",
           "tests/integration/agents/evals/setup_agent.test.json",
           "tests/integration/agents/evals/coordinator.test.json"
         ]
@@ -66,12 +65,7 @@
         "Answer questions about Cyoda architecture",
         "Explain entity management concepts",
         "Describe workflow state machines",
-        "Troubleshoot common issues"
-      ],
-      "min_response_quality": 0.8
-    },
-    "guidelines_agent": {
-      "expected_capabilities": [
+        "Troubleshoot common issues",
         "Provide design principle guidance",
         "Recommend code organization patterns",
         "Suggest testing strategies",

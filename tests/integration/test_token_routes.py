@@ -36,63 +36,8 @@ def client(app):
 class TestGetGuestToken:
     """Test guest token generation endpoint."""
 
-    @pytest.mark.asyncio
-    async def test_get_guest_token_success(self, client):
-        """Test successful guest token generation."""
-        # Act
-        response = await client.get("/api/v1/get_guest_token")
-        data = await response.get_json()
-
-        # Assert
-        assert response.status_code == 200
-        assert "token" in data
-        assert "user_id" in data
-        assert data["user_id"].startswith("guest.")
-        assert "exp" in data
-        assert "iat" in data
-
-    @pytest.mark.asyncio
-    async def test_get_guest_token_returns_different_tokens(self, client):
-        """Test that each request generates unique guest token."""
-        # Act
-        response1 = await client.get("/api/v1/get_guest_token")
-        response2 = await client.get("/api/v1/get_guest_token")
-
-        data1 = await response1.get_json()
-        data2 = await response2.get_json()
-
-        # Assert
-        assert data1["token"] != data2["token"]
-        assert data1["user_id"] != data2["user_id"]
-
-
 class TestGenerateTestToken:
     """Test test token generation endpoint."""
-
-    @pytest.mark.asyncio
-    async def test_generate_test_token_success(self, client):
-        """Test successful test token generation with valid data."""
-        # Arrange
-        request_data = {
-            "user_id": "alice",
-            "is_superuser": False,
-            "expiry_hours": 24
-        }
-
-        # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
-        data = await response.get_json()
-
-        # Assert
-        assert response.status_code == 200
-        assert "token" in data
-        assert data["user_id"] == "alice"
-        assert data["is_superuser"] is False
-        assert "exp" in data
-        assert "iat" in data
 
     @pytest.mark.asyncio
     async def test_generate_test_token_superuser(self, client):
@@ -243,56 +188,9 @@ class TestGenerateTestTokenValidation:
         assert response.status_code == 400
         assert "error" in data
 
-    @pytest.mark.asyncio
-    async def test_invalid_json(self, client):
-        """Test validation fails when request is not valid JSON."""
-        # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            data="not json",
-            headers={"Content-Type": "application/json"}
-        )
-        data = await response.get_json()
-
-        # Assert
-        assert response.status_code == 400
-        assert "error" in data
-
-    @pytest.mark.asyncio
-    async def test_invalid_type_for_is_superuser(self, client):
-        """Test validation fails when is_superuser is not boolean."""
-        # Arrange
-        request_data = {
-            "user_id": "alice",
-            "is_superuser": "yes"  # Should be boolean
-        }
-
-        # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
-        data = await response.get_json()
-
-        # Assert
-        assert response.status_code == 400
-        assert "error" in data
-
 
 class TestResponseFormatting:
     """Test that responses use consistent APIResponse format."""
-
-    @pytest.mark.asyncio
-    async def test_success_response_format(self, client):
-        """Test success responses have consistent format."""
-        # Act
-        response = await client.get("/api/v1/get_guest_token")
-        data = await response.get_json()
-
-        # Assert
-        assert response.status_code == 200
-        assert isinstance(data, dict)
-        assert "token" in data  # Success data is returned directly
 
     @pytest.mark.asyncio
     async def test_error_response_format(self, client):

@@ -122,6 +122,119 @@ def load_nested_template(template_name: str, **variables: Any) -> str:
     return content
 
 
+def _extract_session_variables(context: ReadonlyContext) -> Dict[str, Any]:
+    """Extract runtime variables from session state.
+
+    Args:
+        context: ADK readonly context
+
+    Returns:
+        Dictionary of runtime variables
+    """
+    variables: Dict[str, Any] = {}
+
+    try:
+        session_state = context._invocation_context.session.state
+
+        # Common variable names to extract
+        variable_names = [
+            "git_branch", "programming_language", "repository_name",
+            "environment", "cyoda_version", "project_type",
+            "entity_name", "language"
+        ]
+
+        for var_name in variable_names:
+            if var_name in session_state:
+                variables[var_name] = session_state[var_name]
+
+    except (AttributeError, KeyError):
+        pass
+
+    return variables
+
+
+def _replace_conditional_templates(
+    template_content: str,
+    variables: Dict[str, Any],
+    caller_file: Optional[str],
+) -> str:
+    """Replace conditional nested templates.
+
+    Args:
+        template_content: Template content
+        variables: Variable dictionary
+        caller_file: Caller file path
+
+    Returns:
+        Template with conditional templates replaced
+    """
+    import re
+
+    conditional_pattern = r"\{template_if:([^:]+)==([^:]+):([^}]+)\}"
+
+    def replace_conditional(match):
+        var_name = match.group(1).strip()
+        expected_value = match.group(2).strip()
+        nested_template_name = match.group(3).strip()
+
+        actual_value = str(variables.get(var_name, "")).strip()
+        if actual_value == expected_value:
+            return load_template(nested_template_name, caller_file=caller_file)
+        return ""
+
+    return re.sub(conditional_pattern, replace_conditional, template_content)
+
+
+def _replace_nested_templates(
+    template_content: str,
+    caller_file: Optional[str],
+) -> str:
+    """Replace unconditional nested templates.
+
+    Args:
+        template_content: Template content
+        caller_file: Caller file path
+
+    Returns:
+        Template with nested templates replaced
+    """
+    import re
+
+    template_pattern = r"\{template:([^}]+)\}"
+
+    def replace_nested(match):
+        nested_template_name = match.group(1)
+        return load_template(nested_template_name, caller_file=caller_file)
+
+    return re.sub(template_pattern, replace_nested, template_content)
+
+
+def _substitute_variables(
+    template_content: str,
+    variables: Dict[str, Any],
+) -> str:
+    """Substitute variables in template with error handling.
+
+    Args:
+        template_content: Template content
+        variables: Variable dictionary
+
+    Returns:
+        Template with variables substituted (or error message)
+    """
+    try:
+        return template_content.format(**variables)
+    except KeyError as e:
+        missing_var = str(e).strip("'")
+        return f"{template_content}\n\n[ERROR: Missing required variable: {missing_var}]"
+    except (IndexError, ValueError) as e:
+        error_msg = (
+            f"{template_content}\n\n[ERROR: Template formatting error: {str(e)}. "
+            "Check for unescaped curly braces in template.]"
+        )
+        return error_msg
+
+
 def create_instruction_provider(
     template_name: str, **default_vars: Any
 ) -> Callable[[ReadonlyContext], str]:
@@ -157,7 +270,6 @@ def create_instruction_provider(
         caller_file = frame.f_back.f_code.co_filename
 
     # Load template without variable substitution yet
-    # (we'll do that in instruction_provider with runtime context)
     template_content_raw = load_template(template_name, caller_file=caller_file)
 
     def instruction_provider(context: ReadonlyContext) -> str:
@@ -169,80 +281,21 @@ def create_instruction_provider(
         Returns:
             Instruction string with variables substituted
         """
-        # Start with default variables
-        variables: Dict[str, Any] = {**default_vars}
+        # Merge default and runtime variables
+        variables = {**default_vars}
+        runtime_vars = _extract_session_variables(context)
+        variables.update(runtime_vars)
 
-        # Extract runtime variables from session state if available
-        try:
-            session_state = context._invocation_context.session.state
-
-            # Add common runtime variables from session state dictionary
-            if "git_branch" in session_state:
-                variables["git_branch"] = session_state["git_branch"]
-            if "programming_language" in session_state:
-                variables["programming_language"] = session_state["programming_language"]
-            if "repository_name" in session_state:
-                variables["repository_name"] = session_state["repository_name"]
-            if "environment" in session_state:
-                variables["environment"] = session_state["environment"]
-            if "cyoda_version" in session_state:
-                variables["cyoda_version"] = session_state["cyoda_version"]
-            if "project_type" in session_state:
-                variables["project_type"] = session_state["project_type"]
-            if "entity_name" in session_state:
-                variables["entity_name"] = session_state["entity_name"]
-            if "language" in session_state:
-                variables["language"] = session_state["language"]
-
-        except (AttributeError, KeyError):
-            # Session state not available or doesn't have expected structure
-            # Use only default variables
-            pass
-
-        # Resolve nested templates and substitute variables
-        import re
-
-        # First resolve conditional nested templates
-        # Syntax: {template_if:variable_name==value:template_name}
-        # Example: {template_if:programming_language==PYTHON:setup_python}
-        conditional_pattern = r"\{template_if:([^:]+)==([^:]+):([^}]+)\}"
-
-        def replace_conditional_template(match):
-            var_name = match.group(1).strip()
-            expected_value = match.group(2).strip()
-            nested_template_name = match.group(3).strip()
-
-            # Check if variable matches expected value
-            actual_value = str(variables.get(var_name, "")).strip()
-            if actual_value == expected_value:
-                return load_template(nested_template_name, caller_file=caller_file)
-            return ""  # Don't inject if condition not met
-
-        template_content = re.sub(
-            conditional_pattern, replace_conditional_template, template_content_raw
+        # Replace conditional templates
+        template_content = _replace_conditional_templates(
+            template_content_raw, variables, caller_file
         )
 
-        # Then resolve unconditional nested templates
-        template_pattern = r"\{template:([^}]+)\}"
+        # Replace unconditional nested templates
+        template_content = _replace_nested_templates(template_content, caller_file)
 
-        def replace_nested_template(match):
-            nested_template_name = match.group(1)
-            return load_template(nested_template_name, caller_file=caller_file)
-
-        template_content = re.sub(
-            template_pattern, replace_nested_template, template_content
-        )
-
-        # Finally substitute variables
-        try:
-            return template_content.format(**variables)
-        except KeyError as e:
-            # Missing required variable - return template with error message
-            missing_var = str(e).strip("'")
-            return f"{template_content}\n\n[ERROR: Missing required variable: {missing_var}]"
-        except (IndexError, ValueError) as e:
-            # Unescaped curly braces or format string error
-            return f"{template_content}\n\n[ERROR: Template formatting error: {str(e)}. Check for unescaped curly braces in template.]"
+        # Substitute variables with error handling
+        return _substitute_variables(template_content, variables)
 
     return instruction_provider
 

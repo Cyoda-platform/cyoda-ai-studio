@@ -188,16 +188,17 @@ def extract_bearer_token(auth_header: str) -> str:
 def get_user_info_from_token(token: str) -> Tuple[str, bool]:
     """
     Extract user ID and superuser status from a JWT token.
-
-    For guest tokens (user_id starts with 'guest.'), validates the signature with local key.
-    For Auth0 tokens, validates the signature with Auth0's public key (async operation).
-
+    
+    For guest tokens (user_id starts with 'guest.'), validates the signature.
+    For other tokens, only extracts the payload without verification
+    (assumes external auth provider has already validated).
+    
     Args:
         token: JWT token string
-
+    
     Returns:
         tuple: (user_id, is_superuser)
-
+    
     Raises:
         TokenValidationError: If token is invalid
         TokenExpiredError: If token has expired
@@ -207,89 +208,37 @@ def get_user_info_from_token(token: str) -> Tuple[str, bool]:
         payload = jwt.decode(token, options={"verify_signature": False})
     except InvalidTokenError as e:
         raise TokenValidationError(f"Invalid token format: {e}")
-
+    
     user_id = payload.get("caas_org_id")
     if not user_id:
         raise TokenValidationError("Token missing user_id (caas_org_id)")
-
-    # For guest tokens, validate the signature with local key
+    
+    # For guest tokens, validate the signature
     if user_id.startswith("guest."):
         payload = validate_token(token, verify_signature=True)
-    # For Auth0 tokens, signature validation happens in async function
-    # (get_user_info_from_header_async)
-
+    
     # Extract superuser status (defaults to False if not present)
     is_superuser = payload.get("caas_cyoda_employee", False)
-
+    
     return user_id, is_superuser
 
 
 def get_user_info_from_header(auth_header: str) -> Tuple[str, bool]:
     """
     Extract user ID and superuser status from an Authorization header.
-
+    
     Convenience function that combines extract_bearer_token and get_user_info_from_token.
-
+    
     Args:
         auth_header: Authorization header value (e.g., "Bearer <token>")
-
+    
     Returns:
         tuple: (user_id, is_superuser)
-
+    
     Raises:
         TokenValidationError: If header or token is invalid
         TokenExpiredError: If token has expired
     """
     token = extract_bearer_token(auth_header)
     return get_user_info_from_token(token)
-
-
-async def get_user_info_from_header_async(auth_header: str) -> Tuple[str, bool]:
-    """
-    Extract user ID and superuser status from an Authorization header (async).
-
-    Validates Auth0 tokens with signature verification using JWKS.
-    Guest tokens are validated with local key.
-
-    Args:
-        auth_header: Authorization header value (e.g., "Bearer <token>")
-
-    Returns:
-        tuple: (user_id, is_superuser)
-
-    Raises:
-        TokenValidationError: If header or token is invalid
-        TokenExpiredError: If token has expired
-    """
-    token = extract_bearer_token(auth_header)
-
-    # First decode without verification to check if it's a guest token
-    try:
-        payload = jwt.decode(token, options={"verify_signature": False})
-    except InvalidTokenError as e:
-        raise TokenValidationError(f"Invalid token format: {e}")
-
-    user_id = payload.get("caas_org_id")
-    if not user_id:
-        raise TokenValidationError("Token missing user_id (caas_org_id)")
-
-    # For guest tokens, validate with local key
-    if user_id.startswith("guest."):
-        payload = validate_token(token, verify_signature=True)
-    else:
-        # For Auth0 tokens, validate with Auth0's public key
-        from common.auth.auth0_jwks import get_auth0_validator
-
-        try:
-            validator = get_auth0_validator()
-            payload = await validator.validate_token(token)
-        except TokenExpiredError:
-            raise
-        except ValueError as e:
-            raise TokenValidationError(str(e))
-
-    # Extract superuser status (defaults to False if not present)
-    is_superuser = payload.get("caas_cyoda_employee", False)
-
-    return user_id, is_superuser
 

@@ -13,7 +13,7 @@ from quart import jsonify, request
 from common.utils.jwt_utils import (
     TokenExpiredError,
     TokenValidationError,
-    get_user_info_from_header_async,
+    get_user_info_from_header,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,9 +28,6 @@ def require_auth(func: Callable) -> Callable:
     - request.user_id: The user ID from the token
     - request.is_superuser: Whether the user has superuser privileges
     - request.org_id: Organization ID (defaults to user_id.lower())
-
-    Validates Auth0 tokens with signature verification using JWKS.
-    Guest tokens are validated with local key.
 
     If no Authorization header is provided or the token is invalid,
     returns a 401 Unauthorized response.
@@ -51,7 +48,7 @@ def require_auth(func: Callable) -> Callable:
             return jsonify({"error": "Unauthorized - missing token"}), 401
 
         try:
-            user_id, is_superuser = await get_user_info_from_header_async(auth_header)
+            user_id, is_superuser = get_user_info_from_header(auth_header)
 
             # Attach user info to request object
             request.user_id = user_id

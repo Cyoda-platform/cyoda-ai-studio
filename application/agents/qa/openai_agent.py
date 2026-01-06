@@ -13,7 +13,7 @@ Agent = _openai_agents.Agent
 from application.agents.qa.prompts import create_instruction_provider
 from application.agents.shared.openai_tool_adapter import adapt_adk_tools_list
 from application.agents.qa.tools import explain_cyoda_pattern, search_cyoda_concepts
-from application.agents.shared.tools import load_web_page
+from application.agents.shared.tools import load_web_page, read_documentation
 
 
 def create_openai_qa_agent() -> Agent:
@@ -33,6 +33,7 @@ def create_openai_qa_agent() -> Agent:
     adk_tools = [
         search_cyoda_concepts,
         explain_cyoda_pattern,
+        read_documentation,
         load_web_page,
     ]
     openai_tools = adapt_adk_tools_list(adk_tools)
@@ -40,7 +41,10 @@ def create_openai_qa_agent() -> Agent:
     qa_agent = Agent(
         name="qa_agent",
         instructions=qa_instructions,
-        handoff_description="Cyoda platform expert. Answers questions about architecture, concepts, entity management, workflows, and troubleshooting.",
+        handoff_description=(
+            "Cyoda platform expert. Answers questions about architecture, concepts, entity management, "
+            "workflows, and troubleshooting."
+        ),
         tools=openai_tools,
     )
 

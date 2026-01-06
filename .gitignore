@@ -164,3 +164,7 @@ cython_debug/
 /backup/
 /.idea/
 /private-key.pem
+
+# Google ADK session databases and eval history
+.adk/
+**/.adk/

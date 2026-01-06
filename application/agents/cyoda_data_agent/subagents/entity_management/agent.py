@@ -50,7 +50,10 @@ def _get_instruction() -> str:
 entity_management_agent = LlmAgent(
     name="entity_management_agent",
     model=get_model_config(),
-    description="Manages all entity operations: search, create, update, delete, statistics, and workflows in user's Cyoda environment.",
+    description=(
+        "Manages all entity operations: search, create, update, delete, statistics, "
+        "and workflows in user's Cyoda environment."
+    ),
     instruction=_get_instruction(),
     tools=[
         # Search operations

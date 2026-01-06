@@ -30,24 +30,55 @@ from common.exception.exception_handler import (
 )
 from services.services import get_grpc_client, initialize_services
 
+# Apply Google ADK monkey patches early
+import application.agents.shared  # noqa: F401
+
 # Import blueprints for different route groups
 from application.routes import chat_bp, labels_config_bp, logs_bp, metrics_bp, tasks_bp, token_bp
 from application.routes.repository_routes import repository_bp
 from application.routes.agent_routes import agent_bp
 
 # Configure root logging to both stdout and a file for debugging/triage.
-# Default file is app-log.log in the current working directory; override with APP_LOG_FILE.
-log_file = os.getenv("APP_LOG_FILE", "app-log.log")
+# Default file is app-log.log in the application directory; override with APP_LOG_FILE.
+from logging.handlers import RotatingFileHandler
+
+# Use absolute path to application directory for log file
+app_dir = Path(__file__).parent.resolve()
+log_file_name = os.getenv("APP_LOG_FILE", "app-log.log")
+log_file = str(app_dir / log_file_name)
 log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-logging.basicConfig(
-    level=logging.INFO,
-    format=log_format,
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler(log_file, mode="a"),
-    ],
-)
+# Ensure log file can be created
+try:
+    # Create rotating file handler (max 50MB, keep 5 backups)
+    file_handler = RotatingFileHandler(
+        log_file,
+        mode="a",
+        maxBytes=50 * 1024 * 1024,  # 50 MB
+        backupCount=5,
+        encoding="utf-8",
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter(log_format))
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format=log_format,
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            file_handler,
+        ],
+    )
+    print(f"✓ Logging initialized - writing to: {log_file}")
+except Exception as e:
+    # Fallback to stdout only if file logging fails
+    logging.basicConfig(
+        level=logging.INFO,
+        format=log_format,
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
+    print(f"⚠ Failed to set up file logging: {e}")
+    print(f"⚠ Logging to stdout only")
 
 # Enable LiteLLM debug mode if DEBUG_LITELLM is set
 if os.getenv("DEBUG_LITELLM", "false").lower() == "true":
@@ -243,6 +274,9 @@ if __name__ == "__main__":
     # Configure Hypercorn with extended timeouts for SSE streaming
     config = Config()
     config.bind = [f"{host}:{port}"]
+
+    # Enable socket reuse to handle port conflicts from previous instances
+    config.reuse_port = True
 
     # Critical timeouts for long-running SSE streams
     config.keep_alive_timeout = timeout  # Keep-alive for SSE connections

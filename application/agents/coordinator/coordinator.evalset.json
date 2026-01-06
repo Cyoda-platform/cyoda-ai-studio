@@ -1,0 +1,356 @@
+{
+  "eval_set_id": "coordinator",
+  "name": "coordinator",
+  "eval_cases": [
+    {
+      "eval_id": "deploy_app",
+      "conversation": [
+        {
+          "invocation_id": "e-35d35a33-a15f-472c-b3b6-88c8e1424538",
+          "user_content": {
+            "parts": [
+              {
+                "text": "hi"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Hi — I’m the Cyoda Coordinator. How can I help you today? You can tell me if you want to:\n- deploy or check an environment,\n- set up or run locally,\n- learn a concept or get an explanation,\n- get design/guidelines,\n- or build/create a feature or app."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {},
+          "creation_timestamp": 1767718037.217596
+        },
+        {
+          "invocation_id": "e-b4360655-62af-4c57-ae22-399d323e5256",
+          "user_content": {
+            "parts": [
+              {
+                "text": "i want to deploy my application"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I’ve opened the environment selector in the UI — please choose an environment there.  \nOnce you pick one I’ll run check_environment_exists() and continue with deployment.\n\nNote: Environments take 5–10 min to provision. Apps take 3–5 min to deploy."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_eIPIziX6pjKwU06iL2F2f1zm",
+                        "args": {
+                          "agent_name": "environment_agent"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_eIPIziX6pjKwU06iL2F2f1zm",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "environment_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_1V2dBIP6mM36BoNViIBQZs0v",
+                        "args": {
+                          "question": "Which environment would you like to deploy to? (select one: dev, staging, prod, or Create new)"
+                        },
+                        "name": "show_deployment_options"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "environment_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_1V2dBIP6mM36BoNViIBQZs0v",
+                        "name": "show_deployment_options",
+                        "response": {
+                          "error": "Invoking `show_deployment_options()` failed as the following mandatory input parameters are not present:\noptions\nYou could retry calling this tool, but it is IMPORTANT for you to provide all the mandatory parameters."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "environment_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_MY2VhhFAcO7mSNJD9sTGMAAD",
+                        "args": {
+                          "question": "Which environment would you like to deploy to?",
+                          "options": [
+                            {
+                              "value": "dev",
+                              "label": "dev",
+                              "description": "Development environment (recommended for testing)."
+                            },
+                            {
+                              "value": "staging",
+                              "label": "staging",
+                              "description": "Staging - pre-production testing."
+                            },
+                            {
+                              "value": "prod",
+                              "label": "prod",
+                              "description": "Production - live environment. (Destructive actions require confirmation.)"
+                            },
+                            {
+                              "value": "create_new",
+                              "label": "Create new",
+                              "description": "Create a new environment namespace."
+                            }
+                          ]
+                        },
+                        "name": "show_deployment_options"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "environment_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_MY2VhhFAcO7mSNJD9sTGMAAD",
+                        "name": "show_deployment_options",
+                        "response": {
+                          "result": "{\n  \"message\": \"Which environment would you like to deploy to?\\n\\nPlease select your choice from the options above.\",\n  \"hook\": {\n    \"type\": \"option_selection\",\n    \"action\": \"show_selection_ui\",\n    \"data\": {\n      \"conversation_id\": \"9c2d11b5-d2fe-4b70-aca7-caaa6a8e0e43\",\n      \"question\": \"Which environment would you like to deploy to?\",\n      \"options\": [\n        {\n          \"value\": \"dev\",\n          \"label\": \"dev\",\n          \"description\": \"Development environment (recommended for testing).\"\n        },\n        {\n          \"value\": \"staging\",\n          \"label\": \"staging\",\n          \"description\": \"Staging - pre-production testing.\"\n        },\n        {\n          \"value\": \"prod\",\n          \"label\": \"prod\",\n          \"description\": \"Production - live environment. (Destructive actions require confirmation.)\"\n        },\n        {\n          \"value\": \"create_new\",\n          \"label\": \"Create new\",\n          \"description\": \"Create a new environment namespace.\"\n        }\n      ],\n      \"selection_type\": \"single\",\n      \"context\": null\n    }\n  }\n}"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1767718053.574812
+        }
+      ],
+      "session_input": {
+        "app_name": "coordinator",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767718173.613345
+    },
+    {
+      "eval_id": "build_app",
+      "conversation": [
+        {
+          "invocation_id": "e-7e6d0958-52ba-4f61-b7d3-ab1981e301f5",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Develop an enterprise-grade payment processing system with multi-currency support, advanced fraud detection mechanisms, PCI DSS compliance, settlement management, transaction validation, and comprehensive audit trails"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a GitOps practice, which means the repo isn't just for code—it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI've popped up the repository strategy options for you to choose the language template and whether to create a new branch or use an existing one. Since we're building an enterprise payment processing platform with multi-currency support, fraud detection, PCI DSS compliance, settlements, validation, and audit trails, picking the right strategy now will let us initialize the appropriate Cyoda template and structure.\n\nPlease pick one of the options shown in the UI."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "invocation_events": [
+              {
+                "author": "coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_nK4m4qDzg6vq1AZRRGB72S9r",
+                        "args": {
+                          "agent_name": "github_agent"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "coordinator",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_nK4m4qDzg6vq1AZRRGB72S9r",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "github_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_07pCK3kfeoehKuO4aUguWabu",
+                        "args": {},
+                        "name": "check_existing_branch_configuration"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "github_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_07pCK3kfeoehKuO4aUguWabu",
+                        "name": "check_existing_branch_configuration",
+                        "response": {
+                          "result": "{\"configured\":false,\"language\":null,\"repository_type\":null,\"repository_name\":null,\"repository_owner\":null,\"repository_branch\":null,\"repository_url\":null,\"installation_id\":null,\"repository_path\":null,\"ready_to_build\":false,\"error\":\"No conversation_id found in context\",\"message\":null}"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "github_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_WEMML9WzTvfFCFaJLyVAhRqo",
+                        "args": {
+                          "question": "Which repository strategy would you like to use for this enterprise payment processing project? (This decides language template and whether we create a new branch or use an existing one.)",
+                          "options": [
+                            {
+                              "value": "python_public_new",
+                              "label": "Python — Public repo — New Branch"
+                            },
+                            {
+                              "value": "python_public_existing",
+                              "label": "Python — Public repo — My Existing Branch"
+                            },
+                            {
+                              "value": "python_private_new",
+                              "label": "Python — Private repo — New Branch"
+                            },
+                            {
+                              "value": "python_private_existing",
+                              "label": "Python — Private repo — My Existing Branch"
+                            },
+                            {
+                              "value": "java_public_new",
+                              "label": "Java — Public repo — New Branch"
+                            },
+                            {
+                              "value": "java_public_existing",
+                              "label": "Java — Public repo — My Existing Branch"
+                            },
+                            {
+                              "value": "java_private_new",
+                              "label": "Java — Private repo — New Branch"
+                            },
+                            {
+                              "value": "java_private_existing",
+                              "label": "Java — Private repo — My Existing Branch"
+                            }
+                          ],
+                          "selection_type": "single",
+                          "context": "We're building an enterprise-grade payment processing system with multi-currency support, advanced fraud detection, PCI DSS compliance, settlement management, transaction validation, and audit trails. Choosing the repository strategy now enables the Cyoda templates to initialize correctly and keeps the repo as the single source of truth for the design and build phases."
+                        },
+                        "name": "ask_user_to_select_option"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "github_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_WEMML9WzTvfFCFaJLyVAhRqo",
+                        "name": "ask_user_to_select_option",
+                        "response": {
+                          "result": "{\n  \"message\": \"Which repository strategy would you like to use for this enterprise payment processing project? (This decides language template and whether we create a new branch or use an existing one.)\\n\\nPlease select your choice(s) using the options below.\",\n  \"hook\": {\n    \"type\": \"option_selection\",\n    \"action\": \"show_selection_ui\",\n    \"data\": {\n      \"conversation_id\": \"eec4ac12-6ffb-479f-8cdc-ec069b79719f\",\n      \"question\": \"Which repository strategy would you like to use for this enterprise payment processing project? (This decides language template and whether we create a new branch or use an existing one.)\",\n      \"options\": [\n        {\n          \"value\": \"python_public_new\",\n          \"label\": \"Python \\u2014 Public repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"python_public_existing\",\n          \"label\": \"Python \\u2014 Public repo \\u2014 My Existing Branch\"\n        },\n        {\n          \"value\": \"python_private_new\",\n          \"label\": \"Python \\u2014 Private repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"python_private_existing\",\n          \"label\": \"Python \\u2014 Private repo \\u2014 My Existing Branch\"\n        },\n        {\n          \"value\": \"java_public_new\",\n          \"label\": \"Java \\u2014 Public repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"java_public_existing\",\n          \"label\": \"Java \\u2014 Public repo \\u2014 My Existing Branch\"\n        },\n        {\n          \"value\": \"java_private_new\",\n          \"label\": \"Java \\u2014 Private repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"java_private_existing\",\n          \"label\": \"Java \\u2014 Private repo \\u2014 My Existing Branch\"\n        }\n      ],\n      \"selection_type\": \"single\",\n      \"context\": \"We're building an enterprise-grade payment processing system with multi-currency support, advanced fraud detection, PCI DSS compliance, settlement management, transaction validation, and audit trails. Choosing the repository strategy now enables the Cyoda templates to initialize correctly and keeps the repo as the single source of truth for the design and build phases.\"\n    }\n  }\n}"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              }
+            ]
+          },
+          "creation_timestamp": 1767718601.324704
+        }
+      ],
+      "session_input": {
+        "app_name": "coordinator",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767718662.6092508
+    }
+  ],
+  "creation_timestamp": 1767718163.9711468
+}

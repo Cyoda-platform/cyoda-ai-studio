@@ -22,7 +22,6 @@ class SearchConditionConverter:
         Convert SearchConditionRequest directly to Cyoda format.
 
         This is a single-step conversion that eliminates double mapping.
-        Always wraps conditions in a group as required by Cyoda API.
         """
         if not request.conditions:
             return {"type": "group", "operator": "AND", "conditions": []}
@@ -33,7 +32,7 @@ class SearchConditionConverter:
             for cond in request.conditions
         ]
 
-        # Always wrap in group - Cyoda API requires this format
+        # Always wrap in group format - Cyoda API requires this
         return {
             "type": "group",
             "operator": request.operator.upper(),

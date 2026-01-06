@@ -34,7 +34,7 @@ def get_sdk_service() -> Union[Any, Any]:
 
     elif sdk_choice == "openai":
         logger.info("Using OpenAI SDK")
-        from application.services.openai_sdk_service import OpenAISDKService
+        from application.services.openai.sdk_service import OpenAISDKService
         return OpenAISDKService()
 
     else:

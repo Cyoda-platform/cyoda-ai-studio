@@ -17,9 +17,7 @@ handoff = _openai_agents.handoff
 
 from application.agents.qa.openai_agent import create_openai_qa_agent
 from application.agents.setup.openai_agent import create_openai_setup_agent
-from application.agents.guidelines.openai_agent import create_openai_guidelines_agent
 from application.agents.environment.openai_agent import create_openai_environment_agent
-from application.agents.canvas.openai_agent import create_openai_canvas_agent
 from application.agents.github.openai_agent import create_openai_github_agent
 from application.agents.cyoda_data_agent.openai_agent import create_openai_cyoda_data_agent
 from application.agents.shared.prompts import create_instruction_provider
@@ -37,9 +35,7 @@ def create_openai_coordinator_agent() -> Agent:
     # Create all sub-agents
     qa_agent = create_openai_qa_agent()
     setup_agent = create_openai_setup_agent()
-    guidelines_agent = create_openai_guidelines_agent()
     environment_agent = create_openai_environment_agent()
-    canvas_agent = create_openai_canvas_agent()
     github_agent = create_openai_github_agent()
     cyoda_data_agent = create_openai_cyoda_data_agent()
 
@@ -58,9 +54,7 @@ def create_openai_coordinator_agent() -> Agent:
         handoffs=[
             handoff(qa_agent),
             handoff(setup_agent),
-            handoff(guidelines_agent),
             handoff(environment_agent),
-            handoff(canvas_agent),
             handoff(github_agent),
             handoff(cyoda_data_agent),
         ],

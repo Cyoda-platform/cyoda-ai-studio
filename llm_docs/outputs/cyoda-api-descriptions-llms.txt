@@ -1,0 +1,112 @@
+# Cyoda API Reference - Sections
+
+Base URL: `https://docs.cyoda.net/api-reference/scalar/`
+OpenAPI Spec: `https://docs.cyoda.net/openapi/openapi.json`
+
+## API Sections
+
+### [CQL Execution Statistics](https://docs.cyoda.net/api-reference/scalar/#description/cql-execution-statistics)
+
+Endpoints for monitoring CQL query execution performance and statistics
+
+### [Edge message](https://docs.cyoda.net/api-reference/scalar/#description/edge-message)
+
+4 endpoints
+
+### [Entity Management](https://docs.cyoda.net/api-reference/scalar/#description/entity-management)
+
+APIs for managing entities including creation, updates, and statistics retrieval.
+
+A note on transaction handling:
+* All changes are executed transactionally
+* Collections are processed in transactional batches defined by `transactionWindow`
+* Collections exceeding `transactionWindow` size are automatically split into multiple transactional batches
+
+A note on transitions:
+* Normal transitions are explicitly configured in the workflow and move entities between different states
+* Loopback transitions are virtual transitions that loop back to the same state without explicit configuration
+* Loopback transitions trigger the first allowable automated exit transition, enabling subsequent automated workflow traversal
+
+### [Entity Model, Workflow](https://docs.cyoda.net/api-reference/scalar/#description/entity-model-workflow)
+
+2 endpoints
+
+### [Entity model](https://docs.cyoda.net/api-reference/scalar/#description/entity-model)
+
+Operations for managing entity models, including import/export, versioning, and lifecycle management.
+Supports model locking/unlocking, change level control, and metadata conversion through various formats.
+
+Model Lifecycle Rules:
+- Entity models must be locked before any entities can be saved using that model
+- A locked model cannot be unlocked if there are existing entities in the database using that model
+- Models can only be deleted when unlocked and when no entities reference them
+
+Change Level Control:
+Models support hierarchical change levels (from least to most impactful):
+- ARRAY_LENGTH: Only allows UniTypeArray width increases
+- ARRAY_ELEMENTS: Permits MultiTypeArray changes without new types
+- TYPE: Allows type modifications
+- STRUCTURAL: Permits fundamental model changes
+
+When a change level is set, all less impactful changes are automatically allowed.
+
+### [Entity, Audit](https://docs.cyoda.net/api-reference/scalar/#description/entity-audit)
+
+1 endpoints
+
+### [OAuth, Keys](https://docs.cyoda.net/api-reference/scalar/#description/oauth-keys)
+
+5 endpoints
+
+### [OAuth, OIDC Providers](https://docs.cyoda.net/api-reference/scalar/#description/oauth-oidc-providers)
+
+7 endpoints
+
+### [SQL-Schema](https://docs.cyoda.net/api-reference/scalar/#description/sql-schema)
+
+Operations for managing SQL schemas and tables
+
+### [Search](https://docs.cyoda.net/api-reference/scalar/#description/search)
+
+Provides endpoints for searching and retrieving entities using both synchronous and asynchronous approaches.
+
+Key Features:
+- Snapshot-based searches for large datasets
+- Real-time synchronous searches for immediate results
+- Point-in-time querying capabilities
+- Pagination support for large result sets
+
+Search Methods:
+1. Snapshot Search (/snapshot/*):
+   - Creates a persistent snapshot of search results
+   - The query is distributed across the cluster of Cyoda processing nodes
+   - Horizontally scalable - query time decreases linearly with cluster size
+   - Supports asynchronous processing of large datasets
+   - Allows status monitoring and cancellation
+   - Results can be retrieved in pages
+
+2. Direct Search (/{entityName}/{modelVersion}):
+   - Synchronous, in-memory search
+   - Designed for small to medium datasets
+   - Limited by maximum result set size (default: 1000, max: 10000)
+   - Non-distributed (executes on single node)
+   - Configurable timeout and result limits
+   - Returns immediate streaming results
+
+All endpoints support:
+- Point-in-time queries using ISO 8601 datetime format
+- Complex search conditions using GroupConditionDto
+- Model-specific searches by entity name and version
+
+### [Stream Data](https://docs.cyoda.net/api-reference/scalar/#description/stream-data)
+
+Endpoints for streaming data operations, configuration management, and query planning
+
+### [User, Account](https://docs.cyoda.net/api-reference/scalar/#description/user-account)
+
+2 endpoints
+
+### [User, Machine](https://docs.cyoda.net/api-reference/scalar/#description/user-machine)
+
+5 endpoints
+

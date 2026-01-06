@@ -12,7 +12,7 @@ from quart import request
 from common.utils.jwt_utils import (
     TokenExpiredError,
     TokenValidationError,
-    get_user_info_from_header_async,
+    get_user_info_from_header,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,8 +26,8 @@ async def get_authenticated_user() -> Tuple[str, bool]:
     - user_id from 'caas_org_id' claim
     - is_superuser from 'caas_cyoda_employee' claim
 
-    Guest tokens (user_id starts with 'guest.') are signature-verified with local key.
-    Auth0 tokens are signature-verified with Auth0's public key (JWKS).
+    Guest tokens (user_id starts with 'guest.') are signature-verified.
+    Other tokens are decoded without verification (assumes external auth).
 
     Returns:
         tuple: (user_id, is_superuser)
@@ -47,7 +47,7 @@ async def get_authenticated_user() -> Tuple[str, bool]:
         return "guest.anonymous", False
 
     try:
-        user_id, is_superuser = await get_user_info_from_header_async(auth_header)
+        user_id, is_superuser = get_user_info_from_header(auth_header)
         return user_id, is_superuser
 
     except TokenExpiredError:

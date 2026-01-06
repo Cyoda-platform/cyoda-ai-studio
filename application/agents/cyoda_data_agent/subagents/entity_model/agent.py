@@ -46,7 +46,10 @@ def _get_instruction() -> str:
 entity_model_agent = LlmAgent(
     name="entity_model_agent",
     model=get_model_config(),
-    description="Manages all entity model operations: listing, import/export, lifecycle management, and workflows in user's Cyoda environment.",
+    description=(
+        "Manages all entity model operations: listing, import/export, lifecycle "
+        "management, and workflows in user's Cyoda environment."
+    ),
     instruction=_get_instruction(),
     tools=[
         # Model listing and retrieval

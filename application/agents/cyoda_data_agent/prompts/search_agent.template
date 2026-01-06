@@ -15,23 +15,23 @@ You can help with:
 ### Lifecycle Conditions
 Filter by entity state:
 ```json
-{
+{{
   "type": "lifecycle",
   "field": "state",
   "operatorType": "EQUALS",
   "value": "VALIDATED"
-}
+}}
 ```
 
 ### Simple Conditions
 Filter by entity data using JSONPath:
 ```json
-{
+{{
   "type": "simple",
   "jsonPath": "$.category",
   "operatorType": "EQUALS",
   "value": "physics"
-}
+}}
 ```
 
 Supported operators: EQUALS, CONTAINS, GREATER_THAN, LESS_THAN, GREATER_OR_EQUAL, LESS_OR_EQUAL
@@ -39,11 +39,11 @@ Supported operators: EQUALS, CONTAINS, GREATER_THAN, LESS_THAN, GREATER_OR_EQUAL
 ### Group Conditions
 Combine multiple conditions with AND/OR logic:
 ```json
-{
+{{
   "type": "group",
   "operator": "AND",
   "conditions": [...]
-}
+}}
 ```
 
 ## Search Limitations

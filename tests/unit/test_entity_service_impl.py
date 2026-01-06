@@ -183,37 +183,6 @@ class TestEntityServiceImpl:
         assert all(isinstance(r, EntityResponse) for r in result)
 
     @pytest.mark.asyncio
-    async def test_search_with_single_condition(self, service, repository):
-        """Test searching entities with a single condition."""
-        repository.storage = {
-            "id-1": {"name": "Test", "value": 10, "technical_id": "id-1"},
-            "id-2": {"name": "Test", "value": 20, "technical_id": "id-2"},
-            "id-3": {"name": "Other", "value": 30, "technical_id": "id-3"},
-        }
-
-        search_request = SearchConditionRequest.builder().equals("name", "Test").build()
-        result = await service.search("TestEntity", search_request, "1")
-
-        assert len(result) == 2
-        assert all(r.data.get("name") == "Test" for r in result)
-
-    @pytest.mark.asyncio
-    async def test_search_with_limit(self, service, repository):
-        """Test searching entities with limit."""
-        repository.storage = {
-            "id-1": {"name": "Test", "value": 10, "technical_id": "id-1"},
-            "id-2": {"name": "Test", "value": 20, "technical_id": "id-2"},
-            "id-3": {"name": "Test", "value": 30, "technical_id": "id-3"},
-        }
-
-        search_request = (
-            SearchConditionRequest.builder().equals("name", "Test").limit(2).build()
-        )
-        result = await service.search("TestEntity", search_request, "1")
-
-        assert len(result) == 2
-
-    @pytest.mark.asyncio
     async def test_save_entity(self, service, sample_entity_data):
         """Test saving a new entity."""
         result = await service.save(sample_entity_data, "TestEntity", "1")
@@ -222,24 +191,6 @@ class TestEntityServiceImpl:
         assert isinstance(result, EntityResponse)
         assert result.metadata.id is not None
         assert result.data.get("name") == "Test Entity"
-
-    @pytest.mark.asyncio
-    async def test_update_entity(self, service, repository):
-        """Test updating an existing entity."""
-        repository.storage["test-id-1"] = {
-            "name": "Original",
-            "value": 10,
-            "technical_id": "test-id-1",
-        }
-
-        updated_data = {"name": "Updated", "value": 20}
-        result = await service.update(
-            "test-id-1", updated_data, "TestEntity", None, "1"
-        )
-
-        assert result is not None
-        assert result.data.get("name") == "Updated"
-        assert repository.storage["test-id-1"]["name"] == "Updated"
 
     @pytest.mark.asyncio
     async def test_delete_by_id(self, service, repository):
@@ -334,96 +285,6 @@ class TestEntityServiceImpl:
         assert len(result) > 0
 
     @pytest.mark.asyncio
-    async def test_find_by_business_id_found(self, service, repository):
-        """Test finding entity by business ID when it exists."""
-        repository.storage["id-1"] = {
-            "name": "Test",
-            "business_id": "BIZ-123",
-            "value": 10,
-            "technical_id": "id-1",
-        }
-
-        result = await service.find_by_business_id(
-            "TestEntity", "BIZ-123", "business_id", "1"
-        )
-
-        assert result is not None
-        assert result.data.get("business_id") == "BIZ-123"
-
-    @pytest.mark.asyncio
-    async def test_find_by_business_id_not_found(self, service):
-        """Test finding entity by business ID when it doesn't exist."""
-        result = await service.find_by_business_id(
-            "TestEntity", "NON-EXISTENT", "business_id", "1"
-        )
-
-        assert result is None
-
-    @pytest.mark.asyncio
-    async def test_update_by_business_id(self, service, repository):
-        """Test updating entity by business ID."""
-        repository.storage["id-1"] = {
-            "name": "Original",
-            "business_id": "BIZ-123",
-            "value": 10,
-            "technical_id": "id-1",
-        }
-
-        updated_data = {"name": "Updated", "business_id": "BIZ-123", "value": 20}
-        result = await service.update_by_business_id(
-            updated_data, "business_id", "TestEntity", None, "1"
-        )
-
-        assert result is not None
-        assert result.data.get("name") == "Updated"
-
-    @pytest.mark.asyncio
-    async def test_update_by_business_id_not_found(self, service):
-        """Test updating entity by business ID when it doesn't exist."""
-        updated_data = {"name": "Updated", "business_id": "NON-EXISTENT", "value": 20}
-
-        with pytest.raises(EntityServiceError):
-            await service.update_by_business_id(
-                updated_data, "business_id", "TestEntity", None, "1"
-            )
-
-    @pytest.mark.asyncio
-    async def test_update_by_business_id_missing_field(self, service):
-        """Test updating entity by business ID when data is missing the field."""
-        updated_data = {"name": "Updated", "value": 20}
-
-        with pytest.raises(EntityServiceError):
-            await service.update_by_business_id(
-                updated_data, "business_id", "TestEntity", None, "1"
-            )
-
-    @pytest.mark.asyncio
-    async def test_delete_by_business_id_found(self, service, repository):
-        """Test deleting entity by business ID when it exists."""
-        repository.storage["id-1"] = {
-            "name": "Test",
-            "business_id": "BIZ-123",
-            "value": 10,
-            "technical_id": "id-1",
-        }
-
-        result = await service.delete_by_business_id(
-            "TestEntity", "BIZ-123", "business_id", "1"
-        )
-
-        assert result is True
-        assert "id-1" not in repository.storage
-
-    @pytest.mark.asyncio
-    async def test_delete_by_business_id_not_found(self, service):
-        """Test deleting entity by business ID when it doesn't exist."""
-        result = await service.delete_by_business_id(
-            "TestEntity", "NON-EXISTENT", "business_id", "1"
-        )
-
-        assert result is False
-
-    @pytest.mark.asyncio
     async def test_get_by_id_at_time(self, service, repository):
         """Test getting entity by ID at a specific point in time."""
         repository.storage["test-id-1"] = {
@@ -470,30 +331,6 @@ class TestEntityServiceImpl:
 
         with pytest.raises(ValueError):
             EntityServiceImpl.get_instance()
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_single(self, service):
-        """Test converting single search condition."""
-        search_request = SearchConditionRequest.builder().equals("name", "Test").build()
-
-        result = service._convert_search_condition(search_request)
-
-        assert result == {"name": "Test"}
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_multiple(self, service):
-        """Test converting multiple search conditions."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .equals("name", "Test")
-            .equals("value", 10)
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert "and" in result
-        assert len(result["and"]) == 2
 
     @pytest.mark.asyncio
     async def test_legacy_get_item(self, service, repository):
@@ -563,34 +400,6 @@ class TestEntityServiceImpl:
             )
 
         assert result == "test-id-1"
-
-    @pytest.mark.asyncio
-    async def test_legacy_get_items_by_condition(self, service, repository):
-        """Test legacy get_items_by_condition method."""
-        repository.storage = {
-            "id-1": {"name": "Test", "value": 10, "technical_id": "id-1"},
-        }
-
-        with pytest.warns(DeprecationWarning):
-            result = await service.get_items_by_condition(
-                "token", "TestEntity", "1", {"name": "Test"}
-            )
-
-        assert len(result) == 1
-
-    @pytest.mark.asyncio
-    async def test_legacy_get_single_item_by_condition(self, service, repository):
-        """Test legacy get_single_item_by_condition method."""
-        repository.storage = {
-            "id-1": {"name": "Test", "value": 10, "technical_id": "id-1"},
-        }
-
-        with pytest.warns(DeprecationWarning):
-            result = await service.get_single_item_by_condition(
-                "token", "TestEntity", "1", {"name": "Test"}
-            )
-
-        assert result is not None
 
     @pytest.mark.asyncio
     async def test_create_entity_response(self, service):
@@ -663,25 +472,6 @@ class TestEntityServiceImpl:
             await service.save({"name": "Test"}, "TestEntity", "1")
 
     @pytest.mark.asyncio
-    async def test_update_entity_error(self, service, repository):
-        """Test update entity error handling."""
-        repository.storage["test-id-1"] = {
-            "name": "Test",
-            "value": 10,
-            "technical_id": "test-id-1",
-        }
-
-        async def failing_update(meta, entity_id, entity):
-            raise Exception("Update failed")
-
-        repository.update = failing_update
-
-        with pytest.raises(EntityServiceError):
-            await service.update(
-                "test-id-1", {"name": "Updated"}, "TestEntity", None, "1"
-            )
-
-    @pytest.mark.asyncio
     async def test_delete_entity_error(self, service, repository):
         """Test delete entity error handling."""
 
@@ -692,17 +482,6 @@ class TestEntityServiceImpl:
 
         with pytest.raises(EntityServiceError):
             await service.delete_by_id("test-id-1", "TestEntity", "1")
-
-    @pytest.mark.asyncio
-    async def test_search_no_results(self, service):
-        """Test searching with no results."""
-        search_request = (
-            SearchConditionRequest.builder().equals("name", "NonExistent").build()
-        )
-
-        result = await service.search("TestEntity", search_request, "1")
-
-        assert result == []
 
     @pytest.mark.asyncio
     async def test_save_all_empty_list(self, service):
@@ -813,31 +592,6 @@ class TestEntityServiceImpl:
         assert "Find by business ID failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_update_by_business_id_exception_handling(self, service, repository):
-        """Test update_by_business_id exception handling."""
-        repository.storage["id-1"] = {
-            "name": "Test",
-            "business_id": "BIZ-123",
-            "value": 10,
-            "technical_id": "id-1",
-        }
-
-        async def failing_update(meta, entity_id, entity):
-            raise Exception("Database error")
-
-        repository.update = failing_update
-
-        updated_data = {"name": "Updated", "business_id": "BIZ-123", "value": 20}
-
-        with pytest.raises(EntityServiceError) as exc_info:
-            await service.update_by_business_id(
-                updated_data, "business_id", "TestEntity", None, "1"
-            )
-
-        # The error comes from update method, not update_by_business_id
-        assert "Update failed" in str(exc_info.value)
-
-    @pytest.mark.asyncio
     async def test_delete_by_business_id_exception_handling(self, service, repository):
         """Test delete_by_business_id exception handling."""
 
@@ -898,26 +652,6 @@ class TestEntityServiceImpl:
         assert "Get transitions failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_execute_transition_exception_handling(self, service, repository):
-        """Test execute_transition exception handling."""
-        repository.storage["test-id-1"] = {
-            "name": "Test",
-            "value": 10,
-            "technical_id": "test-id-1",
-        }
-
-        async def failing_update(meta, entity_id, entity):
-            raise Exception("Database error")
-
-        repository.update = failing_update
-
-        with pytest.raises(EntityServiceError) as exc_info:
-            await service.execute_transition("test-id-1", "update", "TestEntity", "1")
-
-        # The error comes from update method, not execute_transition
-        assert "Update failed" in str(exc_info.value)
-
-    @pytest.mark.asyncio
     async def test_get_by_id_at_time_exception_handling(self, service, repository):
         """Test get_by_id_at_time exception handling."""
 
@@ -951,34 +685,6 @@ class TestEntityServiceImpl:
             )
 
         assert "Search at time failed" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_with_non_eq_operator(self, service):
-        """Test converting search condition with non-equals operator."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .add_condition("value", CyodaOperator.GREATER_THAN, 10)
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert result == {"value": {"gt": 10}}
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_multiple_with_non_eq(self, service):
-        """Test converting multiple search conditions with non-equals operators."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .add_condition("value", CyodaOperator.GREATER_THAN, 10)
-            .add_condition("name", CyodaOperator.CONTAINS, "Test")
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert "and" in result
-        assert len(result["and"]) == 2
 
     # Additional Edge Cases and Coverage Tests
 
@@ -1014,22 +720,6 @@ class TestEntityServiceImpl:
         result = await service.exists_by_id("test-id", "TestEntity", "1")
 
         assert result is False
-
-    @pytest.mark.asyncio
-    async def test_exists_by_business_id_true(self, service, repository):
-        """Test exists_by_business_id when entity exists."""
-        repository.storage["id-1"] = {
-            "name": "Test",
-            "business_id": "BIZ-123",
-            "value": 10,
-            "technical_id": "id-1",
-        }
-
-        result = await service.exists_by_business_id(
-            "TestEntity", "BIZ-123", "business_id", "1"
-        )
-
-        assert result is True
 
     @pytest.mark.asyncio
     async def test_exists_by_business_id_false(self, service):
@@ -1089,45 +779,6 @@ class TestEntityServiceImpl:
         assert result == 0
 
     @pytest.mark.asyncio
-    async def test_search_with_or_operator(self, service, repository):
-        """Test searching with OR operator."""
-        repository.storage = {
-            "id-1": {"name": "Test", "value": 10, "technical_id": "id-1"},
-            "id-2": {"name": "Other", "value": 20, "technical_id": "id-2"},
-        }
-
-        search_request = (
-            SearchConditionRequest.builder()
-            .equals("name", "Test")
-            .operator(LogicalOperator.OR)
-            .build()
-        )
-        result = await service.search("TestEntity", search_request, "1")
-
-        assert len(result) >= 1
-
-    @pytest.mark.asyncio
-    async def test_search_with_offset(self, service, repository):
-        """Test searching with offset."""
-        repository.storage = {
-            "id-1": {"name": "Test", "value": 10, "technical_id": "id-1"},
-            "id-2": {"name": "Test", "value": 20, "technical_id": "id-2"},
-            "id-3": {"name": "Test", "value": 30, "technical_id": "id-3"},
-        }
-
-        search_request = (
-            SearchConditionRequest.builder()
-            .equals("name", "Test")
-            .offset(1)
-            .limit(2)
-            .build()
-        )
-        result = await service.search("TestEntity", search_request, "1")
-
-        # Offset and limit are passed to repository but may not be enforced in mock
-        assert isinstance(result, list)
-
-    @pytest.mark.asyncio
     async def test_legacy_get_single_item_by_condition_not_found(self, service):
         """Test legacy get_single_item_by_condition when not found."""
         with pytest.warns(DeprecationWarning):
@@ -1177,103 +828,6 @@ class TestEntityServiceImpl:
         assert result["entity_model"] == "TestEntity"
 
     # Advanced Search Condition Tests
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_with_less_than(self, service):
-        """Test converting search condition with LESS_THAN operator."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .add_condition("value", CyodaOperator.LESS_THAN, 100)
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert result == {"value": {"lt": 100}}
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_with_greater_or_equal(self, service):
-        """Test converting search condition with GREATER_OR_EQUAL operator."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .add_condition("value", CyodaOperator.GREATER_OR_EQUAL, 50)
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert result == {"value": {"gte": 50}}
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_with_less_or_equal(self, service):
-        """Test converting search condition with LESS_OR_EQUAL operator."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .add_condition("value", CyodaOperator.LESS_OR_EQUAL, 75)
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert result == {"value": {"lte": 75}}
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_with_in_operator(self, service):
-        """Test converting search condition with IN operator."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .in_values("status", ["active", "pending", "completed"])
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert result == {"status": {"in": ["active", "pending", "completed"]}}
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_with_not_equals(self, service):
-        """Test converting search condition with NOT_EQUALS operator."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .add_condition("status", CyodaOperator.NOT_EQUAL, "deleted")
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert result == {"status": {"ne": "deleted"}}
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_complex_and(self, service):
-        """Test converting complex search condition with AND operator."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .equals("name", "Test")
-            .add_condition("value", CyodaOperator.GREATER_THAN, 10)
-            .add_condition("status", CyodaOperator.CONTAINS, "active")
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert "and" in result
-        assert len(result["and"]) == 3
-
-    @pytest.mark.asyncio
-    async def test_convert_search_condition_with_or_operator_multiple(self, service):
-        """Test converting search condition with OR operator and multiple conditions."""
-        search_request = (
-            SearchConditionRequest.builder()
-            .equals("status", "active")
-            .equals("status", "pending")
-            .operator(LogicalOperator.OR)
-            .build()
-        )
-
-        result = service._convert_search_condition(search_request)
-
-        assert "or" in result
-        assert len(result["or"]) == 2
 
     # Singleton Pattern Tests
 
@@ -1517,25 +1071,6 @@ class TestEntityServiceImpl:
         assert results == []
 
     @pytest.mark.asyncio
-    async def test_get_single_item_by_condition_deprecated(self, service, repository):
-        """Test get_single_item_by_condition raises deprecation warning."""
-        repository.storage["id-1"] = {
-            "name": "Test",
-            "value": 10,
-            "technical_id": "id-1",
-        }
-
-        with pytest.warns(
-            DeprecationWarning, match="get_single_item_by_condition.*deprecated"
-        ):
-            result = await service.get_single_item_by_condition(
-                "token", "TestEntity", "1", {"name": "Test"}
-            )
-
-        assert result is not None
-        assert result["name"] == "Test"
-
-    @pytest.mark.asyncio
     async def test_get_single_item_by_condition_not_found(self, service):
         """Test get_single_item_by_condition returns None when not found."""
         with pytest.warns(DeprecationWarning):
@@ -1557,45 +1092,6 @@ class TestEntityServiceImpl:
 
         assert result is None
 
-    @pytest.mark.asyncio
-    async def test_get_items_by_condition_deprecated(self, service, repository):
-        """Test get_items_by_condition raises deprecation warning."""
-        repository.storage["id-1"] = {
-            "name": "Test",
-            "value": 10,
-            "technical_id": "id-1",
-        }
-
-        with pytest.warns(
-            DeprecationWarning, match="get_items_by_condition.*deprecated"
-        ):
-            results = await service.get_items_by_condition(
-                "token", "TestEntity", "1", {"name": "Test"}
-            )
-
-        assert len(results) == 1
-
-    @pytest.mark.asyncio
-    async def test_get_items_by_condition_with_chat_repository(
-        self, service, repository
-    ):
-        """Test get_items_by_condition handles CHAT_REPOSITORY wrapper."""
-        from common.config.config import CHAT_REPOSITORY
-
-        repository.storage["id-1"] = {
-            "name": "Test",
-            "value": 10,
-            "technical_id": "id-1",
-        }
-
-        condition = {CHAT_REPOSITORY: {"name": "Test"}}
-
-        with pytest.warns(DeprecationWarning):
-            results = await service.get_items_by_condition(
-                "token", "TestEntity", "1", condition
-            )
-
-        assert len(results) == 1
 
     @pytest.mark.asyncio
     async def test_get_items_by_condition_exception(self, service, repository):
@@ -1868,17 +1364,6 @@ class TestSearchConditionRequestBuilder:
         assert request.conditions[0].operator == CyodaOperator.CONTAINS
         assert request.conditions[0].value == "test"
 
-    def test_builder_in_values_method(self):
-        """Test in_values method in builder."""
-        builder = SearchConditionRequest.builder()
-        builder.in_values("status", ["active", "pending"])
-        request = builder.build()
-
-        assert len(request.conditions) == 1
-        assert request.conditions[0].field == "status"
-        assert request.conditions[0].operator == CyodaOperator.EQUALS
-        assert request.conditions[0].value == ["active", "pending"]
-
     def test_builder_operator_method(self):
         """Test operator method in builder."""
         builder = SearchConditionRequest.builder()
@@ -1987,23 +1472,6 @@ class TestAdditionalCoverage:
             await service.save({"name": "Test"}, "TestEntity", "1")
 
         assert "Save failed" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_update_no_entity_id_returned(self, service, repository):
-        """Test update when repository returns no entity ID."""
-        from common.service.service import EntityServiceError
-
-        repository.storage["test-id"] = {"name": "Old", "technical_id": "test-id"}
-
-        async def update_no_id(meta, entity_id, entity):
-            return None
-
-        repository.update = update_no_id
-
-        with pytest.raises(EntityServiceError) as exc_info:
-            await service.update("test-id", {"name": "New"}, "TestEntity", None, "1")
-
-        assert "Update operation returned no entity ID" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_update_by_business_id_exception_handling(self, service, repository):

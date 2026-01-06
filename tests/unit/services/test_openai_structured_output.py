@@ -5,7 +5,7 @@ Unit tests for OpenAI Structured Output Handler
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from application.services.openai_structured_output import StructuredOutputHandler
+from application.services.openai.structured_output import StructuredOutputHandler
 
 
 class TestPerson(BaseModel):

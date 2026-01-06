@@ -114,79 +114,101 @@ class InstallationTokenManager:
             
             return token.token
     
+    def _build_token_request_headers(self) -> Dict[str, str]:
+        """Build headers for token request.
+
+        Returns:
+            Headers dictionary
+        """
+        jwt_token = self.jwt_generator.generate_jwt()
+        return {
+            "Authorization": f"Bearer {jwt_token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": self.API_VERSION,
+            "Content-Type": "application/json"
+        }
+
+    def _build_token_request_body(
+        self,
+        repositories: Optional[list] = None,
+        permissions: Optional[Dict[str, str]] = None
+    ) -> dict:
+        """Build request body for token request.
+
+        Args:
+            repositories: Optional list of repository names
+            permissions: Optional dict of permissions
+
+        Returns:
+            Request body dictionary
+        """
+        data = {}
+        if repositories:
+            data["repositories"] = repositories
+        if permissions:
+            data["permissions"] = permissions
+        return data
+
+    def _parse_token_response(self, response_data: dict) -> InstallationToken:
+        """Parse token response from GitHub API.
+
+        Args:
+            response_data: Response JSON data
+
+        Returns:
+            InstallationToken object
+        """
+        return InstallationToken(
+            token=response_data["token"],
+            expires_at=response_data["expires_at"],
+            permissions=response_data.get("permissions", {}),
+            repository_selection=response_data.get("repository_selection", "all")
+        )
+
     async def _request_installation_token(
         self,
         installation_id: int,
         repositories: Optional[list] = None,
         permissions: Optional[Dict[str, str]] = None
     ) -> InstallationToken:
-        """
-        Request a new installation access token from GitHub API.
-        
+        """Request a new installation access token from GitHub API.
+
         Args:
             installation_id: GitHub App installation ID
             repositories: Optional list of repository names
             permissions: Optional dict of permissions
-            
+
         Returns:
             InstallationToken object
-            
+
         Raises:
             Exception: If API request fails
         """
-        # Generate JWT for authentication
-        jwt_token = self.jwt_generator.generate_jwt()
-        
-        # Prepare request
         url = f"{self.BASE_URL}/app/installations/{installation_id}/access_tokens"
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": self.API_VERSION,
-            "Content-Type": "application/json"
-        }
-        
-        # Build request body
-        data = {}
-        if repositories:
-            data["repositories"] = repositories
-        if permissions:
-            data["permissions"] = permissions
-        
+        headers = self._build_token_request_headers()
+        data = self._build_token_request_body(repositories, permissions)
+
         try:
             timeout_config = httpx.Timeout(30.0, connect=10.0)
             async with httpx.AsyncClient(timeout=timeout_config, trust_env=False) as client:
                 response = await client.post(url, json=data, headers=headers)
-                
-                if response.status_code == 201:
-                    response_data = response.json()
-                    
-                    token = InstallationToken(
-                        token=response_data["token"],
-                        expires_at=response_data["expires_at"],
-                        permissions=response_data.get("permissions", {}),
-                        repository_selection=response_data.get("repository_selection", "all")
-                    )
-                    
-                    logger.info(
-                        f"Successfully obtained installation token for installation {installation_id} "
-                        f"(expires at {token.expires_at}, permissions: {list(token.permissions.keys())})"
-                    )
-                    
-                    return token
-                    
-                else:
+
+                if response.status_code != 201:
                     error_msg = f"Failed to get installation token (status {response.status_code}): {response.text}"
                     logger.error(error_msg)
                     raise Exception(error_msg)
-                    
+
+                token = self._parse_token_response(response.json())
+                logger.info(
+                    f"Successfully obtained installation token for installation {installation_id} "
+                    f"(expires at {token.expires_at}, permissions: {list(token.permissions.keys())})"
+                )
+                return token
+
         except httpx.RequestError as e:
             error_msg = f"Network error requesting installation token: {e}"
             logger.error(error_msg)
             raise Exception(error_msg)
-        except Exception as e:
-            logger.error(f"Unexpected error requesting installation token: {e}")
-            raise
     
     def clear_cache(self, installation_id: Optional[int] = None):
         """

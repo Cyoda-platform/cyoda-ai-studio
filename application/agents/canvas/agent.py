@@ -28,7 +28,10 @@ tools = [
 root_agent = LlmAgent(
     name="canvas_agent",
     model=get_model_config(),
-    description="Canvas specialist for workflow, entity, and requirements creation with immediate persistence to repository.",
+    description=(
+        "Canvas specialist for workflow, entity, and requirements creation with "
+        "immediate persistence to repository."
+    ),
     instruction=create_instruction_provider("canvas_agent"),
     tools=tools,
     after_agent_callback=accumulate_streaming_response,
@@ -38,3 +41,4 @@ import logging
 logger = logging.getLogger(__name__)
 logger.info("✓ Canvas Agent created with workflow, entity, and requirements creation tools")
 
+agent = root_agent

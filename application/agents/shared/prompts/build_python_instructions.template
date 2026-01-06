@@ -1,0 +1,73 @@
+## 🎯 Objective
+
+Build a Cyoda Python application following the **Interface-based** and **Workflow-driven** architecture. Reference `example_application/` for all patterns.
+---
+## 🛑 The "Never" Rules (Strict Constraints)
+
+* **No Business Logic in Routes:** Routes are thin proxies to `EntityService`.
+* **No Manual State Changes:** `entity.state` is read-only. Transitions manage state.
+* **No `common/` Edits:** Never modify the framework code.
+* **No `entityService` Updates on Self:** Inside a Processor, the current entity is updated automatically via the return value. Only use `entityService` for *other* entities.
+* **No `__init__.py` in Root:** Delete it if found; it breaks `mypy`.
+---
+## 🛠 Step-by-Step Implementation Flow
+
+### 1. Requirements & Analysis
+
+1. Read business requirements in `application/resources/functional_requirements/`.
+2. **Identify Entities:** Map "status" fields in requirements to `entity.meta.state`.
+
+### 2. Entity Definition (Python + JSON)
+
+* **Python:** Create `application/entity/{name}/version_1/{name}.py`.
+* Extend `CyodaEntity`. Define `ENTITY_NAME` and `ENTITY_VERSION`.
+
+* **JSON Example:** Create `application/resources/entity/{name}/version_1/{PascalName}.json`.
+* **Must** be a concrete instance with realistic data (no technical IDs).
+
+### 3. Workflow Design
+
+* **Location:** `application/resources/workflow/{name}/version_1/{PascalName}.json`.
+* **Rules:** * Start state must be `"initial_state"`.
+* Loop-backs or backward moves **must** be `"manual": true`.
+* Total processors/criteria should be minimal (ideally <3 per entity).
+* **Validation:** Must match `example_application/resources/workflow/workflow_schema.json`.
+
+### 4. Logic Implementation (Processors & Criteria)
+
+* **Processors:** `application/processor/{name}_processor.py`.
+* Use `cast_entity(entity)` for type safety.
+* Use `get_entity_service()` only for external entity lookups/updates.
+
+* **Criteria:** `application/criterion/{name}_criterion.py`.
+* Keep logic minimal. Return boolean.
+
+### 5. API Layer (Routes)
+
+* **Location:** `application/routes/{name}s.py`.
+* Use Quart Blueprints with `/api/{entity}` prefix.
+* **Pattern:** Request -> EntityService -> Response (Technical ID + State).
+---
+## 🧪 Quality Gate (Run Before Completion)
+You must execute these commands in order. **If any fail, the task is not complete.**
+
+```bash
+# 1. Formatting
+python -m black . && python -m isort .
+
+# 2. Type & Style (CRITICAL)
+python -m mypy .
+python -m flake8 .
+
+# 3. Security
+python -m bandit -r . -x tests/
+```
+
+## 📋 Completion Checklist
+
+* [ ] Requirements from `functional_requirements/` fully met.
+* [ ] Every Python Entity has a corresponding Example JSON.
+* [ ] Workflow JSON matches the Processor/Criterion class names exactly.
+* [ ] Blueprints registered in `application/app.py`.
+* [ ] Modules registered in `services/config.py`.
+* [ ] `mypy .` returns no errors.

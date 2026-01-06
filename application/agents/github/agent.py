@@ -53,6 +53,14 @@ from application.agents.shared.streaming_callback import accumulate_streaming_re
 
 logger = logging.getLogger(__name__)
 
+# Check if we should mock all tools for evaluation (same as coordinator)
+_MOCK_ALL_TOOLS = os.getenv("MOCK_ALL_TOOLS", "").lower() in ("true", "1", "yes")
+_before_tool_callback = None
+if _MOCK_ALL_TOOLS:
+    from application.agents.eval_mocking import mock_all_tools_callback
+    _before_tool_callback = mock_all_tools_callback
+    logger.info("🎭 Evaluation mode: All tools will be mocked (github_agent)")
+
 
 def _get_github_token_for_mcp() -> str:
     """Get GitHub installation token for MCP server authentication.
@@ -119,6 +127,11 @@ _GITHUB_TOKEN = _get_github_token_for_mcp()
 
 def _create_github_mcp_toolset():
     """Create GitHub MCP Toolset with proper error handling."""
+    # Check if MCP is disabled via environment variable (useful for evaluations)
+    if os.getenv("DISABLE_MCP_TOOLSET", "").lower() in ("true", "1", "yes"):
+        logger.info("MCP toolset disabled via DISABLE_MCP_TOOLSET environment variable")
+        return None
+
     if not _GITHUB_TOKEN:
         logger.warning("No GitHub token available for MCP toolset, MCP tools will be disabled")
         logger.info("GitHub agent will use custom tools only, which provide full functionality")
@@ -212,7 +225,10 @@ else:
 root_agent = LlmAgent(
     name="github_agent",
     model=get_model_config(),
-    description="GitHub repository operations specialist. Handles repository analysis, file operations, commits, and canvas integration.",
+    description=(
+        "GitHub repository operations specialist. Handles repository analysis, file operations, "
+        "commits, and canvas integration."
+    ),
     instruction=create_instruction_provider(
         "github_agent",
         repository_owner="<unknown>",
@@ -220,6 +236,7 @@ root_agent = LlmAgent(
         branch_name="<unknown>",
     ),
     tools=tools,
+    before_tool_callback=_before_tool_callback,  # Enable mocking in eval mode
     after_agent_callback=accumulate_streaming_response,
 )
 

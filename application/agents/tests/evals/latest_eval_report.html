@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADK Evaluation Report - coordinator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header .meta { opacity: 0.9; font-size: 0.95em; }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 4px solid #667eea;
+        }
+        .stat-card.passed { border-left-color: #10b981; }
+        .stat-card.failed { border-left-color: #ef4444; }
+        .stat-card h3 { color: #6b7280; font-size: 0.875em; text-transform: uppercase; margin-bottom: 10px; }
+        .stat-card .value { font-size: 2.5em; font-weight: bold; color: #1f2937; }
+        .stat-card .percentage { font-size: 1.2em; color: #6b7280; margin-left: 10px; }
+        .test-case {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .test-case.passed { border-left: 6px solid #10b981; }
+        .test-case.failed { border-left: 6px solid #ef4444; }
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+        .test-id { font-size: 1.3em; font-weight: 600; color: #1f2937; }
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.875em;
+            text-transform: uppercase;
+        }
+        .status-badge.passed { background: #d1fae5; color: #065f46; }
+        .status-badge.failed { background: #fee2e2; color: #991b1b; }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric {
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+        .metric.passed { border-left-color: #10b981; background: #f0fdf4; }
+        .metric.failed { border-left-color: #ef4444; background: #fef2f2; }
+        .metric-name { font-weight: 600; color: #374151; margin-bottom: 5px; }
+        .metric-score { font-size: 1.5em; font-weight: bold; }
+        .metric-threshold { color: #6b7280; font-size: 0.9em; }
+        .invocation {
+            background: #fafbfc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #e5e7eb;
+        }
+        .section-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 20px 0 10px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .query {
+            background: #eff6ff;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+        .tools-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .tool-column {
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .tool-column.expected { background: #fef3c7; border: 2px solid #f59e0b; }
+        .tool-column.actual { background: #dbeafe; border: 2px solid #3b82f6; }
+        .tool-column h4 { margin-bottom: 10px; color: #1f2937; }
+        .tool-call {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .tool-name { font-weight: 600; color: #7c3aed; }
+        .tool-args { color: #6b7280; margin-left: 10px; }
+        .match-indicator {
+            text-align: center;
+            font-size: 2em;
+            padding: 20px;
+        }
+        .match-indicator.match { color: #10b981; }
+        .match-indicator.mismatch { color: #ef4444; }
+        .response-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .response-column {
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .response-column.expected { background: #fef3c7; border: 2px solid #f59e0b; }
+        .response-column.actual { background: #dbeafe; border: 2px solid #3b82f6; }
+        .response-column h4 { margin-bottom: 10px; color: #1f2937; }
+        .response-text {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .no-response { color: #9ca3af; font-style: italic; }
+        .conversation-flow {
+            margin: 20px 0;
+        }
+        .event {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #e5e7eb;
+        }
+        .event.model { background: #eff6ff; border-left-color: #3b82f6; }
+        .event.user { background: #f0fdf4; border-left-color: #10b981; }
+        .event-header {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        .event-content {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+        .function-call {
+            background: #fef3c7;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+            border-left: 3px solid #f59e0b;
+        }
+        .function-response {
+            background: #dbeafe;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+            border-left: 3px solid #3b82f6;
+        }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-top: 40px;
+        }
+        @media print {
+            body { background: white; }
+            .test-case { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 ADK Evaluation Report</h1>
+            <div class="meta">
+                <div>Evaluation Set: <strong>coordinator</strong></div>
+                <div>Generated: <strong>2026-01-06 14:01:19</strong></div>
+                <div>Total Test Cases: <strong>5</strong></div>
+            </div>
+        </div>
+
+        <div class="summary">
+            <div class="stat-card passed">
+                <h3>Tests Passed</h3>
+                <div>
+                    <span class="value">1</span>
+                    <span class="percentage">20%</span>
+                </div>
+            </div>
+            <div class="stat-card failed">
+                <h3>Tests Failed</h3>
+                <div>
+                    <span class="value">4</span>
+                    <span class="percentage">80%</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>Success Rate</h3>
+                <div>
+                    <span class="value">20.0%</span>
+                </div>
+            </div>
+        </div>
+
+        
+<div class="test-case failed">
+    <div class="test-header">
+        <div class="test-id">deploy_app</div>
+        <span class="status-badge failed">Failed</span>
+    </div>
+
+    <div class="metrics">
+        
+                <div class="metric failed">
+                    <div class="metric-name">tool_trajectory_avg_score</div>
+                    <div>
+                        <span class="metric-score">0.50</span>
+                        <span class="metric-threshold">/ 0.9</span>
+                    </div>
+                </div>
+            
+                <div class="metric passed">
+                    <div class="metric-name">response_match_score</div>
+                    <div>
+                        <span class="metric-score">0.52</span>
+                        <span class="metric-threshold">/ 0.0</span>
+                    </div>
+                </div>
+            
+    </div>
+
+    
+                <div class="invocation">
+                    <div class="section-title">Invocation #1</div>
+                    <div class="query"><strong>Query:</strong> hi</div>
+
+                    <div class="section-title">Conversation Flow (Actual Events)</div>
+                    <div class="conversation-flow">
+                        <div style="color: #9ca3af; font-style: italic;">No events recorded</div>
+                    </div>
+
+                    <div class="section-title">Response Comparison</div>
+                    <div class="response-comparison">
+                        <div class="response-column expected">
+                            <h4>Expected Response</h4>
+                            <div class="response-text">Hi — I’m the Cyoda Coordinator. How can I help you today? You can tell me if you want to:
+- deploy or check an environment,
+- set up or run locally,
+- learn a concept or get an explanation,
+- get design/guidelines,
+- or build/create a feature or app.</div>
+                        </div>
+                        <div class="response-column actual">
+                            <h4>Actual Response (from final_response field)</h4>
+                            <div class="response-text">Hi — I’m the Cyoda Coordinator. How can I help you today?  
+I can route requests about deployments/environments, local setup, conceptual questions, or building app components.</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Tool Calls Comparison</div>
+                    <div class="tools-comparison">
+                        <div class="tool-column expected">
+                            <h4>Expected Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                        <div class="tool-column actual">
+                            <h4>Actual Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                    </div>
+                    <div class="match-indicator match">✅ MATCH</div>
+                </div>
+            
+                <div class="invocation">
+                    <div class="section-title">Invocation #2</div>
+                    <div class="query"><strong>Query:</strong> i want to deploy my application</div>
+
+                    <div class="section-title">Conversation Flow (Actual Events)</div>
+                    <div class="conversation-flow">
+                        
+                        <div class="event model">
+                            <div class="event-header">Event #1 - coordinator (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> transfer_to_agent({"agent_name": "environment_agent"})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #2 - coordinator (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> transfer_to_agent<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": null
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #3 - environment_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> show_deployment_options({"question": "Which environment would you like to deploy to? (Choose one)"})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #4 - environment_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> show_deployment_options<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "error": "Invoking `show_deployment_options()` failed as the following mandatory input parameters are not present:\noptions\nYou could retry calling this tool, but it is IMPORTANT for you to provide all the mandatory parameters."
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #5 - environment_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> show_deployment_options({"question": "Which environment would you like to deploy to?", "options": [{"value": "dev", "label": "dev", "description": "Development environment"}, {"value": "staging", "label": "staging", "description": "Staging environment"}, {"value": "prod", "label": "prod", "description": "Production environment"}]})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #6 - environment_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> show_deployment_options<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": "{\n  \"message\": \"Which environment would you like to deploy to?\\n\\nPlease select your choice from the options above.\",\n  \"hook\": {\n    \"type\": \"option_selection\",\n    \"action\": \"show_selection_ui\",\n    \"data\": {\n      \"conversation_id\": \"___eval___session___a9b55365-3248-45b1-a6ee-cc40626d869b\",\n      \"question\": \"Which environment would you like to deploy to?\",\n      \"options\": [\n        {\n          \"value\": \"dev\",\n          \"label\": \"dev\",\n          \"description\": \"Development environment\"\n        },\n        {\n          \"value\": \"staging\",\n          \"label\": \"staging\",\n          \"description\": \"Staging environment\"\n        },\n        {\n          \"value\": \"prod\",\n          \"label\": \"prod\",\n          \"description\": \"Production environment\"\n        }\n      ],\n      \"selection_type\": \"single\",\n      \"context\": null\n    }\n  }\n}"
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                    </div>
+
+                    <div class="section-title">Response Comparison</div>
+                    <div class="response-comparison">
+                        <div class="response-column expected">
+                            <h4>Expected Response</h4>
+                            <div class="response-text">I’ve opened the environment selector in the UI — please choose an environment there.  
+Once you pick one I’ll run check_environment_exists() and continue with deployment.
+
+Note: Environments take 5–10 min to provision. Apps take 3–5 min to deploy.</div>
+                        </div>
+                        <div class="response-column actual">
+                            <h4>Actual Response (from final_response field)</h4>
+                            <div class="response-text">- I can deploy your app — please select the environment using the selector shown above (dev / staging / prod).  
+- After you pick an environment I will run check_environment_exists() and proceed.
+
+I’ll need these details next:
+- Repository URL (Git)
+- Branch (default: main)
+- App name to create in the environment
+- Is the repo public? (yes/no)
+- Do you already have CYODA_CLIENT_ID & SECRET, or should I issue new credentials for the environment?
+
+Note: Environments take 5–10 min to provision. App builds/deploys take ~3–5 min.</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Tool Calls Comparison</div>
+                    <div class="tools-comparison">
+                        <div class="tool-column expected">
+                            <h4>Expected Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                        <div class="tool-column actual">
+                            <h4>Actual Tools</h4>
+                            
+                    <div class="tool-call">
+                        <span class="tool-name">transfer_to_agent</span>
+                        <span class="tool-args">{"agent_name": "environment_agent"}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">show_deployment_options</span>
+                        <span class="tool-args">{"question": "Which environment would you like to deploy to? (Choose one)"}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">show_deployment_options</span>
+                        <span class="tool-args">{"question": "Which environment would you like to deploy to?", "options": [{"value": "dev", "label": "dev", "description": "Development environment"}, {"value": "staging", "label": "staging", "description": "Staging environment"}, {"value": "prod", "label": "prod", "description": "Production environment"}]}</span>
+                    </div>
+                
+                        </div>
+                    </div>
+                    <div class="match-indicator mismatch">❌ MISMATCH</div>
+                </div>
+            
+</div>
+
+<div class="test-case failed">
+    <div class="test-header">
+        <div class="test-id">deploy_app</div>
+        <span class="status-badge failed">Failed</span>
+    </div>
+
+    <div class="metrics">
+        
+                <div class="metric failed">
+                    <div class="metric-name">tool_trajectory_avg_score</div>
+                    <div>
+                        <span class="metric-score">0.50</span>
+                        <span class="metric-threshold">/ 0.6</span>
+                    </div>
+                </div>
+            
+                <div class="metric passed">
+                    <div class="metric-name">response_match_score</div>
+                    <div>
+                        <span class="metric-score">0.63</span>
+                        <span class="metric-threshold">/ 0.0</span>
+                    </div>
+                </div>
+            
+    </div>
+
+    
+                <div class="invocation">
+                    <div class="section-title">Invocation #1</div>
+                    <div class="query"><strong>Query:</strong> hi</div>
+
+                    <div class="section-title">Conversation Flow (Actual Events)</div>
+                    <div class="conversation-flow">
+                        <div style="color: #9ca3af; font-style: italic;">No events recorded</div>
+                    </div>
+
+                    <div class="section-title">Response Comparison</div>
+                    <div class="response-comparison">
+                        <div class="response-column expected">
+                            <h4>Expected Response</h4>
+                            <div class="response-text">Hi — I’m the Cyoda Coordinator. How can I help you today? You can tell me if you want to:
+- deploy or check an environment,
+- set up or run locally,
+- learn a concept or get an explanation,
+- get design/guidelines,
+- or build/create a feature or app.</div>
+                        </div>
+                        <div class="response-column actual">
+                            <h4>Actual Response (from final_response field)</h4>
+                            <div class="response-text">Hi — I’m the Cyoda Coordinator. How can I help you today? For example, I can check environment/deployments, guide local setup, explain concepts, share design guidelines, or help build features/apps. What would you like to do?</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Tool Calls Comparison</div>
+                    <div class="tools-comparison">
+                        <div class="tool-column expected">
+                            <h4>Expected Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                        <div class="tool-column actual">
+                            <h4>Actual Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                    </div>
+                    <div class="match-indicator match">✅ MATCH</div>
+                </div>
+            
+                <div class="invocation">
+                    <div class="section-title">Invocation #2</div>
+                    <div class="query"><strong>Query:</strong> i want to deploy my application</div>
+
+                    <div class="section-title">Conversation Flow (Actual Events)</div>
+                    <div class="conversation-flow">
+                        
+                        <div class="event model">
+                            <div class="event-header">Event #1 - coordinator (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> transfer_to_agent({"agent_name": "environment_agent"})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #2 - coordinator (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> transfer_to_agent<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": null
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #3 - environment_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> show_deployment_options({"question": "Which environment would you like to deploy to? (e.g., dev, staging, prod)"})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #4 - environment_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> show_deployment_options<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "error": "Invoking `show_deployment_options()` failed as the following mandatory input parameters are not present:\noptions\nYou could retry calling this tool, but it is IMPORTANT for you to provide all the mandatory parameters."
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #5 - environment_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> show_deployment_options({"question": "Which environment would you like to deploy to?", "options": [{"value": "dev", "label": "dev", "description": "Development - for iterative testing"}, {"value": "staging", "label": "staging", "description": "Pre-production testing"}, {"value": "prod", "label": "prod", "description": "Production - live users"}]})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #6 - environment_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> show_deployment_options<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": "{\n  \"message\": \"Which environment would you like to deploy to?\\n\\nPlease select your choice from the options above.\",\n  \"hook\": {\n    \"type\": \"option_selection\",\n    \"action\": \"show_selection_ui\",\n    \"data\": {\n      \"conversation_id\": \"___eval___session___f987a247-d677-4550-96a9-9379abfb27bf\",\n      \"question\": \"Which environment would you like to deploy to?\",\n      \"options\": [\n        {\n          \"value\": \"dev\",\n          \"label\": \"dev\",\n          \"description\": \"Development - for iterative testing\"\n        },\n        {\n          \"value\": \"staging\",\n          \"label\": \"staging\",\n          \"description\": \"Pre-production testing\"\n        },\n        {\n          \"value\": \"prod\",\n          \"label\": \"prod\",\n          \"description\": \"Production - live users\"\n        }\n      ],\n      \"selection_type\": \"single\",\n      \"context\": null\n    }\n  }\n}"
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #7 - environment_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> show_deployment_options({"question": "Which environment would you like to deploy to? (Select one)", "options": [{"value": "dev", "label": "dev", "description": "Development - for iterative testing"}, {"value": "staging", "label": "staging", "description": "Pre-production testing"}, {"value": "prod", "label": "prod", "description": "Production - live users"}]})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #8 - environment_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> show_deployment_options<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": "{\n  \"message\": \"Which environment would you like to deploy to? (Select one)\\n\\nPlease select your choice from the options above.\",\n  \"hook\": {\n    \"type\": \"option_selection\",\n    \"action\": \"show_selection_ui\",\n    \"data\": {\n      \"conversation_id\": \"___eval___session___f987a247-d677-4550-96a9-9379abfb27bf\",\n      \"question\": \"Which environment would you like to deploy to? (Select one)\",\n      \"options\": [\n        {\n          \"value\": \"dev\",\n          \"label\": \"dev\",\n          \"description\": \"Development - for iterative testing\"\n        },\n        {\n          \"value\": \"staging\",\n          \"label\": \"staging\",\n          \"description\": \"Pre-production testing\"\n        },\n        {\n          \"value\": \"prod\",\n          \"label\": \"prod\",\n          \"description\": \"Production - live users\"\n        }\n      ],\n      \"selection_type\": \"single\",\n      \"context\": null\n    }\n  }\n}"
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                    </div>
+
+                    <div class="section-title">Response Comparison</div>
+                    <div class="response-comparison">
+                        <div class="response-column expected">
+                            <h4>Expected Response</h4>
+                            <div class="response-text">I’ve opened the environment selector in the UI — please choose an environment there.  
+Once you pick one I’ll run check_environment_exists() and continue with deployment.
+
+Note: Environments take 5–10 min to provision. Apps take 3–5 min to deploy.</div>
+                        </div>
+                        <div class="response-column actual">
+                            <h4>Actual Response (from final_response field)</h4>
+                            <div class="response-text">- Ready — I can deploy your app. Please choose the target environment using the selection UI above (dev / staging / prod).  
+- After you pick an environment I'll run check_environment_exists() and then ask for: repository URL, branch, language (Python/Java), app name, and visibility (public/private).  
+
+Note: Environments take 5–10 min to provision; app deployments take ~3–5 min.</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Tool Calls Comparison</div>
+                    <div class="tools-comparison">
+                        <div class="tool-column expected">
+                            <h4>Expected Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                        <div class="tool-column actual">
+                            <h4>Actual Tools</h4>
+                            
+                    <div class="tool-call">
+                        <span class="tool-name">transfer_to_agent</span>
+                        <span class="tool-args">{"agent_name": "environment_agent"}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">show_deployment_options</span>
+                        <span class="tool-args">{"question": "Which environment would you like to deploy to? (e.g., dev, staging, prod)"}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">show_deployment_options</span>
+                        <span class="tool-args">{"question": "Which environment would you like to deploy to?", "options": [{"value": "dev", "label": "dev", "description": "Development - for iterative testing"}, {"value": "staging", "label": "staging", "description": "Pre-production testing"}, {"value": "prod", "label": "prod", "description": "Production - live users"}]}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">show_deployment_options</span>
+                        <span class="tool-args">{"question": "Which environment would you like to deploy to? (Select one)", "options": [{"value": "dev", "label": "dev", "description": "Development - for iterative testing"}, {"value": "staging", "label": "staging", "description": "Pre-production testing"}, {"value": "prod", "label": "prod", "description": "Production - live users"}]}</span>
+                    </div>
+                
+                        </div>
+                    </div>
+                    <div class="match-indicator mismatch">❌ MISMATCH</div>
+                </div>
+            
+</div>
+
+<div class="test-case passed">
+    <div class="test-header">
+        <div class="test-id">deploy_app</div>
+        <span class="status-badge passed">Passed</span>
+    </div>
+
+    <div class="metrics">
+        
+                <div class="metric passed">
+                    <div class="metric-name">tool_trajectory_avg_score</div>
+                    <div>
+                        <span class="metric-score">0.50</span>
+                        <span class="metric-threshold">/ 0.3</span>
+                    </div>
+                </div>
+            
+                <div class="metric passed">
+                    <div class="metric-name">response_match_score</div>
+                    <div>
+                        <span class="metric-score">0.55</span>
+                        <span class="metric-threshold">/ 0.0</span>
+                    </div>
+                </div>
+            
+    </div>
+
+    
+                <div class="invocation">
+                    <div class="section-title">Invocation #1</div>
+                    <div class="query"><strong>Query:</strong> hi</div>
+
+                    <div class="section-title">Conversation Flow (Actual Events)</div>
+                    <div class="conversation-flow">
+                        <div style="color: #9ca3af; font-style: italic;">No events recorded</div>
+                    </div>
+
+                    <div class="section-title">Response Comparison</div>
+                    <div class="response-comparison">
+                        <div class="response-column expected">
+                            <h4>Expected Response</h4>
+                            <div class="response-text">Hi — I’m the Cyoda Coordinator. How can I help you today? You can tell me if you want to:
+- deploy or check an environment,
+- set up or run locally,
+- learn a concept or get an explanation,
+- get design/guidelines,
+- or build/create a feature or app.</div>
+                        </div>
+                        <div class="response-column actual">
+                            <h4>Actual Response (from final_response field)</h4>
+                            <div class="response-text">Hi — I’m the Cyoda Coordinator. How can I help you today? Briefly describe what you need (deployment, local setup, a concept explained, best practices, or building a feature/app) and I’ll route you to the right specialist.</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Tool Calls Comparison</div>
+                    <div class="tools-comparison">
+                        <div class="tool-column expected">
+                            <h4>Expected Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                        <div class="tool-column actual">
+                            <h4>Actual Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                    </div>
+                    <div class="match-indicator match">✅ MATCH</div>
+                </div>
+            
+                <div class="invocation">
+                    <div class="section-title">Invocation #2</div>
+                    <div class="query"><strong>Query:</strong> i want to deploy my application</div>
+
+                    <div class="section-title">Conversation Flow (Actual Events)</div>
+                    <div class="conversation-flow">
+                        
+                        <div class="event model">
+                            <div class="event-header">Event #1 - coordinator (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> transfer_to_agent({"agent_name": "environment_agent"})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #2 - coordinator (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> transfer_to_agent<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": null
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #3 - environment_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> show_deployment_options({"question": "Which environment would you like to deploy to? (e.g., dev, staging, prod)"})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #4 - environment_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> show_deployment_options<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "error": "Invoking `show_deployment_options()` failed as the following mandatory input parameters are not present:\noptions\nYou could retry calling this tool, but it is IMPORTANT for you to provide all the mandatory parameters."
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #5 - environment_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> show_deployment_options({"question": "Which environment would you like to deploy to? (select one)", "options": [{"value": "dev", "label": "dev", "description": "Development environment"}, {"value": "staging", "label": "staging", "description": "Staging environment"}, {"value": "prod", "label": "prod", "description": "Production environment"}]})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #6 - environment_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> show_deployment_options<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": "{\n  \"message\": \"Which environment would you like to deploy to? (select one)\\n\\nPlease select your choice from the options above.\",\n  \"hook\": {\n    \"type\": \"option_selection\",\n    \"action\": \"show_selection_ui\",\n    \"data\": {\n      \"conversation_id\": \"___eval___session___c5fe17ee-f2d4-4dff-8842-f8bc6ebbe1fb\",\n      \"question\": \"Which environment would you like to deploy to? (select one)\",\n      \"options\": [\n        {\n          \"value\": \"dev\",\n          \"label\": \"dev\",\n          \"description\": \"Development environment\"\n        },\n        {\n          \"value\": \"staging\",\n          \"label\": \"staging\",\n          \"description\": \"Staging environment\"\n        },\n        {\n          \"value\": \"prod\",\n          \"label\": \"prod\",\n          \"description\": \"Production environment\"\n        }\n      ],\n      \"selection_type\": \"single\",\n      \"context\": null\n    }\n  }\n}"
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                    </div>
+
+                    <div class="section-title">Response Comparison</div>
+                    <div class="response-comparison">
+                        <div class="response-column expected">
+                            <h4>Expected Response</h4>
+                            <div class="response-text">I’ve opened the environment selector in the UI — please choose an environment there.  
+Once you pick one I’ll run check_environment_exists() and continue with deployment.
+
+Note: Environments take 5–10 min to provision. Apps take 3–5 min to deploy.</div>
+                        </div>
+                        <div class="response-column actual">
+                            <h4>Actual Response (from final_response field)</h4>
+                            <div class="response-text">- Please pick the target environment using the selection UI above (dev / staging / prod).
+- Then provide:
+  - Repository URL (HTTPS)
+  - Branch (default: main)
+  - App name
+  - Is the repo public? (yes/no)
+
+Note: Environments take 5–10 min to provision. App deployments take 3–5 min.  
+After you select the environment and send the repo details I will run check_environment_exists() and proceed. I’ll return the Build ID and deployment Status/URL once started.</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Tool Calls Comparison</div>
+                    <div class="tools-comparison">
+                        <div class="tool-column expected">
+                            <h4>Expected Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                        <div class="tool-column actual">
+                            <h4>Actual Tools</h4>
+                            
+                    <div class="tool-call">
+                        <span class="tool-name">transfer_to_agent</span>
+                        <span class="tool-args">{"agent_name": "environment_agent"}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">show_deployment_options</span>
+                        <span class="tool-args">{"question": "Which environment would you like to deploy to? (e.g., dev, staging, prod)"}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">show_deployment_options</span>
+                        <span class="tool-args">{"question": "Which environment would you like to deploy to? (select one)", "options": [{"value": "dev", "label": "dev", "description": "Development environment"}, {"value": "staging", "label": "staging", "description": "Staging environment"}, {"value": "prod", "label": "prod", "description": "Production environment"}]}</span>
+                    </div>
+                
+                        </div>
+                    </div>
+                    <div class="match-indicator mismatch">❌ MISMATCH</div>
+                </div>
+            
+</div>
+
+<div class="test-case failed">
+    <div class="test-header">
+        <div class="test-id">build_app</div>
+        <span class="status-badge failed">Failed</span>
+    </div>
+
+    <div class="metrics">
+        
+                <div class="metric failed">
+                    <div class="metric-name">tool_trajectory_avg_score</div>
+                    <div>
+                        <span class="metric-score">0.00</span>
+                        <span class="metric-threshold">/ 0.5</span>
+                    </div>
+                </div>
+            
+                <div class="metric passed">
+                    <div class="metric-name">response_match_score</div>
+                    <div>
+                        <span class="metric-score">0.67</span>
+                        <span class="metric-threshold">/ 0.6</span>
+                    </div>
+                </div>
+            
+    </div>
+
+    
+                <div class="invocation">
+                    <div class="section-title">Invocation #1</div>
+                    <div class="query"><strong>Query:</strong> Develop an enterprise-grade payment processing system with multi-currency support, advanced fraud detection mechanisms, PCI DSS compliance, settlement management, transaction validation, and comprehensive audit trails</div>
+
+                    <div class="section-title">Conversation Flow (Actual Events)</div>
+                    <div class="conversation-flow">
+                        
+                        <div class="event model">
+                            <div class="event-header">Event #1 - coordinator (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> transfer_to_agent({"agent_name": "github_agent"})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #2 - coordinator (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> transfer_to_agent<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": null
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #3 - github_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> check_existing_branch_configuration({})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #4 - github_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> check_existing_branch_configuration<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": "{\"configured\":false,\"language\":null,\"repository_type\":null,\"repository_name\":null,\"repository_owner\":null,\"repository_branch\":null,\"repository_url\":null,\"installation_id\":null,\"repository_path\":null,\"ready_to_build\":false,\"error\":\"No conversation_id found in context\",\"message\":null}"
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #5 - github_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> ask_user_to_select_option({"question": "Which repository strategy do you want for the payment processing system (language + repo type + branch choice)?", "selection_type": "single", "context": "We're building an enterprise payment processing system with multi-currency support, advanced fraud detection, PCI DSS compliance, settlement management, transaction validation, and audit trails. Choose a language (Python or Java) and whether to use a Cyoda public template or connect your own repo (private). If you select a private repo option, I will ask for your Repo URL and GitHub App Installation ID next.", "tool_context": {}})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #6 - github_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> ask_user_to_select_option<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "error": "Invoking `ask_user_to_select_option()` failed as the following mandatory input parameters are not present:\noptions\nYou could retry calling this tool, but it is IMPORTANT for you to provide all the mandatory parameters."
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #7 - github_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> ask_user_to_select_option({"question": "Which repository strategy do you want for the payment processing system (language + repo type + branch choice)?", "selection_type": "single", "context": "We're building an enterprise payment processing system with multi-currency support, advanced fraud detection, PCI DSS compliance, settlement management, transaction validation, and audit trails. Choose a language (Python or Java) and whether to use a Cyoda public template or connect your own repo (private).", "options": [{"value": "python_public_new", "label": "Python \u2014 Public repo \u2014 New Branch"}, {"value": "python_public_existing", "label": "Python \u2014 Public repo \u2014 My Existing Branch"}, {"value": "python_private_new", "label": "Python \u2014 Private repo \u2014 New Branch"}, {"value": "python_private_existing", "label": "Python \u2014 Private repo \u2014 My Existing Branch"}, {"value": "java_public_new", "label": "Java \u2014 Public repo \u2014 New Branch"}, {"value": "java_public_existing", "label": "Java \u2014 Public repo \u2014 My Existing Branch"}, {"value": "java_private_new", "label": "Java \u2014 Private repo \u2014 New Branch"}, {"value": "java_private_existing", "label": "Java \u2014 Private repo \u2014 My Existing Branch"}]})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #8 - github_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> ask_user_to_select_option<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": "{\n  \"message\": \"Which repository strategy do you want for the payment processing system (language + repo type + branch choice)?\\n\\nPlease select your choice(s) using the options below.\",\n  \"hook\": {\n    \"type\": \"option_selection\",\n    \"action\": \"show_selection_ui\",\n    \"data\": {\n      \"conversation_id\": \"___eval___session___1e5f45b5-de0e-43d1-8def-b34f768eea92\",\n      \"question\": \"Which repository strategy do you want for the payment processing system (language + repo type + branch choice)?\",\n      \"options\": [\n        {\n          \"value\": \"python_public_new\",\n          \"label\": \"Python \\u2014 Public repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"python_public_existing\",\n          \"label\": \"Python \\u2014 Public repo \\u2014 My Existing Branch\"\n        },\n        {\n          \"value\": \"python_private_new\",\n          \"label\": \"Python \\u2014 Private repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"python_private_existing\",\n          \"label\": \"Python \\u2014 Private repo \\u2014 My Existing Branch\"\n        },\n        {\n          \"value\": \"java_public_new\",\n          \"label\": \"Java \\u2014 Public repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"java_public_existing\",\n          \"label\": \"Java \\u2014 Public repo \\u2014 My Existing Branch\"\n        },\n        {\n          \"value\": \"java_private_new\",\n          \"label\": \"Java \\u2014 Private repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"java_private_existing\",\n          \"label\": \"Java \\u2014 Private repo \\u2014 My Existing Branch\"\n        }\n      ],\n      \"selection_type\": \"single\",\n      \"context\": \"We're building an enterprise payment processing system with multi-currency support, advanced fraud detection, PCI DSS compliance, settlement management, transaction validation, and audit trails. Choose a language (Python or Java) and whether to use a Cyoda public template or connect your own repo (private).\"\n    }\n  }\n}"
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                    </div>
+
+                    <div class="section-title">Response Comparison</div>
+                    <div class="response-comparison">
+                        <div class="response-column expected">
+                            <h4>Expected Response</h4>
+                            <div class="response-text">Thank you for the request. To get started, we need to set up the repository first. We follow a GitOps practice, which means the repo isn't just for code—it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.
+
+I've popped up the repository strategy options for you to choose the language template and whether to create a new branch or use an existing one. Since we're building an enterprise payment processing platform with multi-currency support, fraud detection, PCI DSS compliance, settlements, validation, and audit trails, picking the right strategy now will let us initialize the appropriate Cyoda template and structure.
+
+Please pick one of the options shown in the UI.</div>
+                        </div>
+                        <div class="response-column actual">
+                            <h4>Actual Response (from final_response field)</h4>
+                            <div class="response-text">Thank you for the request. To get started, we need to set up the repository first. We follow a GitOps practice, which means the repo isn't just for code—it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.
+
+I've popped up the repository strategy options for you to choose from below. Since we're building an enterprise payment processing system (multi-currency, fraud detection, PCI DSS, settlements, validation, audit trails), pick the language and repo strategy that best matches your team's workflow. If you pick a private repo option, I'll ask for your Repo URL and GitHub App Installation ID so I can connect and initialize the repo using the standard Cyoda template.
+
+Options:
+- Python — Public repo — New Branch
+- Python — Public repo — My Existing Branch
+- Python — Private repo — New Branch
+- Python — Private repo — My Existing Branch
+- Java — Public repo — New Branch
+- Java — Public repo — My Existing Branch
+- Java — Private repo — New Branch
+- Java — Private repo — My Existing Branch
+
+Which option would you like?</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Tool Calls Comparison</div>
+                    <div class="tools-comparison">
+                        <div class="tool-column expected">
+                            <h4>Expected Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                        <div class="tool-column actual">
+                            <h4>Actual Tools</h4>
+                            
+                    <div class="tool-call">
+                        <span class="tool-name">transfer_to_agent</span>
+                        <span class="tool-args">{"agent_name": "github_agent"}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">check_existing_branch_configuration</span>
+                        <span class="tool-args">{}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">ask_user_to_select_option</span>
+                        <span class="tool-args">{"question": "Which repository strategy do you want for the payment processing system (language + repo type + branch choice)?", "selection_type": "single", "context": "We're building an enterprise payment processing system with multi-currency support, advanced fraud detection, PCI DSS compliance, settlement management, transaction validation, and audit trails. Choose a language (Python or Java) and whether to use a Cyoda public template or connect your own repo (private). If you select a private repo option, I will ask for your Repo URL and GitHub App Installation ID next.", "tool_context": {}}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">ask_user_to_select_option</span>
+                        <span class="tool-args">{"question": "Which repository strategy do you want for the payment processing system (language + repo type + branch choice)?", "selection_type": "single", "context": "We're building an enterprise payment processing system with multi-currency support, advanced fraud detection, PCI DSS compliance, settlement management, transaction validation, and audit trails. Choose a language (Python or Java) and whether to use a Cyoda public template or connect your own repo (private).", "options": [{"value": "python_public_new", "label": "Python \u2014 Public repo \u2014 New Branch"}, {"value": "python_public_existing", "label": "Python \u2014 Public repo \u2014 My Existing Branch"}, {"value": "python_private_new", "label": "Python \u2014 Private repo \u2014 New Branch"}, {"value": "python_private_existing", "label": "Python \u2014 Private repo \u2014 My Existing Branch"}, {"value": "java_public_new", "label": "Java \u2014 Public repo \u2014 New Branch"}, {"value": "java_public_existing", "label": "Java \u2014 Public repo \u2014 My Existing Branch"}, {"value": "java_private_new", "label": "Java \u2014 Private repo \u2014 New Branch"}, {"value": "java_private_existing", "label": "Java \u2014 Private repo \u2014 My Existing Branch"}]}</span>
+                    </div>
+                
+                        </div>
+                    </div>
+                    <div class="match-indicator mismatch">❌ MISMATCH</div>
+                </div>
+            
+</div>
+
+<div class="test-case failed">
+    <div class="test-header">
+        <div class="test-id">build_app</div>
+        <span class="status-badge failed">Failed</span>
+    </div>
+
+    <div class="metrics">
+        
+                <div class="metric failed">
+                    <div class="metric-name">tool_trajectory_avg_score</div>
+                    <div>
+                        <span class="metric-score">0.00</span>
+                        <span class="metric-threshold">/ 0.3</span>
+                    </div>
+                </div>
+            
+                <div class="metric passed">
+                    <div class="metric-name">response_match_score</div>
+                    <div>
+                        <span class="metric-score">0.68</span>
+                        <span class="metric-threshold">/ 0.3</span>
+                    </div>
+                </div>
+            
+    </div>
+
+    
+                <div class="invocation">
+                    <div class="section-title">Invocation #1</div>
+                    <div class="query"><strong>Query:</strong> Develop an enterprise-grade payment processing system with multi-currency support, advanced fraud detection mechanisms, PCI DSS compliance, settlement management, transaction validation, and comprehensive audit trails</div>
+
+                    <div class="section-title">Conversation Flow (Actual Events)</div>
+                    <div class="conversation-flow">
+                        
+                        <div class="event model">
+                            <div class="event-header">Event #1 - coordinator (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> transfer_to_agent({"agent_name": "github_agent"})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #2 - coordinator (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> transfer_to_agent<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": null
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event model">
+                            <div class="event-header">Event #3 - github_agent (model)</div>
+                            
+                            <div class="function-call">
+                                <strong>🔧 Function Call:</strong> ask_user_to_select_option({"question": "To start the GitOps repository setup for your payment processing system, please choose one of the repository and language strategies below. Since we're building an enterprise-grade payment processing system (multi-currency, fraud detection, PCI DSS, settlement, audit trails), this choice determines the project template and branch strategy we'll use to initialize the work.", "options": [{"value": "python_public_new", "label": "Python \u2014 Public repo \u2014 New Branch"}, {"value": "python_public_existing", "label": "Python \u2014 Public repo \u2014 My Existing Branch"}, {"value": "python_private_new", "label": "Python \u2014 Private repo \u2014 New Branch"}, {"value": "python_private_existing", "label": "Python \u2014 Private repo \u2014 My Existing Branch"}, {"value": "java_public_new", "label": "Java \u2014 Public repo \u2014 New Branch"}, {"value": "java_public_existing", "label": "Java \u2014 Public repo \u2014 My Existing Branch"}, {"value": "java_private_new", "label": "Java \u2014 Private repo \u2014 New Branch"}, {"value": "java_private_existing", "label": "Java \u2014 Private repo \u2014 My Existing Branch"}], "selection_type": "single", "context": "Choosing the language and repo strategy now lets us generate the right template, branch, and CI/CD layout for PCI-compliant payment workflows. I've popped up the options below for you."})
+                            </div>
+                        
+                        </div>
+                    
+                        <div class="event user">
+                            <div class="event-header">Event #4 - github_agent (user)</div>
+                            
+                            <div class="function-response">
+                                <strong>✅ Function Response:</strong> ask_user_to_select_option<br>
+                                <pre style="margin: 5px 0; font-size: 0.85em;">{
+  "result": "{\n  \"message\": \"To start the GitOps repository setup for your payment processing system, please choose one of the repository and language strategies below. Since we're building an enterprise-grade payment processing system (multi-currency, fraud detection, PCI DSS, settlement, audit trails), this choice determines the project template and branch strategy we'll use to initialize the work.\\n\\nPlease select your choice(s) using the options below.\",\n  \"hook\": {\n    \"type\": \"option_selection\",\n    \"action\": \"show_selection_ui\",\n    \"data\": {\n      \"conversation_id\": \"___eval___session___95e00548-075e-42ad-b98a-a5d085f00250\",\n      \"question\": \"To start the GitOps repository setup for your payment processing system, please choose one of the repository and language strategies below. Since we're building an enterprise-grade payment processing system (multi-currency, fraud detection, PCI DSS, settlement, audit trails), this choice determines the project template and branch strategy we'll use to initialize the work.\",\n      \"options\": [\n        {\n          \"value\": \"python_public_new\",\n          \"label\": \"Python \\u2014 Public repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"python_public_existing\",\n          \"label\": \"Python \\u2014 Public repo \\u2014 My Existing Branch\"\n        },\n        {\n          \"value\": \"python_private_new\",\n          \"label\": \"Python \\u2014 Private repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"python_private_existing\",\n          \"label\": \"Python \\u2014 Private repo \\u2014 My Existing Branch\"\n        },\n        {\n          \"value\": \"java_public_new\",\n          \"label\": \"Java \\u2014 Public repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"java_public_existing\",\n          \"label\": \"Java \\u2014 Public repo \\u2014 My Existing Branch\"\n        },\n        {\n          \"value\": \"java_private_new\",\n          \"label\": \"Java \\u2014 Private repo \\u2014 New Branch\"\n        },\n        {\n          \"value\": \"java_private_existing\",\n          \"label\": \"Java \\u2014 Private repo \\u2014 My Existing Branch\"\n        }\n      ],\n      \"selection_type\": \"single\",\n      \"context\": \"Choosing the language and repo strategy now lets us generate the right template, branch, and CI/CD layout for PCI-compliant payment workflows. I've popped up the options below for you.\"\n    }\n  }\n}"
+}</pre>
+                            </div>
+                        
+                        </div>
+                    
+                    </div>
+
+                    <div class="section-title">Response Comparison</div>
+                    <div class="response-comparison">
+                        <div class="response-column expected">
+                            <h4>Expected Response</h4>
+                            <div class="response-text">Thank you for the request. To get started, we need to set up the repository first. We follow a GitOps practice, which means the repo isn't just for code—it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.
+
+I've popped up the repository strategy options for you to choose the language template and whether to create a new branch or use an existing one. Since we're building an enterprise payment processing platform with multi-currency support, fraud detection, PCI DSS compliance, settlements, validation, and audit trails, picking the right strategy now will let us initialize the appropriate Cyoda template and structure.
+
+Please pick one of the options shown in the UI.</div>
+                        </div>
+                        <div class="response-column actual">
+                            <h4>Actual Response (from final_response field)</h4>
+                            <div class="response-text">Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code—it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.
+
+I've popped up the options below for you.
+
+Since this is an enterprise-grade payment processing system (multi-currency settlement, advanced fraud detection, PCI DSS compliance, transaction validation, and audit trails), your choice now determines the project template, branch strategy, and CI/CD layout we'll initialize. High-level guidance to help you decide:
+- Public repo + New Branch: fastest way to bootstrap using Cyoda’s template and a generated branch for isolated work.
+- Public repo + Existing Branch: if you already have a public repo/branch you want to integrate into, use this.
+- Java vs Python: Python gives rapid iteration and rich ML/fraud libraries; Java is common in highly regulated, strongly typed enterprise environments.
+
+When you’re ready, choose one of the options in the selection UI and I’ll proceed with the repository initialization.</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Tool Calls Comparison</div>
+                    <div class="tools-comparison">
+                        <div class="tool-column expected">
+                            <h4>Expected Tools</h4>
+                            <div class="tool-call">None</div>
+                        </div>
+                        <div class="tool-column actual">
+                            <h4>Actual Tools</h4>
+                            
+                    <div class="tool-call">
+                        <span class="tool-name">transfer_to_agent</span>
+                        <span class="tool-args">{"agent_name": "github_agent"}</span>
+                    </div>
+                
+                    <div class="tool-call">
+                        <span class="tool-name">ask_user_to_select_option</span>
+                        <span class="tool-args">{"question": "To start the GitOps repository setup for your payment processing system, please choose one of the repository and language strategies below. Since we're building an enterprise-grade payment processing system (multi-currency, fraud detection, PCI DSS, settlement, audit trails), this choice determines the project template and branch strategy we'll use to initialize the work.", "options": [{"value": "python_public_new", "label": "Python \u2014 Public repo \u2014 New Branch"}, {"value": "python_public_existing", "label": "Python \u2014 Public repo \u2014 My Existing Branch"}, {"value": "python_private_new", "label": "Python \u2014 Private repo \u2014 New Branch"}, {"value": "python_private_existing", "label": "Python \u2014 Private repo \u2014 My Existing Branch"}, {"value": "java_public_new", "label": "Java \u2014 Public repo \u2014 New Branch"}, {"value": "java_public_existing", "label": "Java \u2014 Public repo \u2014 My Existing Branch"}, {"value": "java_private_new", "label": "Java \u2014 Private repo \u2014 New Branch"}, {"value": "java_private_existing", "label": "Java \u2014 Private repo \u2014 My Existing Branch"}], "selection_type": "single", "context": "Choosing the language and repo strategy now lets us generate the right template, branch, and CI/CD layout for PCI-compliant payment workflows. I've popped up the options below for you."}</span>
+                    </div>
+                
+                        </div>
+                    </div>
+                    <div class="match-indicator mismatch">❌ MISMATCH</div>
+                </div>
+            
+</div>
+
+
+        <div class="footer">
+            Generated by ADK Evaluation Report Generator • Cyoda AI Assistant
+        </div>
+    </div>
+</body>
+</html>

@@ -58,7 +58,10 @@ class CanvasQuestionRequest(BaseModel):
     response_type: str = Field(
         ...,
         alias="responseType",
-        description="Type of response: entity_json, workflow_json, app_config_json, environment_json, requirement_json, text",
+        description=(
+            "Type of response: entity_json, workflow_json, app_config_json, "
+            "environment_json, requirement_json, text"
+        ),
     )
     context: Dict[str, Any] = Field(
         default_factory=dict,

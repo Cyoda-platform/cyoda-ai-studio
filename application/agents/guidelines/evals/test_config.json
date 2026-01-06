@@ -1,8 +1,0 @@
-{
-  "criteria": {
-    "tool_trajectory_avg_score": 0.9,
-    "response_match_score": 0.75,
-    "final_response_match_v2": 0.8
-  }
-}
-

@@ -455,11 +455,12 @@ class EntityServiceImpl(EntityService):
             criteria = self._convert_search_condition(condition)
             logger.info(f"🔍 Searching {entity_class} with criteria: {criteria}")
 
-            # Pass criteria to repository
-            # Note: Don't pass limit/offset without point_in_time as Cyoda API may not handle it correctly
+            # Pass limit and offset to repository for server-side pagination
             data = await self._repository.find_all_by_criteria(
                 meta,
-                criteria
+                criteria,
+                limit=condition.limit,
+                offset=condition.offset
             )
             logger.info(f"🔍 Repository returned {len(data) if isinstance(data, list) else 0} results")
 

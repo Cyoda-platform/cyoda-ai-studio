@@ -7,32 +7,39 @@ Provides clean abstraction over entity service with conversation-specific logic.
 import asyncio
 import copy
 import logging
-from typing import List, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from application.entity.conversation import Conversation
-from application.routes.common.constants import (
-    MAX_CONVERSATION_UPDATE_RETRIES,
-    RETRY_BASE_DELAY_SECONDS,
-)
 from common.exception import is_not_found
-from common.service.entity_service import SearchConditionRequest
+from common.service.entity_service import EntityService, SearchConditionRequest
 
 logger = logging.getLogger(__name__)
 
+# Constants
+MAX_CONVERSATION_UPDATE_RETRIES = 5
+RETRY_BASE_DELAY_SECONDS = 0.1
+
+# Retryable error indicators
+RETRYABLE_ERROR_INDICATORS = (
+    "422",
+    "500",
+    "version mismatch",
+    "earliestupdateaccept",
+    "changed by another transaction",
+    "update operation returned no entity id",
+)
+
 
 class ConversationRepository:
-    """
-    Repository for conversation entity operations.
+    """Repository for conversation entity operations."""
 
-    Encapsulates data access logic and provides domain-specific methods.
-    """
-
-    def __init__(self, entity_service):
+    def __init__(self, entity_service: EntityService):
         """
         Initialize conversation repository.
 
         Args:
-            entity_service: Entity service for data persistence
+            entity_service: Entity service for data persistence operations.
         """
         self.entity_service = entity_service
 
@@ -41,14 +48,13 @@ class ConversationRepository:
         Get conversation by technical ID.
 
         Args:
-            technical_id: Conversation technical ID
+            technical_id: Technical UUID of the conversation.
 
         Returns:
-            Conversation object or None if not found
+            Conversation object if found, None otherwise.
 
-        Example:
-            >>> repo = ConversationRepository(entity_service)
-            >>> conv = await repo.get_by_id("123-456")
+        Raises:
+            Exception: If retrieval fails for reasons other than not found.
         """
         try:
             response = await self.entity_service.get_by_id(
@@ -72,21 +78,17 @@ class ConversationRepository:
         user_id: Optional[str] = None,
         limit: int = 100,
         point_in_time: Optional[str] = None,
-    ) -> List[dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Search conversations with optional filters.
 
         Args:
-            user_id: Filter by user ID (optional)
-            limit: Maximum number of results
-            point_in_time: Cursor for pagination (optional)
+            user_id: Filter by user ID. If None, returns all conversations.
+            limit: Maximum number of results to return. Defaults to 100.
+            point_in_time: Optional timestamp for temporal queries.
 
         Returns:
-            List of conversation dictionaries
-
-        Example:
-            >>> repo = ConversationRepository(entity_service)
-            >>> convs = await repo.search(user_id="alice", limit=50)
+            List of conversation dictionaries matching the search criteria.
         """
         if user_id:
             search_condition = (
@@ -97,10 +99,12 @@ class ConversationRepository:
             )
 
             if point_in_time:
+                # Parse ISO format string to datetime object
+                point_in_time_dt = datetime.fromisoformat(point_in_time.replace("Z", "+00:00"))
                 response_list = await self.entity_service.search_at_time(
                     entity_class=Conversation.ENTITY_NAME,
                     condition=search_condition,
-                    point_in_time=point_in_time,
+                    point_in_time=point_in_time_dt,
                     entity_version=str(Conversation.ENTITY_VERSION),
                 )
             else:
@@ -110,7 +114,6 @@ class ConversationRepository:
                     entity_version=str(Conversation.ENTITY_VERSION),
                 )
         else:
-            # Get all conversations (superuser mode)
             response_list = await self.entity_service.find_all(
                 entity_class=Conversation.ENTITY_NAME,
                 entity_version=str(Conversation.ENTITY_VERSION),
@@ -123,15 +126,10 @@ class ConversationRepository:
         Create a new conversation.
 
         Args:
-            conversation: Conversation object to create
+            conversation: Conversation object to create.
 
         Returns:
-            Created conversation with technical_id populated
-
-        Example:
-            >>> conv = Conversation(user_id="alice", name="My Chat")
-            >>> created = await repo.create(conv)
-            >>> print(created.technical_id)
+            Created conversation with populated technical ID and metadata.
         """
         entity_data = conversation.model_dump(by_alias=False)
         response = await self.entity_service.save(
@@ -147,78 +145,35 @@ class ConversationRepository:
         """
         Update conversation with automatic retry on version conflicts.
 
-        Implements optimistic locking with exponential backoff retry.
-        On conflict, fetches fresh version and merges changes intelligently:
-        - Messages are merged (no duplicates)
-        - Background task IDs are merged (no duplicates)
-        - Other fields are overwritten with target values
+        Implements optimistic locking with intelligent merge strategy. On conflict,
+        fetches fresh version and merges changes before retrying.
 
         Args:
-            conversation: Conversation with updates to persist
+            conversation: Conversation object to update with desired state.
 
         Returns:
-            Updated conversation
+            Updated conversation object with latest state.
 
         Raises:
-            Exception: If all retries fail or non-retryable error occurs
-
-        Example:
-            >>> conv.name = "Updated Name"
-            >>> updated = await repo.update_with_retry(conv)
+            RuntimeError: If update fails after all retry attempts.
+            Exception: For non-retryable errors.
         """
-        # Store target state for re-application on retry
-        target_chat_flow = (
-            copy.deepcopy(conversation.chat_flow) if conversation.chat_flow else {}
-        )
-        target_adk_session_id = conversation.adk_session_id
-        target_name = conversation.name
-        target_description = conversation.description
-        target_background_task_ids = conversation.background_task_ids or []
+        # Snapshot target state
+        target_state = {
+            "chat_flow": copy.deepcopy(conversation.chat_flow) if conversation.chat_flow else {},
+            "adk_session_id": conversation.adk_session_id,
+            "name": conversation.name,
+            "description": conversation.description,
+            "background_task_ids": conversation.background_task_ids or []
+        }
 
         for attempt in range(MAX_CONVERSATION_UPDATE_RETRIES):
             try:
-                # On retry, fetch fresh version
+                # On retry, fetch fresh version and merge
                 if attempt > 0 and conversation.technical_id:
                     fresh_conversation = await self.get_by_id(conversation.technical_id)
                     if fresh_conversation:
-                        # Merge messages to avoid data loss
-                        fresh_messages = fresh_conversation.chat_flow.get(
-                            "finished_flow", []
-                        )
-                        target_messages = target_chat_flow.get("finished_flow", [])
-
-                        # Build set of existing message IDs
-                        existing_ids = {
-                            msg.get("technical_id")
-                            for msg in fresh_messages
-                            if msg.get("technical_id")
-                        }
-
-                        # Add only new messages
-                        for msg in target_messages:
-                            msg_id = msg.get("technical_id")
-                            if msg_id and msg_id not in existing_ids:
-                                fresh_messages.append(msg)
-                                existing_ids.add(msg_id)
-
-                        # Update merged state
-                        fresh_conversation.chat_flow["finished_flow"] = fresh_messages
-                        fresh_conversation.chat_flow["current_flow"] = (
-                            target_chat_flow.get("current_flow", [])
-                        )
-                        fresh_conversation.adk_session_id = target_adk_session_id
-                        fresh_conversation.name = target_name
-                        fresh_conversation.description = target_description
-
-                        # Merge background task IDs
-                        fresh_task_ids = set(
-                            fresh_conversation.background_task_ids or []
-                        )
-                        target_task_ids = set(target_background_task_ids)
-                        fresh_conversation.background_task_ids = list(
-                            fresh_task_ids | target_task_ids
-                        )
-
+                        self._merge_conversation_state(fresh_conversation, target_state)
                         conversation = fresh_conversation
 
                 # Attempt update
@@ -234,31 +189,16 @@ class ConversationRepository:
                 return Conversation(**saved_data)
 
             except Exception as e:
-                error_str = str(e).lower()
-                is_version_conflict = (
-                    "422" in error_str
-                    or "500" in error_str
-                    or "version mismatch" in error_str
-                    or "earliestupdateaccept" in error_str
-                    or "was changed by another transaction" in error_str
-                )
-
-                if is_version_conflict and attempt < MAX_CONVERSATION_UPDATE_RETRIES - 1:
-                    # Exponential backoff
-                    delay = RETRY_BASE_DELAY_SECONDS * (2**attempt)
-                    logger.warning(
-                        f"Version conflict updating conversation {conversation.technical_id} "
-                        f"(attempt {attempt + 1}/{MAX_CONVERSATION_UPDATE_RETRIES}). "
-                        f"Retrying in {delay:.3f}s... Error: {str(e)[:100]}"
-                    )
-                    await asyncio.sleep(delay)
-                    continue
-                else:
-                    if attempt == MAX_CONVERSATION_UPDATE_RETRIES - 1:
-                        logger.error(
-                            f"Failed to update conversation after {MAX_CONVERSATION_UPDATE_RETRIES} attempts: {e}"
-                        )
+                if not self._is_retryable_error(str(e)) or attempt >= MAX_CONVERSATION_UPDATE_RETRIES - 1:
+                    logger.error(f"Failed to update conversation after {attempt + 1} attempts: {e}")
                     raise
+
+                delay = RETRY_BASE_DELAY_SECONDS * (2**attempt)
+                logger.warning(
+                    f"Version conflict updating conversation {conversation.technical_id} "
+                    f"(attempt {attempt + 1}). Retrying in {delay:.3f}s..."
+                )
+                await asyncio.sleep(delay)
 
         raise RuntimeError("Update conversation failed after all retries")
 
@@ -267,13 +207,58 @@ class ConversationRepository:
         Delete conversation by technical ID.
 
         Args:
-            technical_id: Conversation technical ID
-
-        Example:
-            >>> await repo.delete("123-456")
+            technical_id: Technical UUID of the conversation to delete.
         """
         await self.entity_service.delete_by_id(
             entity_id=technical_id,
             entity_class=Conversation.ENTITY_NAME,
             entity_version=str(Conversation.ENTITY_VERSION),
         )
+
+    def _merge_conversation_state(self, fresh: Conversation, target: Dict[str, Any]) -> None:
+        """
+        Merge target state into fresh conversation object.
+
+        Combines messages and tasks from both versions, preferring fresh data
+        but adding any new items from target state.
+
+        Args:
+            fresh: Fresh conversation object fetched from database (modified in place).
+            target: Dictionary containing desired state changes.
+        """
+        # Merge messages
+        fresh_messages = fresh.chat_flow.get("finished_flow", [])
+        target_messages = target["chat_flow"].get("finished_flow", [])
+        
+        existing_ids = {m.get("technical_id") for m in fresh_messages if m.get("technical_id")}
+        
+        for msg in target_messages:
+            msg_id = msg.get("technical_id")
+            if msg_id and msg_id not in existing_ids:
+                fresh_messages.append(msg)
+                existing_ids.add(msg_id)
+
+        # Update fields
+        fresh.chat_flow["finished_flow"] = fresh_messages
+        fresh.chat_flow["current_flow"] = target["chat_flow"].get("current_flow", [])
+        fresh.adk_session_id = target["adk_session_id"]
+        fresh.name = target["name"]
+        fresh.description = target["description"]
+
+        # Merge tasks
+        fresh_task_ids = set(fresh.background_task_ids or [])
+        target_task_ids = set(target["background_task_ids"])
+        fresh.background_task_ids = list(fresh_task_ids | target_task_ids)
+
+    def _is_retryable_error(self, error_str: str) -> bool:
+        """
+        Check if error indicates a retryable condition (e.g., version conflict).
+
+        Args:
+            error_str: Error message to check.
+
+        Returns:
+            True if the error is retryable, False otherwise.
+        """
+        error_lower = error_str.lower()
+        return any(indicator in error_lower for indicator in RETRYABLE_ERROR_INDICATORS)

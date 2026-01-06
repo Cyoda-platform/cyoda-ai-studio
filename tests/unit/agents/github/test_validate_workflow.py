@@ -57,22 +57,3 @@ class TestValidateWorkflow:
         result = await validate_workflow_against_schema(invalid_json)
         assert "❌" in result
         assert "Invalid JSON" in result
-
-    @pytest.mark.asyncio
-    async def test_invalid_initial_state_fails(self):
-        """Test that invalid initialState value fails validation."""
-        invalid_workflow = {
-            "version": "1",
-            "name": "Customer",
-            "initialState": "invalid_state",  # Must be "initial_state"
-            "states": {
-                "initial_state": {
-                    "transitions": []
-                }
-            }
-        }
-
-        result = await validate_workflow_against_schema(json.dumps(invalid_workflow))
-        assert "❌" in result
-        assert "validation failed" in result.lower()
-

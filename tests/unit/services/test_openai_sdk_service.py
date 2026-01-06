@@ -7,7 +7,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from pydantic import BaseModel
 
-from application.services.openai_sdk_service import OpenAISDKService
+from application.services.openai.sdk_service import OpenAISDKService
 
 
 class TestPerson(BaseModel):
@@ -31,7 +31,7 @@ def mock_env(monkeypatch):
 @pytest.fixture
 def service(mock_env):
     """Create service instance with mocked client."""
-    with patch('application.services.openai_sdk_service.AsyncOpenAI'):
+    with patch('application.services.openai.sdk_service.AsyncOpenAI'):
         service = OpenAISDKService()
         service.client = AsyncMock()
         return service
@@ -42,7 +42,7 @@ class TestOpenAISDKServiceInit:
 
     def test_init_with_api_key(self, mock_env):
         """Test initialization with API key."""
-        with patch('application.services.openai_sdk_service.AsyncOpenAI'):
+        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
             service = OpenAISDKService()
             assert service.api_key == "sk-test-key"
             assert service.model_name == "gpt-4o"
@@ -54,7 +54,7 @@ class TestOpenAISDKServiceInit:
     def test_init_without_api_key(self, monkeypatch):
         """Test initialization without API key."""
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        with patch('application.services.openai_sdk_service.AsyncOpenAI'):
+        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
             service = OpenAISDKService()
             assert service.api_key is None
             assert service.client is None
@@ -65,7 +65,7 @@ class TestOpenAISDKServiceInit:
 
     def test_is_configured_false(self, mock_env):
         """Test is_configured returns False when client is None."""
-        with patch('application.services.openai_sdk_service.AsyncOpenAI'):
+        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
             service = OpenAISDKService()
             service.client = None
             assert service.is_configured() is False
@@ -114,7 +114,7 @@ class TestGenerateResponse:
     @pytest.mark.asyncio
     async def test_generate_response_not_configured(self, mock_env):
         """Test response generation when not configured."""
-        with patch('application.services.openai_sdk_service.AsyncOpenAI'):
+        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
             service = OpenAISDKService()
             service.client = None
 
@@ -130,6 +130,119 @@ class TestGenerateResponse:
 
         response = await service.generate_response("Hello")
         assert response == ""
+
+    @pytest.mark.asyncio
+    async def test_generate_response_api_call_parameters(self, service):
+        """Test that API is called with correct parameters."""
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
+        service.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        await service.generate_response("Test prompt")
+
+        # Verify API was called
+        service.client.chat.completions.create.assert_called_once()
+        call_kwargs = service.client.chat.completions.create.call_args[1]
+        assert "messages" in call_kwargs
+        assert "model" in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_generate_response_uses_model_from_config(self, service):
+        """Test that model from service configuration is used."""
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
+        service.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        await service.generate_response("Test")
+
+        call_kwargs = service.client.chat.completions.create.call_args[1]
+        assert call_kwargs["model"] == service.model_name
+
+    @pytest.mark.asyncio
+    async def test_generate_response_uses_temperature(self, service):
+        """Test that temperature from service configuration is used."""
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
+        service.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        await service.generate_response("Test")
+
+        call_kwargs = service.client.chat.completions.create.call_args[1]
+        assert call_kwargs.get("temperature") == service.temperature
+
+    @pytest.mark.asyncio
+    async def test_generate_response_uses_max_tokens(self, service):
+        """Test that max_tokens from service configuration is used."""
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
+        service.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        await service.generate_response("Test")
+
+        call_kwargs = service.client.chat.completions.create.call_args[1]
+        assert call_kwargs.get("max_tokens") == service.max_tokens
+
+    @pytest.mark.asyncio
+    async def test_generate_response_message_structure(self, service):
+        """Test that messages are structured correctly."""
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
+        service.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        await service.generate_response("Test prompt")
+
+        call_kwargs = service.client.chat.completions.create.call_args[1]
+        messages = call_kwargs["messages"]
+        assert isinstance(messages, list)
+        assert len(messages) > 0
+        assert "role" in messages[-1]
+        assert "content" in messages[-1]
+
+    @pytest.mark.asyncio
+    async def test_generate_response_with_context_message_order(self, service):
+        """Test that context messages are in correct order."""
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Response"))]
+        service.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        context = [
+            {"role": "user", "content": "First"},
+            {"role": "assistant", "content": "Second"}
+        ]
+
+        await service.generate_response("Third", context=context)
+
+        call_kwargs = service.client.chat.completions.create.call_args[1]
+        messages = call_kwargs["messages"]
+        # Context should be first, prompt last
+        assert messages[0]["content"] == "First"
+        assert messages[1]["content"] == "Second"
+        assert messages[2]["content"] == "Third"
+
+    @pytest.mark.asyncio
+    async def test_generate_response_long_content(self, service):
+        """Test response with long content."""
+        long_response = "A" * 5000
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content=long_response))]
+        service.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        response = await service.generate_response("Hello")
+
+        assert response == long_response
+        assert len(response) == 5000
+
+    @pytest.mark.asyncio
+    async def test_generate_response_special_characters(self, service):
+        """Test response with special characters."""
+        special_response = "Test\\nwith\\ttabs and \"quotes\" and 'apostrophes'"
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content=special_response))]
+        service.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        response = await service.generate_response("Test")
+
+        assert response == special_response
 
 
 class TestGenerateStructuredOutput:
@@ -154,7 +267,7 @@ class TestGenerateStructuredOutput:
     @pytest.mark.asyncio
     async def test_generate_structured_output_not_configured(self, mock_env):
         """Test structured output when not configured."""
-        with patch('application.services.openai_sdk_service.AsyncOpenAI'):
+        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
             service = OpenAISDKService()
             service.client = None
 
@@ -194,7 +307,7 @@ class TestStreamResponse:
     @pytest.mark.asyncio
     async def test_stream_response_not_configured(self, mock_env):
         """Test streaming when not configured."""
-        with patch('application.services.openai_sdk_service.AsyncOpenAI'):
+        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
             service = OpenAISDKService()
             service.client = None
 

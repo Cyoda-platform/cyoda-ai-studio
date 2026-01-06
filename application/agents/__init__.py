@@ -9,17 +9,23 @@ SDK selection via AI_SDK environment variable:
 See: https://google.github.io/adk-docs/agents/multi-agents/#hierarchical-task-decomposition
 """
 
-from application.agents.cyoda_assistant import (
-    CyodaAssistantWrapper,
-    create_cyoda_assistant,
-)
-
 
 def __getattr__(name: str):
     """Lazy import to avoid circular imports."""
-    if name == "OpenAIAssistantWrapper":
-        from application.services.openai_assistant_wrapper import OpenAIAssistantWrapper
+    if name == "create_cyoda_assistant":
+        from application.agents.cyoda_assistant import create_cyoda_assistant
+        return create_cyoda_assistant
+    elif name == "CyodaAssistantWrapper":
+        from application.services.assistant.wrapper import CyodaAssistantWrapper
+        return CyodaAssistantWrapper
+    elif name == "OpenAIAssistantWrapper":
+        from application.services.openai.assistant_wrapper import OpenAIAssistantWrapper
         return OpenAIAssistantWrapper
+    elif name == "agent":
+        # Import agent module for ADK evaluation
+        import importlib
+        agent_module = importlib.import_module("application.agents.agent")
+        return agent_module
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 

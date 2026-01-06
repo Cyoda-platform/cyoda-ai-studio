@@ -92,34 +92,15 @@ class GitHubAPIClient:
         """
         url = f"{self.BASE_URL}/{path}"
         headers = await self._get_headers()
-        
+
         try:
             timeout_config = httpx.Timeout(timeout, connect=60.0)
-            async with httpx.AsyncClient(timeout=timeout_config, trust_env=False) as client:
-                if method.upper() == "GET":
-                    response = await client.get(url, headers=headers, params=params)
-                elif method.upper() == "POST":
-                    response = await client.post(url, json=data, headers=headers, params=params)
-                elif method.upper() == "PUT":
-                    response = await client.put(url, json=data, headers=headers, params=params)
-                elif method.upper() == "DELETE":
-                    response = await client.delete(url, headers=headers, params=params)
-                elif method.upper() == "PATCH":
-                    response = await client.patch(url, json=data, headers=headers, params=params)
-                else:
-                    raise ValueError(f"Unsupported HTTP method: {method}")
-            
-            if response.status_code in (200, 201, 204):
-                logger.info(f"GitHub API {method} request to {url} successful (status: {response.status_code})")
-                try:
-                    return response.json() if response.content else {}
-                except:
-                    return {}
-            else:
-                error_msg = f"GitHub API request failed (status {response.status_code}): {response.text}"
-                logger.error(error_msg)
-                raise Exception(error_msg)
-        
+            response = await self._execute_http_request(
+                method, url, headers, data, params, timeout_config
+            )
+
+            return self._process_response(response, method, url)
+
         except httpx.RequestError as e:
             error_msg = f"GitHub API request error: {e}"
             logger.error(error_msg)
@@ -127,6 +108,79 @@ class GitHubAPIClient:
         except Exception as e:
             logger.error(f"Unexpected error in GitHub API request: {e}")
             raise
+
+    async def _execute_http_request(
+        self,
+        method: str,
+        url: str,
+        headers: Dict[str, str],
+        data: Optional[Dict[str, Any]],
+        params: Optional[Dict[str, Any]],
+        timeout_config: httpx.Timeout,
+    ) -> httpx.Response:
+        """Execute HTTP request with method routing.
+
+        Args:
+            method: HTTP method
+            url: Request URL
+            headers: Request headers
+            data: Request body data
+            params: Query parameters
+            timeout_config: Timeout configuration
+
+        Returns:
+            HTTP response
+
+        Raises:
+            ValueError: If HTTP method is unsupported
+        """
+        method_upper = method.upper()
+
+        async with httpx.AsyncClient(timeout=timeout_config, trust_env=False) as client:
+            if method_upper == "GET":
+                return await client.get(url, headers=headers, params=params)
+            elif method_upper == "POST":
+                return await client.post(url, json=data, headers=headers, params=params)
+            elif method_upper == "PUT":
+                return await client.put(url, json=data, headers=headers, params=params)
+            elif method_upper == "DELETE":
+                return await client.delete(url, headers=headers, params=params)
+            elif method_upper == "PATCH":
+                return await client.patch(url, json=data, headers=headers, params=params)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+
+    def _process_response(
+        self, response: httpx.Response, method: str, url: str
+    ) -> Optional[Dict[str, Any]]:
+        """Process HTTP response and extract data.
+
+        Args:
+            response: HTTP response object
+            method: HTTP method used
+            url: Request URL
+
+        Returns:
+            Response data as dict or empty dict
+
+        Raises:
+            Exception: If response status indicates failure
+        """
+        if response.status_code in (200, 201, 204):
+            logger.info(
+                f"GitHub API {method} request to {url} "
+                f"successful (status: {response.status_code})"
+            )
+            if response.content:
+                try:
+                    return response.json()
+                except Exception:
+                    return {}
+            return {}
+
+        error_msg = f"GitHub API request failed (status {response.status_code}): {response.text}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
     
     async def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """Make a GET request.

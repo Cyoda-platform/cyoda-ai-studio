@@ -1,15 +1,13 @@
-"""API Data Agent - Fetches data from external REST APIs using Google ADK tools.
+"""API Data Agent - Provides guidance on REST API interactions.
 
-This agent uses Google ADK's built-in tools to:
-- Search for API documentation (GoogleSearchTool)
-- Fetch content from URLs (UrlContextTool)
-- Make REST API calls (RestApiTool)
+Note: This agent currently has limited functionality when using OpenAI models,
+as Google ADK's built-in tools (GoogleSearchTool, UrlContextTool) only work
+with Google models.
 """
 
 from __future__ import annotations
 
 from google.adk.agents import LlmAgent
-from google.adk.tools import google_search, url_context
 
 from application.agents.shared import get_model_config
 from application.agents.shared.streaming_callback import accumulate_streaming_response
@@ -17,48 +15,53 @@ from application.agents.shared.streaming_callback import accumulate_streaming_re
 
 def _get_instruction() -> str:
     """Get instruction for API Data Agent."""
-    return """You are an API Data Agent that helps users fetch data from external REST APIs.
+    return """You are an API Data Agent that helps users with REST API interactions.
 
 ## Your Capabilities
 
-1. **Search API Documentation**: Use Google Search to find API endpoints and documentation
-2. **Fetch Web Content**: Use URL context tool to read API documentation from web pages
-3. **Make API Calls**: Execute REST API requests to fetch data
+You can provide guidance on:
+- REST API best practices
+- How to structure API requests
+- Understanding API documentation
+- Troubleshooting API issues
+
+## Limitations
+
+Currently, when using OpenAI models, this agent does not have tools to:
+- Search for API documentation online
+- Fetch web content from URLs
+- Make direct API calls
+
+For these capabilities, please use external tools or switch to Google models.
 
 ## How to Help Users
 
-When a user asks to fetch data from an API (e.g., "Get all pets from Petstore API"):
+When a user asks about APIs:
 
-1. **Identify the API**: Clarify which API they want to access
-2. **Find Documentation**: Search for the API documentation if needed
-3. **Determine Endpoint**: Identify the specific endpoint URL
-4. **Fetch Data**: Make the API call and return results
-
-## Example Scenarios
-
-- **Petstore API**: "Get all available pets" → Search for Petstore API docs → Call GET /v2/pet/findByStatus?status=available
-- **Search First**: "I want data from an API but don't know the endpoint" → Use Google Search to find docs
-- **Read Documentation**: "What endpoints does this API have?" → Use URL context to read the API docs
+1. **Provide Guidance**: Explain how to interact with the API
+2. **Suggest Approaches**: Recommend tools and methods for API testing
+3. **Documentation**: Help understand API documentation structure
+4. **Best Practices**: Share REST API best practices
 
 ## Important Guidelines
 
-- Always validate URLs before making requests
-- Handle errors gracefully and provide helpful error messages
-- Ask for clarification if the request is ambiguous
-- Never expose sensitive credentials in responses
-- Respect API rate limits and authentication requirements
+- Be helpful and informative about API concepts
+- Suggest appropriate tools and approaches
+- Clarify what you can and cannot do
+- Guide users to appropriate resources
 """
 
 
 root_agent = LlmAgent(
     name="api_data_agent",
     model=get_model_config(),
-    description="Fetches data from external REST APIs. Can search API documentation and retrieve data from specified endpoints.",
+    description=(
+        "Provides guidance on REST API interactions and best practices. "
+        "Note: Limited functionality with OpenAI models."
+    ),
     instruction=_get_instruction(),
-    tools=[
-        google_search,
-        url_context,
-    ],
+    tools=[],
     after_agent_callback=accumulate_streaming_response,
 )
 
+agent = root_agent

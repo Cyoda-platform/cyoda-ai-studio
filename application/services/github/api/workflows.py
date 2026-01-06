@@ -329,7 +329,9 @@ class WorkflowOperations:
             )
 
             for run in runs:
-                if tracker_id in str(run.get("name", "")) or tracker_id in str(run.get("head_commit", {}).get("message", "")):
+                run_name = str(run.get("name", ""))
+                commit_msg = str(run.get("head_commit", {}).get("message", ""))
+                if tracker_id in run_name or tracker_id in commit_msg:
                     return run["id"]
 
             if attempt < max_attempts - 1:
