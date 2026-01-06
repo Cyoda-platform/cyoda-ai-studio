@@ -114,7 +114,7 @@ def scrape_cyoda_api_docs():
 
     openapi_url = "https://docs.cyoda.net/openapi/openapi.json"
     base_url = "https://docs.cyoda.net/api-reference/scalar/"
-    output_dir = Path("/home/kseniia/IdeaProjects/cyoda-ai-studio/llm_docs/outputs")
+    output_dir = Path("llm_docs/outputs")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Starting to scrape Cyoda API documentation")

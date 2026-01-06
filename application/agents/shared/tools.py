@@ -111,18 +111,24 @@ async def read_documentation(tool_context: ToolContext, filename: str) -> str:
         logger.info(f"Reading documentation file: {filename}")
 
         # Resolve path relative to project root
-        project_root = Path(__file__).parent.parent.parent.parent
+        project_root = Path(__file__).parent.parent.parent.parent.resolve()
         file_path = project_root / "llm_docs" / "outputs" / filename
 
+        logger.debug(f"Project root: {project_root}, File path: {file_path}")
+
         if not file_path.exists():
-            available_files = [
-                "cyoda-api-sitemap-llms.txt",
-                "cyoda-api-descriptions-llms.txt",
-                "cyoda-docs-llms.txt"
-            ]
+            # List actual files in the directory
+            outputs_dir = project_root / "llm_docs" / "outputs"
+            if outputs_dir.exists():
+                actual_files = [f.name for f in outputs_dir.iterdir() if f.is_file()]
+                available_msg = f"Files in {outputs_dir}: {', '.join(actual_files)}" if actual_files else f"Directory {outputs_dir} is empty"
+            else:
+                available_msg = f"Directory does not exist: {outputs_dir}"
+
             error_msg = (
                 f"File not found: {filename}\n"
-                f"Available files: {', '.join(available_files)}"
+                f"Attempted path: {file_path}\n"
+                f"{available_msg}"
             )
             logger.error(error_msg)
             return error_msg

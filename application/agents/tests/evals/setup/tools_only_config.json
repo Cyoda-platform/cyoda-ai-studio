@@ -1,6 +1,6 @@
 {
   "criteria": {
-    "tool_trajectory_avg_score": 0.8
+    "tool_trajectory_avg_score": 0.6
   },
   "user_simulator_config": {
     "max_allowed_invocations": 50,

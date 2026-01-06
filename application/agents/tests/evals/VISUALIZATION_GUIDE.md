@@ -351,4 +351,3 @@ See the included files:
 - **generate_html_report.py** - HTML generator source
 
 **Your HTML report is ready!**
-Open: `file:///home/kseniia/IdeaProjects/cyoda-ai-studio/application/agents/tests/evals/latest_eval_report.html`

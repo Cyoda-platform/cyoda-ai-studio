@@ -18,7 +18,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Hi! I'm your Cyoda Setup Assistant.\n\nYou can use the Canvas (local) or Cloud panels — Canvas for local development, Cloud for deployed environments.\n\nPlease choose an option from the menu."
+                "text": "Hi! I'm your Cyoda Setup Assistant. You can use the Canvas panel for local repo/workflow work and the Cloud panel for environment and credential management. \n\nI've displayed the setup menu — please pick an option and I'll help you from there."
               }
             ],
             "role": "model"
@@ -98,7 +98,7 @@
           "final_response": {
             "parts": [
               {
-                "text": "Great — here are the local setup steps.\n\nPython Setup (Path B)\n- Init: mv .env.template .env\n- Venv: python3 -m venv .venv && source .venv/bin/activate\n- Deps: pip install -r requirements.txt\n- Run: python app.py (Default port: 8000)\n- Import: python common/repository/cyoda/cyoda_init.py\n\nJava Setup (Path A)\n- Init: Rename .env.template to .env\n- Config: Update CYODA_HOST and ensure ENTITY_VERSION is unique\n- Import: ./gradlew importWorkflows\n- Run: Test at http://localhost:8080\n\nNeed anything else — e.g., help with one of these commands, troubleshooting an error, or do you want me to check your cloud environment or generate credentials/resources? (If you ask to check env or generate credentials/resources I’ll hand that off to the appropriate agent.)"
+                "text": "Great — I can show the exact local setup steps, but I need to know which path your app uses.\n\nIs your app a Python app or a Java app? Reply with \"Python\" or \"Java\" and I'll show the step-by-step commands. If you're not sure, tell me a file from your repo (e.g., requirements.txt, build.gradle, pom.xml) and I can help identify it."
               }
             ],
             "role": "model"

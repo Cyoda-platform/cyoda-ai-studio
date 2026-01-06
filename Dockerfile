@@ -92,6 +92,7 @@ COPY cyoda_mcp ./cyoda_mcp
 COPY application ./application
 COPY common ./common
 COPY services ./services
+COPY llm_docs ./llm_docs
 
 # Install the package in editable mode (same as local development)
 RUN pip install -e .

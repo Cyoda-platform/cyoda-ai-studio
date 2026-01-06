@@ -16,7 +16,7 @@ Run the setup assistant evaluation tests through the coordinator:
 ```bash
 export DISABLE_MCP_TOOLSET=true MOCK_ALL_TOOLS=true && \
 adk eval application/agents \
-  application/agents/tests/evals/setup/setup_assistant.evalset.json \
+  application/agents/tests/evals/setup/evalset5fcfa8.evalset.json \
   --config_file_path application/agents/tests/evals/setup/tools_only_config.json
 ```
 
@@ -113,7 +113,7 @@ adk eval application/agents \
 
 # Generate HTML report from latest results
 python application/agents/tests/evals/generate_html_report.py \
-  application/agents/.adk/eval_history/agents_setup_assistant_basic_*.json \
+  application/agents/.adk/eval_history/agents_evalset5fcfa8_1767726007.9775038.evalset_result.json \
   -o application/agents/tests/evals/setup/setup_eval_report.html
 
 # Open in browser
@@ -128,7 +128,7 @@ Detailed comparison and analysis:
 
 ```bash
 python application/agents/tests/evals/analyze_eval_results.py \
-  application/agents/.adk/eval_history/agents_setup_assistant_basic_*.json
+  application/agents/.adk/eval_history/agents_evalset5fcfa8_1767725308.9409945.evalset_result.json
 ```
 
 ---
