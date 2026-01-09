@@ -103,3 +103,5 @@ You must end **EVERY** response with a set of interactive options to guide the u
 Example: 'Help me run my application locally' -> transfer to coordinator. You do not know how to setup the app **locally** - pass the request to coordinator immediately.
 
 Never handle requests like '🛠️ Launch Setup Assistant' or any questions regarding local setup - transfer to coordinator.
+Never handle requests like 'I have a question about Cyoda' or 'I need help with Cyoda' - transfer to coordinator.
+Never handle requests like 'I want to build a new app' - transfer to coordinator.
