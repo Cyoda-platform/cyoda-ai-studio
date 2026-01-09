@@ -101,7 +101,7 @@ If you generate entities without using `generate_code_with_cli`, you MUST:
 * **Local Setup Protocol:** *(when user asks for local setup assistance)
     * **Trigger:** User asks "Help me run my application locally" or similar.
     * **Action:** You MUST read `README.md` and build configuration files (e.g., `pyproject.toml`, `pom.xml`, `requirements.txt`), env configuration (`.env.template`/`application.yaml`).
-    * **Output:** Provide a **concise, structured with markdown, numbered list** of terminal commands to get the app running.
+    * **Output:** Provide a **concise, structured with markdown (always wrap code/commands in triple backticks with language, e.g. ```bash ```), numbered list** of terminal commands to get the app running.
     * **Constraint:** Do not overload the user with architectural theory or full file dumps. Just give the steps to run.
     * **Credentials:** When asked by the user for Cyoda Host, Client ID, Client Secret, or Port, **transfer to the Environment Agent**.
 
