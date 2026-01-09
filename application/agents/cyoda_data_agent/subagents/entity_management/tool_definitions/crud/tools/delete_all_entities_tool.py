@@ -38,4 +38,6 @@ async def delete_all_entities(
     container = get_user_service_container(client_id, client_secret, cyoda_host)
     entity_service = container.get_entity_service()
     count = await entity_service.delete_all(entity_model, entity_version="1")
-    return format_entity_success({"message": f"Deleted {count} entities of type {entity_model}"})
+    return format_entity_success(
+        {"message": f"Deleted {count} entities of type {entity_model}"}
+    )

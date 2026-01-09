@@ -24,27 +24,26 @@ from application.services import (
 from application.services.repository_parser import RepositoryParser
 from services.services import get_entity_service
 
-# Re-export all public APIs from submodules
-from .helpers import (
-    _fetch_conversation,
-    _extract_repository_info,
-    _verify_repository_exists,
-    _scan_repository_resources,
-    _read_requirements,
-    _format_workflows_response,
-    _format_analysis_response,
-)
-
-from .legacy_analysis import (
-    _get_github_service,
-    _fetch_requirements_with_content,
-    _build_entity_responses,
-    _build_workflow_responses,
-    analyze_repository_legacy,
-)
-
 from .conversation_analysis import (
     analyze_repository_conversation,
+)
+
+# Re-export all public APIs from submodules
+from .helpers import (
+    _extract_repository_info,
+    _fetch_conversation,
+    _format_analysis_response,
+    _format_workflows_response,
+    _read_requirements,
+    _scan_repository_resources,
+    _verify_repository_exists,
+)
+from .legacy_analysis import (
+    _build_entity_responses,
+    _build_workflow_responses,
+    _fetch_requirements_with_content,
+    _get_github_service,
+    analyze_repository_legacy,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,9 +64,7 @@ async def handle_analyze_repository() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error analyzing repository: {e}", exc_info=True)
         return APIResponse.error(
-            "Failed to analyze repository",
-            500,
-            details={"message": str(e)}
+            "Failed to analyze repository", 500, details={"message": str(e)}
         )
 
 

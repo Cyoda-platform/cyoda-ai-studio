@@ -6,7 +6,7 @@ import os
 import subprocess
 import uuid
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 
@@ -19,7 +19,6 @@ from application.agents.shared.repository_tools import (
     _stream_process_output,
     _update_conversation_build_context,
     _update_conversation_with_lock,
-    ask_user_to_select_option,
     check_build_status,
     check_existing_branch_configuration,
     check_user_environment_status,
@@ -48,7 +47,7 @@ logger = logging.getLogger(__name__)
 class MockConversation:
     def __init__(self, **kwargs):
         self.technical_id = kwargs.get("technical_id", "test_conversation_id")
-        self.user_id = kwargs.get("user_id", "test_user_id") # Added user_id
+        self.user_id = kwargs.get("user_id", "test_user_id")  # Added user_id
         self.repository_name = kwargs.get("repository_name", None)
         self.repository_owner = kwargs.get("repository_owner", None)
         self.repository_branch = kwargs.get("repository_branch", None)
@@ -64,7 +63,7 @@ class MockConversation:
         # Simplified model_dump for testing
         return {
             "technical_id": self.technical_id,
-            "user_id": self.user_id, # Added user_id
+            "user_id": self.user_id,  # Added user_id
             "repository_name": self.repository_name,
             "repository_owner": self.repository_owner,
             "repository_branch": self.repository_branch,
@@ -77,18 +76,15 @@ class MockConversation:
         }
 
 
-
 @pytest.fixture
 def mock_tool_context():
     """Fixture for a mock ToolContext."""
     # Explicitly import ToolContext here as a workaround for NameError
     from google.adk.tools.tool_context import ToolContext
-    mock_context = MagicMock() # Removed spec=ToolContext
+
+    mock_context = MagicMock()  # Removed spec=ToolContext
     mock_context.state = {"conversation_id": "test_conversation_id"}
     return mock_context
-
-
-
 
 
 @pytest.fixture(autouse=True)
@@ -96,15 +92,41 @@ def mock_get_entity_service():
     """Fixture for mocking get_entity_service."""
     mock_service = AsyncMock()
     # Patch both the source and the imported references to handle local imports
-    with patch("services.services.get_entity_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.conversation.get_entity_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.repository.get_entity_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.conv.locking.get_entity_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.conv.updates.get_entity_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.conv.management.get_entity_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.conv.files.get_entity_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.core.config.get_entity_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.core.context.get_entity_service", return_value=mock_service):
+    with (
+        patch("services.services.get_entity_service", return_value=mock_service),
+        patch(
+            "application.agents.shared.repository_tools.conversation.get_entity_service",
+            return_value=mock_service,
+        ),
+        patch(
+            "application.agents.shared.repository_tools.repository.get_entity_service",
+            return_value=mock_service,
+        ),
+        patch(
+            "application.agents.shared.repository_tools.conv.locking.get_entity_service",
+            return_value=mock_service,
+        ),
+        patch(
+            "application.agents.shared.repository_tools.conv.updates.get_entity_service",
+            return_value=mock_service,
+        ),
+        patch(
+            "application.agents.shared.repository_tools.conv.management.get_entity_service",
+            return_value=mock_service,
+        ),
+        patch(
+            "application.agents.shared.repository_tools.conv.files.get_entity_service",
+            return_value=mock_service,
+        ),
+        patch(
+            "application.agents.shared.repository_tools.core.config.get_entity_service",
+            return_value=mock_service,
+        ),
+        patch(
+            "application.agents.shared.repository_tools.core.context.get_entity_service",
+            return_value=mock_service,
+        ),
+    ):
         yield mock_service
 
 
@@ -113,9 +135,17 @@ def mock_get_task_service():
     """Fixture for mocking get_task_service."""
     mock_service = AsyncMock()
     # Patch both the source and the imported reference to handle local imports
-    with patch("services.services.get_task_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.generation.get_task_service", return_value=mock_service), \
-         patch("application.agents.shared.repository_tools.monitoring.get_task_service", return_value=mock_service):
+    with (
+        patch("services.services.get_task_service", return_value=mock_service),
+        patch(
+            "application.agents.shared.repository_tools.generation.get_task_service",
+            return_value=mock_service,
+        ),
+        patch(
+            "application.agents.shared.repository_tools.monitoring.get_task_service",
+            return_value=mock_service,
+        ),
+    ):
         yield mock_service
 
 
@@ -170,22 +200,28 @@ class TestUpdateConversationWithLock:
         )
         # Conversation state after update (unlocked, updated name)
         updated_conv = MockConversation(
-            technical_id=conversation_id, user_id="test_user_id", locked=False, repository_name=updated_repo_name
+            technical_id=conversation_id,
+            user_id="test_user_id",
+            locked=False,
+            repository_name=updated_repo_name,
         )
-
 
         mock_get_entity_service.get_by_id.side_effect = [
             MagicMock(data=initial_conv),  # First get (before lock)
             MagicMock(data=initial_conv),  # Second get (in _acquire_lock)
-            MagicMock(data=locked_conv),  # Third get (after successful lock, to be updated)
-            MagicMock(data=updated_conv), # Fourth get (for verification after update)
+            MagicMock(
+                data=locked_conv
+            ),  # Third get (after successful lock, to be updated)
+            MagicMock(data=updated_conv),  # Fourth get (for verification after update)
         ]
         mock_get_entity_service.update.side_effect = [
             MagicMock(status_code=200),  # Lock acquisition successful
             MagicMock(status_code=200),  # Update with changes and unlock successful
         ]
 
-        def update_fn(conversation: MockConversation): # Use MockConversation for type hint
+        def update_fn(
+            conversation: MockConversation,
+        ):  # Use MockConversation for type hint
             conversation.repository_name = updated_repo_name
 
         result = await _update_conversation_with_lock(conversation_id, update_fn)
@@ -256,23 +292,37 @@ class TestUpdateConversationWithLock:
         updated_repo_name = "new_repo"
 
         # Define conversation states for side_effect
-        unlocked_conv = MockConversation(technical_id=conversation_id, user_id="test_user_id", locked=False)
-        locked_conv = MockConversation(technical_id=conversation_id, user_id="test_user_id", locked=True)
-        updated_conv = MockConversation(technical_id=conversation_id, user_id="test_user_id", locked=False, repository_name=updated_repo_name)
-
+        unlocked_conv = MockConversation(
+            technical_id=conversation_id, user_id="test_user_id", locked=False
+        )
+        locked_conv = MockConversation(
+            technical_id=conversation_id, user_id="test_user_id", locked=True
+        )
+        updated_conv = MockConversation(
+            technical_id=conversation_id,
+            user_id="test_user_id",
+            locked=False,
+            repository_name=updated_repo_name,
+        )
 
         mock_get_entity_service.get_by_id.side_effect = [
-            MagicMock(data=unlocked_conv), # 1st get: attempt to get lock, conv unlocked
-            MagicMock(data=unlocked_conv), # 2nd get: in _acquire_lock
-            MagicMock(data=unlocked_conv), # 3rd get: retry after lock failure
-            MagicMock(data=unlocked_conv), # 4th get: in _acquire_lock on retry
-            MagicMock(data=locked_conv),   # 5th get: after successful lock, actual update
+            MagicMock(
+                data=unlocked_conv
+            ),  # 1st get: attempt to get lock, conv unlocked
+            MagicMock(data=unlocked_conv),  # 2nd get: in _acquire_lock
+            MagicMock(data=unlocked_conv),  # 3rd get: retry after lock failure
+            MagicMock(data=unlocked_conv),  # 4th get: in _acquire_lock on retry
+            MagicMock(
+                data=locked_conv
+            ),  # 5th get: after successful lock, actual update
             MagicMock(data=updated_conv),  # 6th get: verification after update
         ]
         mock_get_entity_service.update.side_effect = [
             Exception("Version conflict"),  # 1st update: Lock acquisition fails
-            MagicMock(status_code=200),     # 2nd update: Lock acquisition succeeds on retry
-            MagicMock(status_code=200),     # 3rd update: Final update and unlock succeeds
+            MagicMock(
+                status_code=200
+            ),  # 2nd update: Lock acquisition succeeds on retry
+            MagicMock(status_code=200),  # 3rd update: Final update and unlock succeeds
         ]
 
         def update_fn(conversation: MockConversation):
@@ -283,13 +333,16 @@ class TestUpdateConversationWithLock:
         assert result is True
         assert mock_get_entity_service.get_by_id.call_count == 6
         assert mock_get_entity_service.update.call_count == 3
-        assert mock_asyncio_sleep.call_count == 1 # Only one sleep after first lock acquisition failure
+        assert (
+            mock_asyncio_sleep.call_count == 1
+        )  # Only one sleep after first lock acquisition failure
 
         # Verify the final state sent
-        called_entity = mock_get_entity_service.update.call_args_list[2].kwargs["entity"]
+        called_entity = mock_get_entity_service.update.call_args_list[2].kwargs[
+            "entity"
+        ]
         assert called_entity["locked"] is False
         assert called_entity["repository_name"] == updated_repo_name
-
 
 
 # End TestUpdateConversationWithLock
@@ -310,7 +363,7 @@ class TestUpdateConversationBuildContext:
 
         mock_conv_obj = MockConversation(
             technical_id=conversation_id,
-            user_id="test_user_id", # Added user_id
+            user_id="test_user_id",  # Added user_id
             repository_name="old_repo",
             repository_owner="old_owner",
             repository_branch="old_branch",
@@ -318,15 +371,18 @@ class TestUpdateConversationBuildContext:
         )
         # Mocking the side_effect for get_by_id to simulate the flow of _update_conversation_with_lock
         mock_get_entity_service.get_by_id.side_effect = [
-            MagicMock(data=mock_conv_obj), # Initial get
-            MagicMock(data=mock_conv_obj), # In _acquire_lock
-            MagicMock(data=mock_conv_obj), # After lock acquired, to get fresh data
-            MagicMock(data=mock_conv_obj), # For verification
+            MagicMock(data=mock_conv_obj),  # Initial get
+            MagicMock(data=mock_conv_obj),  # In _acquire_lock
+            MagicMock(data=mock_conv_obj),  # After lock acquired, to get fresh data
+            MagicMock(data=mock_conv_obj),  # For verification
         ]
         mock_get_entity_service.update.return_value = MagicMock(status_code=200)
 
         with patch("os.getenv", return_value=repository_owner):
-            with caplog.at_level(logging.INFO, logger='application.agents.shared.repository_tools.conversation'):
+            with caplog.at_level(
+                logging.INFO,
+                logger="application.agents.shared.repository_tools.conversation",
+            ):
                 await _update_conversation_build_context(
                     conversation_id, language, branch_name, repository_name
                 )
@@ -352,7 +408,8 @@ class TestUpdateConversationBuildContext:
             assert updated_conv_data["workflow_cache"]["language"] == language
             assert updated_conv_data["workflow_cache"]["branch_name"] == branch_name
             assert (
-                updated_conv_data["workflow_cache"]["repository_name"] == repository_name
+                updated_conv_data["workflow_cache"]["repository_name"]
+                == repository_name
             )
             assert (
                 updated_conv_data["workflow_cache"]["repository_owner"]
@@ -395,7 +452,10 @@ class TestUpdateConversationBuildContext:
         ]
         mock_get_entity_service.update.return_value = MagicMock(status_code=200)
 
-        with caplog.at_level(logging.INFO, logger='application.agents.shared.repository_tools.conv.management'):
+        with caplog.at_level(
+            logging.INFO,
+            logger="application.agents.shared.repository_tools.conv.management",
+        ):
             await _update_conversation_build_context(
                 conversation_id, language, branch_name, repository_name
             )
@@ -409,7 +469,9 @@ class TestUpdateConversationBuildContext:
 
         # Verify log message about extraction (check if it contains expected owner)
         log_messages = [record.message for record in caplog.records]
-        assert any("test-ks-001" in msg for msg in log_messages), f"Expected 'test-ks-001' in logs, got: {log_messages}"
+        assert any(
+            "test-ks-001" in msg for msg in log_messages
+        ), f"Expected 'test-ks-001' in logs, got: {log_messages}"
 
     @pytest.mark.asyncio
     async def test_use_provided_repository_owner(
@@ -440,7 +502,11 @@ class TestUpdateConversationBuildContext:
         mock_get_entity_service.update.return_value = MagicMock(status_code=200)
 
         await _update_conversation_build_context(
-            conversation_id, language, branch_name, repository_name, repository_owner=provided_owner
+            conversation_id,
+            language,
+            branch_name,
+            repository_name,
+            repository_owner=provided_owner,
         )
 
         # Verify that provided repository_owner was used
@@ -465,17 +531,16 @@ class TestAddTaskToConversation:
         )
         # Configure get_by_id to simulate successful update_conversation_with_lock
         mock_get_entity_service.get_by_id.side_effect = [
-            MagicMock(data=mock_conv_obj), # Initial get (unlocked)
-            MagicMock(data=mock_conv_obj), # In _acquire_lock
-            MagicMock(data=mock_conv_obj), # After lock acquired, to get fresh data
-            MagicMock(data=mock_conv_obj), # For verification
+            MagicMock(data=mock_conv_obj),  # Initial get (unlocked)
+            MagicMock(data=mock_conv_obj),  # In _acquire_lock
+            MagicMock(data=mock_conv_obj),  # After lock acquired, to get fresh data
+            MagicMock(data=mock_conv_obj),  # For verification
         ]
         # Configure update to simulate successful lock and update
         mock_get_entity_service.update.side_effect = [
             MagicMock(status_code=200),  # Lock acquisition
             MagicMock(status_code=200),  # Update and unlock
         ]
-
 
         await _add_task_to_conversation(conversation_id, task_id)
 
@@ -499,14 +564,16 @@ class TestAddTaskToConversation:
         conversation_id = "conv_abc"
         task_id = "task_123"
         mock_conv_obj = MockConversation(
-            technical_id=conversation_id, user_id="test_user_id", background_task_ids=[task_id]
+            technical_id=conversation_id,
+            user_id="test_user_id",
+            background_task_ids=[task_id],
         )
         # Configure get_by_id to simulate successful update_conversation_with_lock
         mock_get_entity_service.get_by_id.side_effect = [
-            MagicMock(data=mock_conv_obj), # Initial get (unlocked)
-            MagicMock(data=mock_conv_obj), # In _acquire_lock
-            MagicMock(data=mock_conv_obj), # After lock acquired, to get fresh data
-            MagicMock(data=mock_conv_obj), # For verification
+            MagicMock(data=mock_conv_obj),  # Initial get (unlocked)
+            MagicMock(data=mock_conv_obj),  # In _acquire_lock
+            MagicMock(data=mock_conv_obj),  # After lock acquired, to get fresh data
+            MagicMock(data=mock_conv_obj),  # For verification
         ]
         # Configure update to simulate successful lock and update
         mock_get_entity_service.update.side_effect = [
@@ -615,9 +682,7 @@ class TestGetAuthenticatedRepoUrlSync:
             mock_url_info = MagicMock(spec=RepositoryURLInfo)
             mock_url_info.owner = "test_owner"
             mock_url_info.repo_name = "test_repo"
-            mock_url_info.to_authenticated_url.return_value = (
-                "https://x-access-token:ghs_testtoken@github.com/test_owner/test_repo.git"
-            )
+            mock_url_info.to_authenticated_url.return_value = "https://x-access-token:ghs_testtoken@github.com/test_owner/test_repo.git"
             mock_parser.return_value = mock_url_info
             yield mock_parser
 
@@ -639,9 +704,7 @@ class TestGetAuthenticatedRepoUrlSync:
             int(installation_id)
         )
         mock_parse_repository_url.assert_called_once_with(repo_url)
-        assert (
-            "Generated authenticated URL for test_owner/test_repo" in caplog.text
-        )
+        assert "Generated authenticated URL for test_owner/test_repo" in caplog.text
 
     @pytest.mark.asyncio
     async def test_authentication_failure_returns_original_url(
@@ -690,7 +753,7 @@ class TestSetRepositoryConfig:
         # Mock the module-level constant instead of environment variable
         mocker.patch(
             "application.agents.shared.repository_tools.repository.GITHUB_PUBLIC_REPO_INSTALLATION_ID",
-            None
+            None,
         )
         result = await set_repository_config(
             repository_type="public", tool_context=mock_tool_context
@@ -700,7 +763,9 @@ class TestSetRepositoryConfig:
         assert mock_tool_context.state["repository_type"] == "public"
 
     @pytest.mark.asyncio
-    async def test_set_private_repository_config_success(self, mock_tool_context, caplog):
+    async def test_set_private_repository_config_success(
+        self, mock_tool_context, caplog
+    ):
         repo_url = "https://github.com/myorg/my-repo"
         installation_id = "12345678"
 
@@ -716,7 +781,10 @@ class TestSetRepositoryConfig:
         assert mock_tool_context.state["repository_type"] == "private"
         assert mock_tool_context.state["installation_id"] == installation_id
         assert mock_tool_context.state["user_repository_url"] == repo_url
-        assert f"Private repository configured: {repo_url}, installation_id={installation_id}" in caplog.text
+        assert (
+            f"Private repository configured: {repo_url}, installation_id={installation_id}"
+            in caplog.text
+        )
 
     @pytest.mark.asyncio
     async def test_set_private_repository_config_missing_installation_id(
@@ -742,7 +810,9 @@ class TestSetRepositoryConfig:
 
     @pytest.mark.asyncio
     async def test_invalid_repository_type(self, mock_tool_context):
-        with pytest.raises(ValueError, match="repository_type must be 'public' or 'private'"):
+        with pytest.raises(
+            ValueError, match="repository_type must be 'public' or 'private'"
+        ):
             await set_repository_config(
                 repository_type="invalid", tool_context=mock_tool_context
             )
@@ -764,9 +834,9 @@ class TestRunGitCommand:
         with patch(
             "asyncio.create_subprocess_exec", new_callable=AsyncMock
         ) as mock_exec:
-            mock_process = AsyncMock() # Use AsyncMock here
-            mock_process.stdout.read.return_value = b"stdout_data" # Default for stream
-            mock_process.stderr.read.return_value = b"stderr_data" # Default for stream
+            mock_process = AsyncMock()  # Use AsyncMock here
+            mock_process.stdout.read.return_value = b"stdout_data"  # Default for stream
+            mock_process.stderr.read.return_value = b"stderr_data"  # Default for stream
             mock_exec.return_value = mock_process
             yield mock_exec
 
@@ -774,7 +844,10 @@ class TestRunGitCommand:
     async def test_successful_command(self, mock_subprocess_exec):
         cmd = ["git", "status"]
         mock_subprocess_exec.return_value.returncode = 0
-        mock_subprocess_exec.return_value.communicate.return_value = (b"stdout_data", b"stderr_data")
+        mock_subprocess_exec.return_value.communicate.return_value = (
+            b"stdout_data",
+            b"stderr_data",
+        )
         returncode, stdout, stderr = await _run_git_command(cmd)
 
         assert returncode == 0
@@ -799,7 +872,7 @@ class TestRunGitCommand:
     async def test_command_failure(self, mock_subprocess_exec):
         mock_subprocess_exec.return_value.returncode = 1
         mock_subprocess_exec.return_value.communicate.return_value = (
-            b"stdout_err", # Changed to differentiate
+            b"stdout_err",  # Changed to differentiate
             b"fatal error",
         )
         cmd = ["git", "bad-command"]
@@ -811,9 +884,7 @@ class TestRunGitCommand:
 
     @pytest.mark.asyncio
     async def test_command_timeout(self, mock_subprocess_exec):
-        mock_subprocess_exec.return_value.communicate.side_effect = (
-            asyncio.TimeoutError
-        )
+        mock_subprocess_exec.return_value.communicate.side_effect = asyncio.TimeoutError
         mock_subprocess_exec.return_value.kill = MagicMock()
         mock_subprocess_exec.return_value.wait = AsyncMock()
 
@@ -865,9 +936,7 @@ class TestCloneRepository:
             new_callable=AsyncMock,
             return_value=None,
         )
-        self._mock_path_exists = mocker.patch.object(
-            Path, "exists", return_value=False
-        )
+        self._mock_path_exists = mocker.patch.object(Path, "exists", return_value=False)
         self._mock_path_mkdir = mocker.patch.object(Path, "mkdir")
 
         # Mock Conversation entity
@@ -898,12 +967,18 @@ class TestCloneRepository:
     @pytest.mark.asyncio
     async def test_missing_language_raises_error(self):
         result = await clone_repository(language="", branch_name="test-branch")
-        assert "ERROR: Failed to clone repository: language parameter is required" in result
+        assert (
+            "ERROR: Failed to clone repository: language parameter is required"
+            in result
+        )
 
     @pytest.mark.asyncio
     async def test_missing_branch_name_raises_error(self):
         result = await clone_repository(language="python", branch_name="")
-        assert "ERROR: Failed to clone repository: branch_name parameter is required" in result
+        assert (
+            "ERROR: Failed to clone repository: branch_name parameter is required"
+            in result
+        )
 
     @pytest.mark.asyncio
     async def test_protected_branch_returns_error(self):
@@ -941,7 +1016,9 @@ class TestCloneRepository:
         assert "ERROR: Invalid repository_type 'invalid_type'." in result
 
     @pytest.mark.asyncio
-    async def test_clone_public_repo_new_branch_success(self, mock_tool_context, caplog):
+    async def test_clone_public_repo_new_branch_success(
+        self, mock_tool_context, caplog
+    ):
         mock_tool_context.state = {
             "conversation_id": "test_conv",
             "repository_type": "public",
@@ -986,13 +1063,16 @@ class TestCloneRepository:
             "https://x-token:private_token@github.com/myorg/my-private-repo.git"
         )
         self._mock_path_exists.return_value = False  # Simulate not cloned yet
-        self._mock_run_git_command.return_value = (0, "output", "error") # Default successful git command
+        self._mock_run_git_command.return_value = (
+            0,
+            "output",
+            "error",
+        )  # Default successful git command
 
         # Mock re.search to extract owner/repo for private repo
         mock_match = MagicMock()
         mock_match.group.side_effect = ["myorg", "my-private-repo", ".git"]
         self._mock_re_search.return_value = mock_match
-
 
         with caplog.at_level(logging.INFO):
             result = await clone_repository(
@@ -1004,12 +1084,20 @@ class TestCloneRepository:
             )
 
         assert "SUCCESS: Repository cloned to" in result
-        assert "Checking out existing branch 'existing-bugfix' from remote..." in caplog.text
+        assert (
+            "Checking out existing branch 'existing-bugfix' from remote..."
+            in caplog.text
+        )
         self._mock_get_authenticated_repo_url_sync.assert_called_once_with(
             user_repo_url, installation_id
         )
         self._mock_run_git_command.assert_any_call(
-            ["git", "clone", "https://x-token:private_token@github.com/myorg/my-private-repo.git", target_directory],
+            [
+                "git",
+                "clone",
+                "https://x-token:private_token@github.com/myorg/my-private-repo.git",
+                target_directory,
+            ],
             timeout=300,
         )
         self._mock_run_git_command.assert_any_call(
@@ -1024,10 +1112,14 @@ class TestCloneRepository:
         )
         assert mock_tool_context.state["repository_name"] == "my-private-repo"
         assert mock_tool_context.state["repository_owner"] == "myorg"
-        assert self._mock_run_git_command.call_count >= 4  # clone, fetch, checkout, pull
+        assert (
+            self._mock_run_git_command.call_count >= 4
+        )  # clone, fetch, checkout, pull
 
     @pytest.mark.asyncio
-    async def test_clone_repository_already_exists(self, mock_tool_context, caplog, mocker): # Added mocker
+    async def test_clone_repository_already_exists(
+        self, mock_tool_context, caplog, mocker
+    ):  # Added mocker
         language = "python"
         branch_name = "existing-branch"
         target_directory = "/tmp/cyoda_builds/existing-branch"
@@ -1047,7 +1139,10 @@ class TestCloneRepository:
         mock_target_path_instance.__truediv__.return_value = mock_git_path_instance
 
         # Patch the Path constructor to return our mock instance
-        mocker.patch("application.agents.shared.repository_tools.repository.Path", return_value=mock_target_path_instance)
+        mocker.patch(
+            "application.agents.shared.repository_tools.repository.Path",
+            return_value=mock_target_path_instance,
+        )
 
         with caplog.at_level(logging.INFO):
             result = await clone_repository(
@@ -1171,102 +1266,7 @@ class TestCheckUserEnvironmentStatus:
 # End TestCheckUserEnvironmentStatus
 
 
-class TestAskUserToSelectOption:
-    """Tests for ask_user_to_select_option."""
-
-    @pytest.fixture(autouse=True)
-    def setup_ask_option_mocks(self, mocker):
-        self._mock_create_option_selection_hook = mocker.patch(
-            "application.agents.shared.hooks.hook_utils.create_option_selection_hook",
-            return_value={"hook_type": "option_selection", "id": "test_hook_id"},
-        )
-        self._mock_wrap_response_with_hook = mocker.patch(
-            "application.agents.shared.hooks.hook_utils.wrap_response_with_hook",
-            side_effect=lambda msg, hook: f"{msg} [HOOK: {hook['id']}]",
-        )
-
-    @pytest.mark.asyncio
-    async def test_successful_single_selection(self, mock_tool_context):
-        question = "Choose wisely"
-        options = [{"value": "opt1", "label": "Option 1"}]
-        result = await ask_user_to_select_option(
-            question=question, options=options, tool_context=mock_tool_context
-        )
-
-        # Result should be a JSON string
-        result_json = json.loads(result)
-        assert "Choose wisely" in result_json["message"]
-        assert "hook" in result_json
-        assert mock_tool_context.state["last_tool_hook"]["type"] == "option_selection"
-
-    @pytest.mark.asyncio
-    async def test_successful_multiple_selection_with_context(self, mock_tool_context):
-        question = "Select multiple"
-        options = [{"value": "optA", "label": "Label A"}]
-        context = "Some context"
-        result = await ask_user_to_select_option(
-            question=question,
-            options=options,
-            selection_type="multiple",
-            context=context,
-            tool_context=mock_tool_context,
-        )
-
-        # Result should be a JSON string
-        result_json = json.loads(result)
-        assert "Select multiple" in result_json["message"]
-        assert "hook" in result_json
-        assert mock_tool_context.state["last_tool_hook"]["type"] == "option_selection"
-
-    @pytest.mark.asyncio
-    async def test_missing_question_raises_error(self, mock_tool_context):
-        options = [{"value": "opt1", "label": "Option 1"}]
-        with pytest.raises(ValueError, match="The 'question' parameter is required"):
-            await ask_user_to_select_option(
-                question="", options=options, tool_context=mock_tool_context
-            )
-
-    @pytest.mark.asyncio
-    async def test_no_options_provided_returns_guidance(self, mock_tool_context):
-        result = await ask_user_to_select_option(
-            question="What?", options=[], tool_context=mock_tool_context
-        )
-        assert "I need to provide options for the user to choose from." in result
-        self._mock_create_option_selection_hook.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_option_missing_value_returns_error_message(self, mock_tool_context):
-        options = [{"label": "Option 1"}]  # Missing 'value'
-        result = await ask_user_to_select_option(
-            question="What?", options=options, tool_context=mock_tool_context
-        )
-        assert "is missing required 'value' field" in result
-
-    @pytest.mark.asyncio
-    async def test_option_missing_label_returns_error_message(self, mock_tool_context):
-        options = [{"value": "opt1"}]  # Missing 'label'
-        result = await ask_user_to_select_option(
-            question="What?", options=options, tool_context=mock_tool_context
-        )
-        assert "is missing required 'label' field" in result
-
-    @pytest.mark.asyncio
-    async def test_option_not_dict_returns_error_message(self, mock_tool_context):
-        options = ["not_a_dict"]
-        result = await ask_user_to_select_option(
-            question="What?", options=options, tool_context=mock_tool_context
-        )
-        assert "is not a dictionary" in result
-
-    @pytest.mark.asyncio
-    async def test_no_tool_context_raises_error(self):
-        question = "Choose wisely"
-        options = [{"value": "opt1", "label": "Option 1"}]
-        with pytest.raises(ValueError, match="Tool context not available"):
-            await ask_user_to_select_option(question=question, options=options)
-
-
-# End TestAskUserToSelectOption
+# TestAskUserToSelectOption class removed - functionality no longer exists
 
 
 class TestCheckExistingBranchConfiguration:
@@ -1380,10 +1380,14 @@ class TestCheckExistingBranchConfiguration:
         parsed_result = json.loads(result)
 
         assert parsed_result["configured"] is False
-        assert "No branch configuration found in conversation" in parsed_result["message"]
+        assert (
+            "No branch configuration found in conversation" in parsed_result["message"]
+        )
 
     @pytest.mark.asyncio
-    async def test_conversation_not_found(self, mock_tool_context, mock_get_entity_service):
+    async def test_conversation_not_found(
+        self, mock_tool_context, mock_get_entity_service
+    ):
         mock_tool_context.state = {"conversation_id": "non_existent_conv"}
         mock_get_entity_service.get_by_id.return_value = None
 
@@ -1417,8 +1421,8 @@ class TestCheckExistingBranchConfiguration:
             ("my-python-app", "python"),
             ("my-java-service", "java"),
             ("unknown-repo", None),
-            ("python-test-repo", "python"), # Added for clarity
-            ("java-api", "java"), # Added for clarity
+            ("python-test-repo", "python"),  # Added for clarity
+            ("java-api", "java"),  # Added for clarity
         ],
     )
     async def test_language_detection(
@@ -1454,6 +1458,7 @@ class TestCheckExistingBranchConfiguration:
         parsed_result = json.loads(result)
         assert parsed_result["repository_type"] == "public"
 
+
 # End TestCheckExistingBranchConfiguration
 
 
@@ -1480,13 +1485,21 @@ class TestCheckBuildStatus:
     def setup_mocks(self, mocker):
         self._mock_os_kill = mocker.patch("os.kill")
         # Removed global Path mocks, will mock Path constructor directly in tests
-        self._mock_path_exists = MagicMock(return_value=True)  # Still keep a reference for assertions if needed
-        self._mock_path_glob = MagicMock(return_value=[]) # Still keep a reference for assertions if needed
+        self._mock_path_exists = MagicMock(
+            return_value=True
+        )  # Still keep a reference for assertions if needed
+        self._mock_path_glob = MagicMock(
+            return_value=[]
+        )  # Still keep a reference for assertions if needed
 
         # Patch the Path constructor in generation module (where check_build_status is used)
-        self._mock_path_constructor = mocker.patch("application.agents.shared.repository_tools.generation.Path")
+        self._mock_path_constructor = mocker.patch(
+            "application.agents.shared.repository_tools.generation.Path"
+        )
         self._mock_path_constructor.return_value.exists = self._mock_path_exists
-        self._mock_path_constructor.return_value.is_dir.return_value = True # Default for directory checks
+        self._mock_path_constructor.return_value.is_dir.return_value = (
+            True  # Default for directory checks
+        )
         self._mock_path_constructor.return_value.glob = self._mock_path_glob
 
     @pytest.mark.asyncio
@@ -1499,7 +1512,6 @@ class TestCheckBuildStatus:
         self._mock_os_kill.assert_called_once_with(1000, 0)
         # Path is not called when process is still running
         self._mock_path_constructor.assert_not_called()
-
 
     @pytest.mark.asyncio
     async def test_process_completed_no_artifacts(self, mocker):
@@ -1515,7 +1527,9 @@ class TestCheckBuildStatus:
         # Need to support chained __truediv__ calls like repo_path / "build" / "libs"
         mock_artifact_child = MagicMock(spec=Path)
         mock_artifact_child.exists.return_value = False
-        mock_artifact_child.__truediv__.return_value = mock_artifact_child  # Support chaining
+        mock_artifact_child.__truediv__.return_value = (
+            mock_artifact_child  # Support chaining
+        )
         mock_repo_path.__truediv__.return_value = mock_artifact_child
 
         self._mock_path_constructor.return_value = mock_repo_path
@@ -1547,10 +1561,10 @@ class TestCheckBuildStatus:
 
         # Simulate only the first artifact path existing
         mock_repo_path.__truediv__.side_effect = [
-            mock_artifact_child_exists, # For repo_path / "build" / "libs"
-            mock_artifact_child_not_exists, # For repo_path / "target"
-            mock_artifact_child_not_exists, # For repo_path / ".venv"
-            mock_artifact_child_not_exists, # For repo_path / "dist"
+            mock_artifact_child_exists,  # For repo_path / "build" / "libs"
+            mock_artifact_child_not_exists,  # For repo_path / "target"
+            mock_artifact_child_not_exists,  # For repo_path / ".venv"
+            mock_artifact_child_not_exists,  # For repo_path / "dist"
         ]
 
         self._mock_path_constructor.return_value = mock_repo_path
@@ -1585,7 +1599,10 @@ class TestCheckBuildStatus:
         self._mock_path_constructor.return_value = mock_repo_path
 
         result = await check_build_status(build_job_info)
-        assert result == "ESCALATE: Build completed but repository path /tmp/repo not found"
+        assert (
+            result
+            == "ESCALATE: Build completed but repository path /tmp/repo not found"
+        )
         self._mock_os_kill.assert_called_once_with(1000, 0)
         self._mock_path_constructor.assert_called_once_with("/tmp/repo")
         mock_repo_path.exists.assert_called_once()
@@ -1597,7 +1614,6 @@ class TestCheckBuildStatus:
         assert result == "ESCALATE: Invalid build job info - could not parse PID"
         self._mock_os_kill.assert_not_called()
         self._mock_path_constructor.assert_not_called()
-
 
     @pytest.mark.asyncio
     async def test_unexpected_exception(self, mocker):
@@ -1632,7 +1648,9 @@ class TestGenerateApplication:
         self._mock_path_glob = mocker.patch.object(Path, "glob")
         self._mock_path_exists.return_value = True  # Default existing paths
         self._mock_path_is_dir.return_value = True
-        self._mock_path_glob.return_value = [MagicMock(name="req_file")]  # Simulate requirements file exists
+        self._mock_path_glob.return_value = [
+            MagicMock(name="req_file")
+        ]  # Simulate requirements file exists
 
         self._mock_create_subprocess_exec = mocker.patch(
             "asyncio.create_subprocess_exec", new_callable=AsyncMock
@@ -1660,13 +1678,14 @@ class TestGenerateApplication:
 
         # Use the autofixture task service
         self._mock_task_service = mock_get_task_service
-        self._mock_task_service.create_task = AsyncMock(return_value=MagicMock(
-            technical_id="build_task_abc"
-        ))
+        self._mock_task_service.create_task = AsyncMock(
+            return_value=MagicMock(technical_id="build_task_abc")
+        )
         self._mock_task_service.update_task_status = AsyncMock(return_value=None)
-        self._mock_task_service.get_task = AsyncMock(return_value=MagicMock(metadata={}))
+        self._mock_task_service.get_task = AsyncMock(
+            return_value=MagicMock(metadata={})
+        )
         self._mock_task_service.add_progress_update = AsyncMock(return_value=None)
-
 
         # Patch _monitor_build_process in the monitoring module (since it's lazily imported from there in generation)
         self._mock_monitor_build_process = mocker.patch(
@@ -1709,7 +1728,11 @@ class TestGenerateApplication:
 
     @pytest.mark.asyncio
     async def test_missing_language_returns_error(self, mock_tool_context):
-        mock_tool_context.state = {"conversation_id": "conv1", "repository_path": "/tmp/repo", "branch_name": "feat"}
+        mock_tool_context.state = {
+            "conversation_id": "conv1",
+            "repository_path": "/tmp/repo",
+            "branch_name": "feat",
+        }
         result = await generate_application(
             requirements="test app", language=None, tool_context=mock_tool_context
         )
@@ -1728,12 +1751,15 @@ class TestGenerateApplication:
             requirements="test app", tool_context=mock_tool_context
         )
         # Check for protected branch error or generic failure message
-        assert "ERROR" in result and ("protected" in result.lower() or "failed" in result.lower())
+        assert "ERROR" in result and (
+            "protected" in result.lower() or "failed" in result.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_repo_directory_not_found(self, mock_tool_context):
         # Use a counter-based side_effect to control behavior
         call_count = {"count": 0}
+
         def exists_side_effect(*args, **kwargs):
             call_count["count"] += 1
             if call_count["count"] == 1:  # First call: repo_path.exists()
@@ -1756,6 +1782,7 @@ class TestGenerateApplication:
     async def test_repo_not_a_git_repo(self, mock_tool_context):
         # Use a counter-based side_effect to control behavior
         call_count = {"count": 0}
+
         def exists_side_effect(*args, **kwargs):
             call_count["count"] += 1
             if call_count["count"] == 1:  # First call: repo_path.exists()
@@ -1799,13 +1826,16 @@ class TestGenerateApplication:
         )
         # Use a counter-based side_effect to control behavior
         call_count = {"count": 0}
+
         def exists_side_effect(*args, **kwargs):
             call_count["count"] += 1
             if call_count["count"] == 1:  # First call: repo_path.exists()
                 return True
             if call_count["count"] == 2:  # Second call: .git exists
                 return True
-            if call_count["count"] == 3:  # Third call: requirements exists (checked indirectly)
+            if (
+                call_count["count"] == 3
+            ):  # Third call: requirements exists (checked indirectly)
                 return True
             if call_count["count"] == 4:  # Fourth call: script itself
                 return False
@@ -1822,7 +1852,11 @@ class TestGenerateApplication:
             requirements="test app", tool_context=mock_tool_context
         )
         # Accept error about script not found or other errors
-        assert "error" in result.lower() or "not found" in result.lower() or "failed" in result.lower()
+        assert (
+            "error" in result.lower()
+            or "not found" in result.lower()
+            or "failed" in result.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_process_limit_reached(self, mock_tool_context):
@@ -1838,7 +1872,11 @@ class TestGenerateApplication:
             requirements="test app", tool_context=mock_tool_context
         )
         # Accept error message about process limit or generic error
-        assert "cannot start" in result.lower() or "error" in result.lower() or "concurrent" in result.lower()
+        assert (
+            "cannot start" in result.lower()
+            or "error" in result.lower()
+            or "concurrent" in result.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_successful_generation_env_deploy_triggered(self, mock_tool_context):
@@ -1856,7 +1894,11 @@ class TestGenerateApplication:
         )
 
         # Accept either success or error; be lenient about exact message format
-        assert "success" in result.lower() or "started" in result.lower() or "error" in result.lower()
+        assert (
+            "success" in result.lower()
+            or "started" in result.lower()
+            or "error" in result.lower()
+        )
         # Note: Mock assertions may not all be called due to implementation changes
         assert self._mock_create_subprocess_exec.call_count >= 0
 
@@ -1875,15 +1917,23 @@ class TestGenerateApplication:
         )
 
         # Accept either success or error message
-        assert "success" in result.lower() or "started" in result.lower() or "error" in result.lower()
+        assert (
+            "success" in result.lower()
+            or "started" in result.lower()
+            or "error" in result.lower()
+        )
         # Note: Mock assertions may not all be called due to implementation changes
         assert self._mock_create_subprocess_exec.call_count >= 0
 
     @pytest.mark.asyncio
-    async def test_successful_generation_no_task_service(self, mock_tool_context, mocker, mock_get_task_service):
+    async def test_successful_generation_no_task_service(
+        self, mock_tool_context, mocker, mock_get_task_service
+    ):
         # Make the task service raise an exception to simulate service not available
         mock_get_task_service.create_task = AsyncMock(
-            side_effect=Exception("Services not initialized. Call initialize_services() first.")
+            side_effect=Exception(
+                "Services not initialized. Call initialize_services() first."
+            )
         )
         mock_tool_context.state = {
             "conversation_id": "conv1",
@@ -1898,7 +1948,11 @@ class TestGenerateApplication:
         )
 
         # Accept either success or error message
-        assert "success" in result.lower() or "started" in result.lower() or "error" in result.lower()
+        assert (
+            "success" in result.lower()
+            or "started" in result.lower()
+            or "error" in result.lower()
+        )
         # Don't make strict assertions about mock calls due to implementation changes
         assert isinstance(result, str)
 
@@ -1933,7 +1987,9 @@ class TestStreamProcessOutput:
     def setup_mocks(self, mocker, mock_get_task_service):
         # Use the autofixture task service
         self._mock_task_service = mock_get_task_service
-        self._mock_task_service.get_task = AsyncMock(return_value=MagicMock(metadata={}))
+        self._mock_task_service.get_task = AsyncMock(
+            return_value=MagicMock(metadata={})
+        )
         self._mock_task_service.update_task_status = AsyncMock(return_value=None)
 
         self._mock_process_stdout = AsyncMock()
@@ -1982,11 +2038,15 @@ class TestMonitorBuildProcess:
     """Tests for _monitor_build_process."""
 
     @pytest.fixture(autouse=True)
-    def setup_mocks(self, mocker, mock_tool_context, mock_get_entity_service, mock_get_task_service):
+    def setup_mocks(
+        self, mocker, mock_tool_context, mock_get_entity_service, mock_get_task_service
+    ):
         self._mock_get_task_service = mock_get_task_service
         self._mock_get_entity_service = mock_get_entity_service
         self._mock_process_wait = AsyncMock()
-        self._mock_process = MagicMock(pid=123, wait=self._mock_process_wait, returncode=0)
+        self._mock_process = MagicMock(
+            pid=123, wait=self._mock_process_wait, returncode=0
+        )
 
         self._mock_is_process_running = mocker.patch(
             "application.agents.shared.process_utils._is_process_running",
@@ -2013,18 +2073,20 @@ class TestMonitorBuildProcess:
 
         # Mock conversation entity for updates
         mock_conv_obj = MockConversation(
-            technical_id="test_conversation_id",
-            metadata={}
+            technical_id="test_conversation_id", metadata={}
         )
         # Ensure mock_get_entity_service has methods with proper return values
-        mock_get_entity_service.get_by_id = AsyncMock(return_value=MagicMock(data=mock_conv_obj))
-        mock_get_entity_service.update = AsyncMock(return_value=MagicMock(status_code=200))
+        mock_get_entity_service.get_by_id = AsyncMock(
+            return_value=MagicMock(data=mock_conv_obj)
+        )
+        mock_get_entity_service.update = AsyncMock(
+            return_value=MagicMock(status_code=200)
+        )
 
         # Ensure mock_get_task_service has methods with proper return values
         mock_get_task_service.update_task_status = AsyncMock(return_value=None)
         mock_get_task_service.add_progress_update = AsyncMock(return_value=None)
         mock_get_task_service.get_task = AsyncMock(return_value=MagicMock(metadata={}))
-
 
         mock_tool_context.state["background_task_id"] = "test_task_id"
         mock_tool_context.state["conversation_id"] = "test_conversation_id"
@@ -2053,7 +2115,7 @@ class TestMonitorBuildProcess:
         timeout = 60
 
         # Simulate process finishing within timeout
-        self._mock_process_wait.return_value = 0 # Process returns 0 (success)
+        self._mock_process_wait.return_value = 0  # Process returns 0 (success)
 
         await _monitor_build_process(
             self._mock_process, repository_path, branch_name, timeout, mock_tool_context
@@ -2067,21 +2129,20 @@ class TestMonitorBuildProcess:
         # Task service calls are wrapped in try-except, so they may not be called
         # if services are not initialized (which is expected in tests)
 
-
     @pytest.mark.asyncio
     async def test_monitoring_timeout(self, mock_tool_context):
         repository_path = "/tmp/repo"
         branch_name = "test-branch"
         timeout = 10
-        check_interval = 1 # make it faster
+        check_interval = 1  # make it faster
 
         # Simulate process never finishing within timeout, then succeeds after kill
         self._mock_process_wait.side_effect = [
             asyncio.TimeoutError,  # Monitoring loop times out
             asyncio.TimeoutError,  # First wait in _terminate_process times out
-            0  # Final wait after kill succeeds
+            0,  # Final wait after kill succeeds
         ]
-        self._mock_is_process_running.return_value = True # Always running
+        self._mock_is_process_running.return_value = True  # Always running
 
         await _monitor_build_process(
             self._mock_process, repository_path, branch_name, timeout, mock_tool_context
@@ -2103,9 +2164,11 @@ class TestMonitorBuildProcess:
         # Simulate initial timeout, then process is no longer running
         self._mock_process_wait.side_effect = [
             asyncio.TimeoutError,  # Initial wait times out
-            0  # Process has already exited when checked again
+            0,  # Process has already exited when checked again
         ]
-        self._mock_is_process_running.side_effect = [False] # Process is not running anymore
+        self._mock_is_process_running.side_effect = [
+            False
+        ]  # Process is not running anymore
 
         await _monitor_build_process(
             self._mock_process, repository_path, branch_name, timeout, mock_tool_context
@@ -2137,7 +2200,7 @@ class TestMonitorBuildProcess:
             tool_context=mock_tool_context,
             repo_url=None,  # Should be None based on default setup
             installation_id=None,
-            repository_type="public", # Set in fixture
+            repository_type="public",  # Set in fixture
         )
 
     @pytest.mark.asyncio
@@ -2162,13 +2225,18 @@ class TestMonitorBuildProcess:
         assert True  # Function executed without error
 
 
-
 # Additional edge case tests for _monitor_build_process
 class TestMonitorBuildProcessEdgeCases:
     """Additional edge case tests for _monitor_build_process."""
 
     @pytest.fixture(autouse=True)
-    def setup_edge_case_mocks(self, mock_tool_context, mock_get_entity_service, mock_get_task_service, monkeypatch):
+    def setup_edge_case_mocks(
+        self,
+        mock_tool_context,
+        mock_get_entity_service,
+        mock_get_task_service,
+        monkeypatch,
+    ):
         self._mock_get_task_service = mock_get_task_service
         self._mock_get_entity_service = mock_get_entity_service
         self._mock_process_wait = AsyncMock()
@@ -2180,7 +2248,9 @@ class TestMonitorBuildProcessEdgeCases:
             self._mock_is_process_running,
         )
 
-        self._mock_commit_and_push_changes = AsyncMock(return_value={"status": "success"})
+        self._mock_commit_and_push_changes = AsyncMock(
+            return_value={"status": "success"}
+        )
         monkeypatch.setattr(
             "application.agents.github.tools._commit_and_push_changes",
             self._mock_commit_and_push_changes,
@@ -2188,7 +2258,9 @@ class TestMonitorBuildProcessEdgeCases:
 
         self._mock_process_manager = AsyncMock()
         self._mock_process_manager.unregister_process.return_value = None
-        self._mock_get_process_manager = MagicMock(return_value=self._mock_process_manager)
+        self._mock_get_process_manager = MagicMock(
+            return_value=self._mock_process_manager
+        )
         monkeypatch.setattr(
             "application.agents.shared.process_manager.get_process_manager",
             self._mock_get_process_manager,
@@ -2202,15 +2274,20 @@ class TestMonitorBuildProcessEdgeCases:
 
         # Mock conversation entity for updates
         mock_conv_obj = MockConversation(
-            technical_id="test_conversation_id",
-            metadata={}
+            technical_id="test_conversation_id", metadata={}
         )
-        mock_get_entity_service.return_value.get_by_id.return_value = MagicMock(data=mock_conv_obj)
-        mock_get_entity_service.return_value.update.return_value = MagicMock(status_code=200)
+        mock_get_entity_service.return_value.get_by_id.return_value = MagicMock(
+            data=mock_conv_obj
+        )
+        mock_get_entity_service.return_value.update.return_value = MagicMock(
+            status_code=200
+        )
 
         mock_get_task_service.return_value.update_task_status.return_value = None
         mock_get_task_service.return_value.add_progress_update.return_value = None
-        mock_get_task_service.return_value.get_task.return_value = MagicMock(metadata={})
+        mock_get_task_service.return_value.get_task.return_value = MagicMock(
+            metadata={}
+        )
 
         mock_tool_context.state["background_task_id"] = "test_task_id"
         mock_tool_context.state["conversation_id"] = "test_conversation_id"
@@ -2287,7 +2364,9 @@ class TestMonitorBuildProcessEdgeCases:
         self._mock_process_manager.unregister_process.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_stream_output_failure_does_not_stop_monitoring(self, mock_tool_context):
+    async def test_stream_output_failure_does_not_stop_monitoring(
+        self, mock_tool_context
+    ):
         """Test that stream output failures don't stop monitoring."""
         repository_path = "/tmp/repo"
         branch_name = "test-branch"
@@ -2350,7 +2429,7 @@ class TestMonitorBuildProcessEdgeCases:
         self._mock_process_wait.side_effect = [
             asyncio.TimeoutError,  # First check times out
             asyncio.TimeoutError,  # Second check times out
-            0  # Finally completes
+            0,  # Finally completes
         ]
 
         await _monitor_build_process(
@@ -2368,7 +2447,9 @@ class TestMonitorBuildProcessEdgeCases:
         timeout = 60
 
         # Add auth info to context
-        mock_tool_context.state["user_repository_url"] = "https://github.com/user/repo.git"
+        mock_tool_context.state["user_repository_url"] = (
+            "https://github.com/user/repo.git"
+        )
         mock_tool_context.state["installation_id"] = "inst_12345"
         mock_tool_context.state["repository_type"] = "private"
 
@@ -2406,14 +2487,20 @@ class TestMonitorBuildProcessEdgeCases:
         assert call_args.kwargs["repo_url"] == "https://github.com/public/repo.git"
 
     @pytest.mark.asyncio
-    async def test_monitoring_timeout_triggers_process_termination(self, mock_tool_context):
+    async def test_monitoring_timeout_triggers_process_termination(
+        self, mock_tool_context
+    ):
         """Test that timeout triggers process termination."""
         repository_path = "/tmp/repo"
         branch_name = "test-branch"
         timeout = 5
 
         # First call times out (main monitoring), second times out (termination), third succeeds (final wait)
-        self._mock_process_wait.side_effect = [asyncio.TimeoutError, asyncio.TimeoutError, 1]
+        self._mock_process_wait.side_effect = [
+            asyncio.TimeoutError,
+            asyncio.TimeoutError,
+            1,
+        ]
 
         await _monitor_build_process(
             self._mock_process, repository_path, branch_name, timeout, mock_tool_context
@@ -2427,13 +2514,17 @@ class TestMonitorBuildProcessEdgeCases:
         self._mock_process.kill.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_monitoring_extracts_auth_from_context_correctly(self, mock_tool_context):
+    async def test_monitoring_extracts_auth_from_context_correctly(
+        self, mock_tool_context
+    ):
         """Test correct extraction of authentication details from context."""
         repository_path = "/tmp/repo"
         branch_name = "test-branch"
         timeout = 60
 
-        mock_tool_context.state["user_repository_url"] = "https://github.com/user/private.git"
+        mock_tool_context.state["user_repository_url"] = (
+            "https://github.com/user/private.git"
+        )
         mock_tool_context.state["installation_id"] = "inst_99999"
         mock_tool_context.state["repository_type"] = "private"
 
@@ -2482,9 +2573,15 @@ class TestMonitorBuildProcessEdgeCases:
 
         self._mock_process_wait.return_value = 0
 
-        with patch('application.agents.shared.repository_tools.monitoring.logger') as mock_logger:
+        with patch(
+            "application.agents.shared.repository_tools.monitoring.logger"
+        ) as mock_logger:
             await _monitor_build_process(
-                self._mock_process, repository_path, branch_name, timeout, mock_tool_context
+                self._mock_process,
+                repository_path,
+                branch_name,
+                timeout,
+                mock_tool_context,
             )
 
             # Logging may or may not be called depending on implementation
@@ -2622,7 +2719,10 @@ class TestSaveFilesToBranch:
         files = [{"filename": "test.txt", "content": "test content"}]
 
         # Mock Path.exists() to return False
-        mocker.patch("application.agents.shared.repository_tools.files.Path.exists", return_value=False)
+        mocker.patch(
+            "application.agents.shared.repository_tools.files.Path.exists",
+            return_value=False,
+        )
 
         result = await save_files_to_branch(files=files, tool_context=mock_context)
 
@@ -2641,7 +2741,10 @@ class TestSaveFilesToBranch:
         files = [{"filename": "test.txt", "content": "test content"}]
 
         # Mock Path.exists() to return True
-        mocker.patch("application.agents.shared.repository_tools.files.Path.exists", return_value=True)
+        mocker.patch(
+            "application.agents.shared.repository_tools.files.Path.exists",
+            return_value=True,
+        )
 
         result = await save_files_to_branch(files=files, tool_context=mock_context)
 
@@ -2666,7 +2769,9 @@ class TestSaveFilesToBranch:
         def mock_path_constructor(*args, **kwargs):
             mock_p = mocker.MagicMock()
             mock_p.exists.return_value = True
-            mock_p.relative_to.return_value = Path("application/resources/functional_requirements")
+            mock_p.relative_to.return_value = Path(
+                "application/resources/functional_requirements"
+            )
             mock_p.__truediv__ = mocker.MagicMock(return_value=mock_p)
             mock_p.write_text = mocker.MagicMock()
             mock_p.mkdir = mocker.MagicMock()
@@ -2674,8 +2779,10 @@ class TestSaveFilesToBranch:
             mock_p.name = args[0].split("/")[-1] if args else "mock"
             return mock_p
 
-        mocker.patch("application.agents.shared.repository_tools.files.Path", side_effect=mock_path_constructor)
-
+        mocker.patch(
+            "application.agents.shared.repository_tools.files.Path",
+            side_effect=mock_path_constructor,
+        )
 
         # Mock file write
 
@@ -2688,7 +2795,7 @@ class TestSaveFilesToBranch:
         # Mock authentication function
         mocker.patch(
             "application.agents.shared.repository_tools.files._get_authenticated_repo_url_sync",
-            return_value="https://x-access-token:token@github.com/owner/repo.git"
+            return_value="https://x-access-token:token@github.com/owner/repo.git",
         )
 
         result = await save_files_to_branch(files=files, tool_context=mock_context)
@@ -2713,7 +2820,9 @@ class TestSaveFilesToBranch:
         def mock_path_constructor(*args, **kwargs):
             mock_p = mocker.MagicMock()
             mock_p.exists.return_value = True
-            mock_p.relative_to.return_value = Path("application/resources/functional_requirements")
+            mock_p.relative_to.return_value = Path(
+                "application/resources/functional_requirements"
+            )
             mock_p.__truediv__ = mocker.MagicMock(return_value=mock_p)
             mock_p.write_text = mocker.MagicMock()
             mock_p.mkdir = mocker.MagicMock()
@@ -2721,8 +2830,10 @@ class TestSaveFilesToBranch:
             mock_p.name = args[0].split("/")[-1] if args else "mock"
             return mock_p
 
-        mocker.patch("application.agents.shared.repository_tools.files.Path", side_effect=mock_path_constructor)
-
+        mocker.patch(
+            "application.agents.shared.repository_tools.files.Path",
+            side_effect=mock_path_constructor,
+        )
 
         # Mock file write
 
@@ -2735,7 +2846,7 @@ class TestSaveFilesToBranch:
         # Mock authentication function
         mocker.patch(
             "application.agents.shared.repository_tools.files._get_authenticated_repo_url_sync",
-            return_value="https://x-access-token:token@github.com/owner/repo.git"
+            return_value="https://x-access-token:token@github.com/owner/repo.git",
         )
 
         result = await save_files_to_branch(files=files, tool_context=mock_context)
@@ -2759,7 +2870,9 @@ class TestSaveFilesToBranch:
         def mock_path_constructor(*args, **kwargs):
             mock_p = mocker.MagicMock()
             mock_p.exists.return_value = True
-            mock_p.relative_to.return_value = Path("application/resources/functional_requirements")
+            mock_p.relative_to.return_value = Path(
+                "application/resources/functional_requirements"
+            )
             mock_p.__truediv__ = mocker.MagicMock(return_value=mock_p)
             mock_p.write_text = mocker.MagicMock()
             mock_p.mkdir = mocker.MagicMock()
@@ -2767,8 +2880,10 @@ class TestSaveFilesToBranch:
             mock_p.name = args[0].split("/")[-1] if args else "mock"
             return mock_p
 
-        mocker.patch("application.agents.shared.repository_tools.files.Path", side_effect=mock_path_constructor)
-
+        mocker.patch(
+            "application.agents.shared.repository_tools.files.Path",
+            side_effect=mock_path_constructor,
+        )
 
         # Mock git config to succeed, git add to fail
         call_count = {"count": 0}
@@ -2813,7 +2928,9 @@ class TestSaveFilesToBranch:
         def mock_path_constructor(*args, **kwargs):
             mock_p = mocker.MagicMock()
             mock_p.exists.return_value = True
-            mock_p.relative_to.return_value = Path("application/resources/functional_requirements")
+            mock_p.relative_to.return_value = Path(
+                "application/resources/functional_requirements"
+            )
             mock_p.__truediv__ = mocker.MagicMock(return_value=mock_p)
             mock_p.write_text = mocker.MagicMock()
             mock_p.mkdir = mocker.MagicMock()
@@ -2821,8 +2938,10 @@ class TestSaveFilesToBranch:
             mock_p.name = args[0].split("/")[-1] if args else "mock"
             return mock_p
 
-        mocker.patch("application.agents.shared.repository_tools.files.Path", side_effect=mock_path_constructor)
-
+        mocker.patch(
+            "application.agents.shared.repository_tools.files.Path",
+            side_effect=mock_path_constructor,
+        )
 
         # Mock git operations
         call_count = {"count": 0}
@@ -2838,7 +2957,9 @@ class TestSaveFilesToBranch:
                 mock_proc.returncode = 0
                 if call_count["count"] == 4:
                     # git status returns staged files
-                    mock_proc.communicate = AsyncMock(return_value=(b"M  test.txt", b""))
+                    mock_proc.communicate = AsyncMock(
+                        return_value=(b"M  test.txt", b"")
+                    )
                 else:
                     mock_proc.communicate = AsyncMock(return_value=(b"", b""))
             # Fifth call: git commit (fail)
@@ -2873,7 +2994,9 @@ class TestSaveFilesToBranch:
         def mock_path_constructor(*args, **kwargs):
             mock_p = mocker.MagicMock()
             mock_p.exists.return_value = True
-            mock_p.relative_to.return_value = Path("application/resources/functional_requirements")
+            mock_p.relative_to.return_value = Path(
+                "application/resources/functional_requirements"
+            )
             mock_p.__truediv__ = mocker.MagicMock(return_value=mock_p)
             mock_p.write_text = mocker.MagicMock()
             mock_p.mkdir = mocker.MagicMock()
@@ -2881,8 +3004,10 @@ class TestSaveFilesToBranch:
             mock_p.name = args[0].split("/")[-1] if args else "mock"
             return mock_p
 
-        mocker.patch("application.agents.shared.repository_tools.files.Path", side_effect=mock_path_constructor)
-
+        mocker.patch(
+            "application.agents.shared.repository_tools.files.Path",
+            side_effect=mock_path_constructor,
+        )
 
         # Mock git operations
         async def mock_subprocess(*args, **kwargs):
@@ -2907,7 +3032,7 @@ class TestSaveFilesToBranch:
         mocker.patch("asyncio.create_subprocess_exec", side_effect=mock_subprocess)
         mocker.patch(
             "application.agents.shared.repository_tools.files._get_authenticated_repo_url_sync",
-            return_value="https://x-access-token:token@github.com/owner/repo.git"
+            return_value="https://x-access-token:token@github.com/owner/repo.git",
         )
 
         result = await save_files_to_branch(files=files, tool_context=mock_context)
@@ -2933,16 +3058,23 @@ class TestSaveFilesToBranch:
         def mock_path_constructor(*args, **kwargs):
             mock_p = mocker.MagicMock()
             mock_p.exists.return_value = True
-            mock_p.relative_to.return_value = Path("application/resources/functional_requirements")
+            mock_p.relative_to.return_value = Path(
+                "application/resources/functional_requirements"
+            )
             mock_p.__truediv__ = mocker.MagicMock(return_value=mock_p)
             # Make write_text fail with Permission denied
-            mock_p.write_text = mocker.MagicMock(side_effect=PermissionError("Permission denied"))
+            mock_p.write_text = mocker.MagicMock(
+                side_effect=PermissionError("Permission denied")
+            )
             mock_p.mkdir = mocker.MagicMock()
             mock_p.iterdir = mocker.MagicMock(return_value=[])
             mock_p.name = args[0].split("/")[-1] if args else "mock"
             return mock_p
 
-        mocker.patch("application.agents.shared.repository_tools.files.Path", side_effect=mock_path_constructor)
+        mocker.patch(
+            "application.agents.shared.repository_tools.files.Path",
+            side_effect=mock_path_constructor,
+        )
 
         result = await save_files_to_branch(files=files, tool_context=mock_context)
 
@@ -2971,7 +3103,9 @@ class TestSaveFilesToBranch:
         def mock_path_constructor(*args, **kwargs):
             mock_p = mocker.MagicMock()
             mock_p.exists.return_value = True
-            mock_p.relative_to.return_value = Path("application/resources/functional_requirements")
+            mock_p.relative_to.return_value = Path(
+                "application/resources/functional_requirements"
+            )
             mock_p.__truediv__ = mocker.MagicMock(return_value=mock_p)
             mock_p.write_text = mocker.MagicMock()
             mock_p.mkdir = mocker.MagicMock()
@@ -2979,8 +3113,10 @@ class TestSaveFilesToBranch:
             mock_p.name = args[0].split("/")[-1] if args else "mock"
             return mock_p
 
-        mocker.patch("application.agents.shared.repository_tools.files.Path", side_effect=mock_path_constructor)
-
+        mocker.patch(
+            "application.agents.shared.repository_tools.files.Path",
+            side_effect=mock_path_constructor,
+        )
 
         # Mock git operations
         mock_process = AsyncMock()
@@ -2989,7 +3125,7 @@ class TestSaveFilesToBranch:
         mocker.patch("asyncio.create_subprocess_exec", return_value=mock_process)
         mocker.patch(
             "application.agents.shared.repository_tools.files._get_authenticated_repo_url_sync",
-            return_value="https://x-access-token:token@github.com/owner/repo.git"
+            return_value="https://x-access-token:token@github.com/owner/repo.git",
         )
 
         # The function should raise ValueError for the first invalid entry
@@ -3054,7 +3190,9 @@ class TestRetrieveAndSaveConversationFiles:
         assert "No files found in conversation" in result
 
     @pytest.mark.asyncio
-    async def test_successful_retrieval_with_file_blob_ids(self, mock_get_entity_service, mocker):
+    async def test_successful_retrieval_with_file_blob_ids(
+        self, mock_get_entity_service, mocker
+    ):
         """Test successful file retrieval using conversation.file_blob_ids."""
         mock_context = MagicMock()
         mock_context.state = {
@@ -3077,6 +3215,7 @@ class TestRetrieveAndSaveConversationFiles:
 
         # Mock repository to return edge messages
         import base64
+
         file1_content = base64.b64encode(b"content 1").decode("utf-8")
         file2_content = base64.b64encode(b"content 2").decode("utf-8")
 
@@ -3086,12 +3225,12 @@ class TestRetrieveAndSaveConversationFiles:
             if entity_id == "file1":
                 return {
                     "message": file1_content,
-                    "metadata": {"filename": "test1.txt", "encoding": "base64"}
+                    "metadata": {"filename": "test1.txt", "encoding": "base64"},
                 }
             elif entity_id == "file2":
                 return {
                     "message": file2_content,
-                    "metadata": {"filename": "test2.md", "encoding": "base64"}
+                    "metadata": {"filename": "test2.md", "encoding": "base64"},
                 }
             return None
 
@@ -3102,7 +3241,7 @@ class TestRetrieveAndSaveConversationFiles:
         mock_save_files = AsyncMock(return_value="SUCCESS: Files saved")
         mocker.patch(
             "application.agents.shared.repository_tools.files.save_files_to_branch",
-            mock_save_files
+            mock_save_files,
         )
 
         result = await retrieve_and_save_conversation_files(tool_context=mock_context)
@@ -3119,7 +3258,9 @@ class TestRetrieveAndSaveConversationFiles:
         assert files[1]["content"] == "content 2"
 
     @pytest.mark.asyncio
-    async def test_successful_retrieval_from_chat_flow(self, mock_get_entity_service, mocker):
+    async def test_successful_retrieval_from_chat_flow(
+        self, mock_get_entity_service, mocker
+    ):
         """Test successful file retrieval from chat_flow messages (fallback)."""
         mock_context = MagicMock()
         mock_context.state = {
@@ -3148,6 +3289,7 @@ class TestRetrieveAndSaveConversationFiles:
 
         # Mock repository
         import base64
+
         file1_content = base64.b64encode(b"content 1").decode("utf-8")
         file2_content = base64.b64encode(b"content 2").decode("utf-8")
         file3_content = base64.b64encode(b"content 3").decode("utf-8")
@@ -3158,17 +3300,17 @@ class TestRetrieveAndSaveConversationFiles:
             if entity_id == "file1":
                 return {
                     "message": file1_content,
-                    "metadata": {"filename": "file1.txt", "encoding": "base64"}
+                    "metadata": {"filename": "file1.txt", "encoding": "base64"},
                 }
             elif entity_id == "file2":
                 return {
                     "message": file2_content,
-                    "metadata": {"filename": "file2.txt", "encoding": "base64"}
+                    "metadata": {"filename": "file2.txt", "encoding": "base64"},
                 }
             elif entity_id == "file3":
                 return {
                     "message": file3_content,
-                    "metadata": {"filename": "file3.txt", "encoding": "base64"}
+                    "metadata": {"filename": "file3.txt", "encoding": "base64"},
                 }
             return None
 
@@ -3179,7 +3321,7 @@ class TestRetrieveAndSaveConversationFiles:
         mock_save_files = AsyncMock(return_value="SUCCESS: Files saved")
         mocker.patch(
             "application.agents.shared.repository_tools.files.save_files_to_branch",
-            mock_save_files
+            mock_save_files,
         )
 
         result = await retrieve_and_save_conversation_files(tool_context=mock_context)
@@ -3214,6 +3356,7 @@ class TestRetrieveAndSaveConversationFiles:
 
         # Mock repository - file2 fails
         import base64
+
         file1_content = base64.b64encode(b"content 1").decode("utf-8")
         file3_content = base64.b64encode(b"content 3").decode("utf-8")
 
@@ -3223,14 +3366,14 @@ class TestRetrieveAndSaveConversationFiles:
             if entity_id == "file1":
                 return {
                     "message": file1_content,
-                    "metadata": {"filename": "file1.txt", "encoding": "base64"}
+                    "metadata": {"filename": "file1.txt", "encoding": "base64"},
                 }
             elif entity_id == "file2":
                 return None  # Failed retrieval
             elif entity_id == "file3":
                 return {
                     "message": file3_content,
-                    "metadata": {"filename": "file3.txt", "encoding": "base64"}
+                    "metadata": {"filename": "file3.txt", "encoding": "base64"},
                 }
             return None
 
@@ -3241,7 +3384,7 @@ class TestRetrieveAndSaveConversationFiles:
         mock_save_files = AsyncMock(return_value="SUCCESS: Files saved")
         mocker.patch(
             "application.agents.shared.repository_tools.files.save_files_to_branch",
-            mock_save_files
+            mock_save_files,
         )
 
         result = await retrieve_and_save_conversation_files(tool_context=mock_context)
@@ -3306,7 +3449,7 @@ class TestRetrieveAndSaveConversationFiles:
         async def mock_find_by_id(meta, entity_id):
             return {
                 "message": "not-valid-base64!!!",
-                "metadata": {"filename": "file1.txt", "encoding": "base64"}
+                "metadata": {"filename": "file1.txt", "encoding": "base64"},
             }
 
         mock_repository.find_by_id = mock_find_by_id
@@ -3316,7 +3459,7 @@ class TestRetrieveAndSaveConversationFiles:
         mock_save_files = AsyncMock(return_value="SUCCESS: Files saved")
         mocker.patch(
             "application.agents.shared.repository_tools.files.save_files_to_branch",
-            mock_save_files
+            mock_save_files,
         )
 
         result = await retrieve_and_save_conversation_files(tool_context=mock_context)
@@ -3354,6 +3497,7 @@ class TestRetrieveAndSaveConversationFiles:
 
         # Mock repository with object format
         import base64
+
         file1_content = base64.b64encode(b"content 1").decode("utf-8")
 
         mock_edge_data = MagicMock()
@@ -3368,7 +3512,7 @@ class TestRetrieveAndSaveConversationFiles:
         mock_save_files = AsyncMock(return_value="SUCCESS: Files saved")
         mocker.patch(
             "application.agents.shared.repository_tools.files.save_files_to_branch",
-            mock_save_files
+            mock_save_files,
         )
 
         result = await retrieve_and_save_conversation_files(tool_context=mock_context)
@@ -3408,6 +3552,7 @@ class TestRetrieveAndSaveConversationFiles:
 
         # Mock repository
         import base64
+
         file1_content = base64.b64encode(b"content 1").decode("utf-8")
 
         mock_repository = AsyncMock()
@@ -3415,7 +3560,7 @@ class TestRetrieveAndSaveConversationFiles:
         async def mock_find_by_id(meta, entity_id):
             return {
                 "message": file1_content,
-                "metadata": {"filename": "file1.txt", "encoding": "base64"}
+                "metadata": {"filename": "file1.txt", "encoding": "base64"},
             }
 
         mock_repository.find_by_id = mock_find_by_id
@@ -3425,13 +3570,12 @@ class TestRetrieveAndSaveConversationFiles:
         mock_save_files = AsyncMock(return_value="SUCCESS: Files saved")
         mocker.patch(
             "application.agents.shared.repository_tools.files.save_files_to_branch",
-            mock_save_files
+            mock_save_files,
         )
 
         result = await retrieve_and_save_conversation_files(tool_context=mock_context)
 
         assert result == "SUCCESS: Files saved"
-
 
 
 class TestCloneRepository:
@@ -3444,7 +3588,7 @@ class TestCloneRepository:
         result = await clone_repository(
             language="invalid_lang",
             branch_name="test-branch",
-            tool_context=mock_tool_context
+            tool_context=mock_tool_context,
         )
 
         assert "ERROR" in result or "Unsupported" in result
@@ -3455,7 +3599,7 @@ class TestCloneRepository:
         result = await clone_repository(
             language="python",
             branch_name="main",  # Protected branch
-            tool_context=mock_tool_context
+            tool_context=mock_tool_context,
         )
 
         assert "ERROR" in result
@@ -3464,13 +3608,15 @@ class TestCloneRepository:
     @pytest.mark.asyncio
     async def test_clone_repository_python_template(self, mock_tool_context):
         """Test cloning Python template repository."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git:
+        with patch(
+            "application.agents.shared.repository_tools.repository._run_git_command"
+        ) as mock_git:
             mock_git.return_value = (0, "success", "")
 
             result = await clone_repository(
                 language="python",
                 branch_name="feature-branch",
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Should either succeed or fail gracefully
@@ -3479,13 +3625,15 @@ class TestCloneRepository:
     @pytest.mark.asyncio
     async def test_clone_repository_java_template(self, mock_tool_context):
         """Test cloning Java template repository."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git:
+        with patch(
+            "application.agents.shared.repository_tools.repository._run_git_command"
+        ) as mock_git:
             mock_git.return_value = (0, "success", "")
 
             result = await clone_repository(
                 language="java",
                 branch_name="feature-branch",
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Should either succeed or fail gracefully

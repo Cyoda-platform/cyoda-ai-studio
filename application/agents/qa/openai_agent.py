@@ -11,8 +11,8 @@ _openai_agents = importlib.import_module("agents")
 Agent = _openai_agents.Agent
 
 from application.agents.qa.prompts import create_instruction_provider
-from application.agents.shared.openai_tool_adapter import adapt_adk_tools_list
 from application.agents.qa.tools import explain_cyoda_pattern, search_cyoda_concepts
+from application.agents.shared.openai_tool_adapter import adapt_adk_tools_list
 from application.agents.shared.tools import load_web_page, read_documentation
 
 
@@ -50,4 +50,3 @@ def create_openai_qa_agent() -> Agent:
 
     logger.info("✓ OpenAI QA Agent created with tools")
     return qa_agent
-

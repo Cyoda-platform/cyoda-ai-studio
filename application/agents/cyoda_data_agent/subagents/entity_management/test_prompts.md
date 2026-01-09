@@ -110,4 +110,3 @@ Delete all Order entities where status equals "completed" and created_date is ol
 ```
 Get statistics for the Customer model to confirm final count.
 ```
-

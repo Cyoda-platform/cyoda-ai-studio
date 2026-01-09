@@ -56,7 +56,9 @@ async def load_web_page(tool_context: ToolContext, url: str) -> str:
         content_type = response.headers.get("content-type", "").lower()
         if "application/json" in content_type or url.endswith(".json"):
             result = response.text
-            logger.info(f"Successfully fetched {len(result)} characters of JSON from {url}")
+            logger.info(
+                f"Successfully fetched {len(result)} characters of JSON from {url}"
+            )
             return result
 
         # For HTML/text content, parse and extract clean text
@@ -121,7 +123,11 @@ async def read_documentation(tool_context: ToolContext, filename: str) -> str:
             outputs_dir = project_root / "llm_docs" / "outputs"
             if outputs_dir.exists():
                 actual_files = [f.name for f in outputs_dir.iterdir() if f.is_file()]
-                available_msg = f"Files in {outputs_dir}: {', '.join(actual_files)}" if actual_files else f"Directory {outputs_dir} is empty"
+                available_msg = (
+                    f"Files in {outputs_dir}: {', '.join(actual_files)}"
+                    if actual_files
+                    else f"Directory {outputs_dir} is empty"
+                )
             else:
                 available_msg = f"Directory does not exist: {outputs_dir}"
 
@@ -134,7 +140,7 @@ async def read_documentation(tool_context: ToolContext, filename: str) -> str:
             return error_msg
 
         # Read file content
-        content = file_path.read_text(encoding='utf-8')
+        content = file_path.read_text(encoding="utf-8")
         logger.info(f"Successfully read {len(content)} characters from {filename}")
         return content
 

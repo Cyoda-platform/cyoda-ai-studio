@@ -11,8 +11,8 @@ from google.adk.sessions.base_session_service import GetSessionConfig
 from google.adk.sessions.session import Session
 
 from application.entity.adk_session import AdkSession
-from common.service.entity_service import EntityService, SearchConditionRequest
 from common.search import CyodaOperator
+from common.service.entity_service import EntityService, SearchConditionRequest
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,9 @@ async def find_session_entity(
         return None
 
 
-def filter_session_events(session: Session, config: Optional[GetSessionConfig]) -> Session:
+def filter_session_events(
+    session: Session, config: Optional[GetSessionConfig]
+) -> Session:
     """Filter session events based on config.
 
     Args:
@@ -281,8 +283,13 @@ async def fallback_search_with_retry(
     """
     for attempt in range(max_retries):
         session = await fallback_search(
-            entity_service, app_name, user_id, session_id,
-            to_adk_session_fn, entity_name, entity_version
+            entity_service,
+            app_name,
+            user_id,
+            session_id,
+            to_adk_session_fn,
+            entity_name,
+            entity_version,
         )
 
         if session:

@@ -7,8 +7,8 @@ from typing import List
 from application.services.github.github_service import GitHubService
 from common.config.config import CLIENT_GIT_BRANCH
 
-from .models import EntityInfo, WorkflowInfo, RequirementInfo, RepositoryStructure
 from .entity_parser import EntityParser
+from .models import EntityInfo, RepositoryStructure, RequirementInfo, WorkflowInfo
 from .workflow_parser import WorkflowParser
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,12 @@ class RepositoryParser:
         self.github_service = github_service
 
         # Get resource paths from environment variables
-        python_resources = os.getenv("PYTHON_RESOURCES_PATH", self.DEFAULT_PYTHON_RESOURCES_PATH)
-        java_resources = os.getenv("JAVA_RESOURCES_PATH", self.DEFAULT_JAVA_RESOURCES_PATH)
+        python_resources = os.getenv(
+            "PYTHON_RESOURCES_PATH", self.DEFAULT_PYTHON_RESOURCES_PATH
+        )
+        java_resources = os.getenv(
+            "JAVA_RESOURCES_PATH", self.DEFAULT_JAVA_RESOURCES_PATH
+        )
 
         # Construct full paths for entities, workflows and requirements
         self.PYTHON_ENTITY_PATH = f"{python_resources}/entity"
@@ -43,7 +47,9 @@ class RepositoryParser:
         self.JAVA_REQUIREMENTS_PATH = f"{java_resources}/functional_requirements"
 
         # Initialize parsers
-        self.entity_parser = EntityParser(github_service, self.PYTHON_ENTITY_PATH, self.PYTHON_WORKFLOW_PATH)
+        self.entity_parser = EntityParser(
+            github_service, self.PYTHON_ENTITY_PATH, self.PYTHON_WORKFLOW_PATH
+        )
         self.workflow_parser = WorkflowParser(github_service)
 
         logger.info(f"Initialized RepositoryParser with paths:")
@@ -60,7 +66,9 @@ class RepositoryParser:
         """Wrapper for entity_parser.parse_python_entities (for test compatibility)."""
         return await self.entity_parser.parse_python_entities(repository_name, branch)
 
-    async def detect_app_type(self, repository_name: str, branch: str = CLIENT_GIT_BRANCH) -> str:
+    async def detect_app_type(
+        self, repository_name: str, branch: str = CLIENT_GIT_BRANCH
+    ) -> str:
         """Detect if repository is Python or Java application.
 
         Args:
@@ -87,13 +95,13 @@ class RepositoryParser:
             return "java"
 
         # Default to Python
-        logger.warning(f"Could not detect app type for {repository_name}, defaulting to Python")
+        logger.warning(
+            f"Could not detect app type for {repository_name}, defaulting to Python"
+        )
         return "python"
 
     async def parse_repository(
-        self,
-        repository_name: str,
-        branch: str = CLIENT_GIT_BRANCH
+        self, repository_name: str, branch: str = CLIENT_GIT_BRANCH
     ) -> RepositoryStructure:
         """Parse complete repository structure.
 
@@ -112,13 +120,25 @@ class RepositoryParser:
 
         # Parse based on app type
         if app_type == "python":
-            entities = await self.entity_parser.parse_python_entities(repository_name, branch)
-            workflows = await self.workflow_parser.parse_workflows(repository_name, branch, self.PYTHON_WORKFLOW_PATH)
-            requirements = await self._parse_requirements(repository_name, branch, self.PYTHON_REQUIREMENTS_PATH)
+            entities = await self.entity_parser.parse_python_entities(
+                repository_name, branch
+            )
+            workflows = await self.workflow_parser.parse_workflows(
+                repository_name, branch, self.PYTHON_WORKFLOW_PATH
+            )
+            requirements = await self._parse_requirements(
+                repository_name, branch, self.PYTHON_REQUIREMENTS_PATH
+            )
         else:
-            entities = await self.entity_parser.parse_java_entities(repository_name, branch)
-            workflows = await self.workflow_parser.parse_workflows(repository_name, branch, self.JAVA_WORKFLOW_PATH)
-            requirements = await self._parse_requirements(repository_name, branch, self.JAVA_REQUIREMENTS_PATH)
+            entities = await self.entity_parser.parse_java_entities(
+                repository_name, branch
+            )
+            workflows = await self.workflow_parser.parse_workflows(
+                repository_name, branch, self.JAVA_WORKFLOW_PATH
+            )
+            requirements = await self._parse_requirements(
+                repository_name, branch, self.JAVA_REQUIREMENTS_PATH
+            )
 
         return RepositoryStructure(
             app_type=app_type,
@@ -126,14 +146,11 @@ class RepositoryParser:
             workflows=workflows,
             requirements=requirements,
             branch=branch,
-            repository_name=repository_name
+            repository_name=repository_name,
         )
 
     async def _parse_requirements(
-        self,
-        repository_name: str,
-        branch: str,
-        requirements_path: str
+        self, repository_name: str, branch: str, requirements_path: str
     ) -> List[RequirementInfo]:
         """Parse functional requirement files recursively."""
         requirements = []
@@ -146,15 +163,19 @@ class RepositoryParser:
                 )
 
                 for item in items:
-                    if item.is_file and not item.name.startswith('_'):
+                    if item.is_file and not item.name.startswith("_"):
                         # Accept markdown, text, and other common doc formats
-                        if any(item.name.endswith(ext) for ext in ['.md', '.txt', '.rst', '.adoc']):
-                            requirements.append(RequirementInfo(
-                                file_name=item.name,
-                                file_path=item.path
-                            ))
+                        if any(
+                            item.name.endswith(ext)
+                            for ext in [".md", ".txt", ".rst", ".adoc"]
+                        ):
+                            requirements.append(
+                                RequirementInfo(
+                                    file_name=item.name, file_path=item.path
+                                )
+                            )
                             logger.info(f"  Found requirement: {item.path}")
-                    elif item.is_directory and not item.name.startswith('.'):
+                    elif item.is_directory and not item.name.startswith("."):
                         # Recursively scan subdirectories
                         await scan_directory(item.path)
             except Exception as e:

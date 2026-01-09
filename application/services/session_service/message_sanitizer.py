@@ -35,12 +35,12 @@ def sanitize_adk_session_events(events: List[Any]) -> List[Any]:
 
         for idx, event in enumerate(events):
             # Check if event has content with messages
-            if not hasattr(event, 'content') or not event.content:
+            if not hasattr(event, "content") or not event.content:
                 sanitized_events.append(event)
                 continue
 
             # Check if content has parts (ADK message structure)
-            if not hasattr(event.content, 'parts') or not event.content.parts:
+            if not hasattr(event.content, "parts") or not event.content.parts:
                 sanitized_events.append(event)
                 continue
 
@@ -52,17 +52,17 @@ def sanitize_adk_session_events(events: List[Any]) -> List[Any]:
 
             for part in event.content.parts:
                 # Check for function_call (tool call)
-                if hasattr(part, 'function_call') and part.function_call:
+                if hasattr(part, "function_call") and part.function_call:
                     has_tool_call = True
-                    call_id = getattr(part.function_call, 'id', None)
+                    call_id = getattr(part.function_call, "id", None)
                     if call_id:
                         tool_call_ids_in_event.append(call_id)
                         pending_tool_calls[call_id] = idx
 
                 # Check for function_response (tool response)
-                if hasattr(part, 'function_response') and part.function_response:
+                if hasattr(part, "function_response") and part.function_response:
                     has_tool_response = True
-                    response_id = getattr(part.function_response, 'id', None)
+                    response_id = getattr(part.function_response, "id", None)
                     if response_id and response_id in pending_tool_calls:
                         tool_response_ids_in_event.append(response_id)
                         # Remove from pending
@@ -81,7 +81,9 @@ def sanitize_adk_session_events(events: List[Any]) -> List[Any]:
                 f"Tool call IDs: {list(pending_tool_calls.keys())}"
             )
             sanitized_events = sanitized_events[:earliest_incomplete_idx]
-            logger.info(f"Session events sanitized: {len(events)} -> {len(sanitized_events)}")
+            logger.info(
+                f"Session events sanitized: {len(events)} -> {len(sanitized_events)}"
+            )
 
         return sanitized_events
 

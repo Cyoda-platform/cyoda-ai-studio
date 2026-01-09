@@ -11,18 +11,17 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from ....common.constants import EXT_JSON
-
-from .file_operations import find_json_file_in_directory, parse_json_file
-from .resource_builders import (
-    extract_workflow_entity_name,
-    create_resource_dict,
-)
 from .directory_scanner import (
     get_version_sort_key,
     parse_direct_resource_file,
     parse_versioned_resource,
-    scan_versioned_directory,
     scan_unversioned_directory,
+    scan_versioned_directory,
+)
+from .file_operations import find_json_file_in_directory, parse_json_file
+from .resource_builders import (
+    create_resource_dict,
+    extract_workflow_entity_name,
 )
 
 logger = logging.getLogger(__name__)

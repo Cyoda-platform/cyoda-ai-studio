@@ -10,7 +10,6 @@ from application.agents.shared.streaming_callback import accumulate_streaming_re
 
 from .entity_management_tools import create_entity, delete_entity, update_entity
 
-
 entity_management_agent = LlmAgent(
     name="entity_management_agent",
     model=get_model_config(),
@@ -23,4 +22,3 @@ entity_management_agent = LlmAgent(
     ],
     after_agent_callback=accumulate_streaming_response,
 )
-

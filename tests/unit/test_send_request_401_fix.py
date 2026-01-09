@@ -1,11 +1,12 @@
 """Test for the send_request function 401 status code fix."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
-import httpx
 
-from common.utils.utils import send_request
+import httpx
+import pytest
+
 from common.exception.exceptions import InvalidTokenException
+from common.utils.utils import send_request
 
 
 @pytest.mark.asyncio
@@ -28,7 +29,7 @@ async def test_send_request_raises_invalid_token_exception_on_401_get():
             await send_request(
                 headers={"Authorization": "Bearer test_token"},
                 url="https://test.example.com/api/v1",
-                method="GET"
+                method="GET",
             )
 
         # Verify the exception message contains the URL
@@ -58,7 +59,7 @@ async def test_send_request_raises_invalid_token_exception_on_401_post():
                 headers={"Authorization": "Bearer test_token"},
                 url="https://test.example.com/api/v1",
                 method="POST",
-                json={"test": "data"}
+                json={"test": "data"},
             )
 
         # Verify the exception message contains the URL
@@ -86,7 +87,7 @@ async def test_send_request_raises_invalid_token_exception_on_401_put():
                 headers={"Authorization": "Bearer test_token"},
                 url="https://test.example.com/api/v1",
                 method="PUT",
-                json={"test": "data"}
+                json={"test": "data"},
             )
 
         # Verify the exception message contains the URL
@@ -113,7 +114,7 @@ async def test_send_request_raises_invalid_token_exception_on_401_delete():
             await send_request(
                 headers={"Authorization": "Bearer test_token"},
                 url="https://test.example.com/api/v1",
-                method="DELETE"
+                method="DELETE",
             )
 
         # Verify the exception message contains the URL

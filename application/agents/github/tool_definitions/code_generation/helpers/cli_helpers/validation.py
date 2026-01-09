@@ -76,9 +76,15 @@ def _extract_cli_context(
     if not tool_context:
         return False, f"ERROR: Tool context not available.{STOP_ON_ERROR}", None
 
-    language, repository_path, branch_name, repository_name, session_id, repository_type, conversation_id = (
-        _extract_context_values(language, repository_path, branch_name, tool_context)
-    )
+    (
+        language,
+        repository_path,
+        branch_name,
+        repository_name,
+        session_id,
+        repository_type,
+        conversation_id,
+    ) = _extract_context_values(language, repository_path, branch_name, tool_context)
 
     error_msg = _validate_cli_parameters(language, repository_path, branch_name)
     if error_msg:
@@ -126,7 +132,9 @@ async def _check_build_already_started(
     return False, None
 
 
-async def _validate_branch_not_protected(branch_name: str) -> tuple[bool, Optional[str]]:
+async def _validate_branch_not_protected(
+    branch_name: str,
+) -> tuple[bool, Optional[str]]:
     """Validate that branch is not protected.
 
     Args:

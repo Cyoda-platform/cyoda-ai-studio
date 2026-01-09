@@ -1,0 +1,58 @@
+{
+  "eval_set_id": "github_scenario_add_a_requirement_document_to_the_repository_for_a",
+  "name": "github_scenario_add_a_requirement_document_to_the_repository_for_a",
+  "description": "Test case for: As a user, I want to add a requirement document to the repository for a customer management system.",
+  "eval_cases": [
+    {
+      "eval_id": "gh_add_requirements_doc",
+      "conversation": [
+        {
+          "invocation_id": "e-6d55d260-d7c7-410b-8d6d-afccaf3977c5",
+          "user_content": {
+            "parts": [
+              {
+                "text": "add a requirement document to the repository for a customer management system."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nSince we're creating a requirements document for a customer management system, we'll initialize the repository with the appropriate Cyoda template and then add the requirements file into the functional requirements directory so it\u2019s tracked and reviewable. Before I can save anything, please choose how you'd like the repository and branch to be created.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767901727.3300192
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767901727.3300211
+    }
+  ],
+  "creation_timestamp": 1767901727.3300219
+}

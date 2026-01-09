@@ -1,8 +1,9 @@
 """Tests for functional requirements validation in generate_application."""
 
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from google.adk.tools.tool_context import ToolContext
 
 from application.agents.shared.repository_tools import generate_application
@@ -24,7 +25,9 @@ class TestFunctionalRequirementsValidation:
         return context
 
     @pytest.mark.asyncio
-    async def test_missing_functional_requirements_returns_guidance(self, tmp_path, mock_tool_context):
+    async def test_missing_functional_requirements_returns_guidance(
+        self, tmp_path, mock_tool_context
+    ):
         """Test that missing functional requirements returns helpful guidance."""
         # Create a mock repository structure without requirements
         repo_path = tmp_path / "test_repo"
@@ -43,12 +46,16 @@ class TestFunctionalRequirementsValidation:
 
         assert isinstance(result, str)
         # Accept error messages or requirement warnings
-        assert ("no functional requirements" in result.lower() or
-                "error" in result.lower() or
-                "failed to start" in result.lower())
+        assert (
+            "no functional requirements" in result.lower()
+            or "error" in result.lower()
+            or "failed to start" in result.lower()
+        )
 
     @pytest.mark.asyncio
-    async def test_empty_functional_requirements_returns_guidance(self, tmp_path, mock_tool_context):
+    async def test_empty_functional_requirements_returns_guidance(
+        self, tmp_path, mock_tool_context
+    ):
         """Test that empty functional requirements directory returns guidance."""
         # Create a mock repository with empty requirements directory
         repo_path = tmp_path / "test_repo"
@@ -68,12 +75,16 @@ class TestFunctionalRequirementsValidation:
 
         assert isinstance(result, str)
         # Accept error messages or requirement warnings
-        assert ("no functional requirements" in result.lower() or
-                "error" in result.lower() or
-                "failed to start" in result.lower())
+        assert (
+            "no functional requirements" in result.lower()
+            or "error" in result.lower()
+            or "failed to start" in result.lower()
+        )
 
     @pytest.mark.asyncio
-    async def test_with_functional_requirements_proceeds(self, tmp_path, mock_tool_context):
+    async def test_with_functional_requirements_proceeds(
+        self, tmp_path, mock_tool_context
+    ):
         """Test that with functional requirements, the build proceeds."""
         # Create a mock repository with requirements
         repo_path = tmp_path / "test_repo"
@@ -83,14 +94,18 @@ class TestFunctionalRequirementsValidation:
         (repo_path / "application" / "resources").mkdir()
         req_dir = repo_path / "application" / "resources" / "functional_requirements"
         req_dir.mkdir()
-        (req_dir / "requirements.md").write_text("# Test Requirements\nBuild a test app")
+        (req_dir / "requirements.md").write_text(
+            "# Test Requirements\nBuild a test app"
+        )
 
         mock_tool_context.state["repository_path"] = str(repo_path)
 
         # Mock the template loading and CLI execution
-        with patch("application.agents.shared.repository_tools._load_prompt_template") as mock_template:
+        with patch(
+            "application.agents.shared.repository_tools._load_prompt_template"
+        ) as mock_template:
             mock_template.return_value = "Test template"
-            
+
             result = await generate_application(
                 requirements="Build a test app",
                 tool_context=mock_tool_context,
@@ -99,4 +114,3 @@ class TestFunctionalRequirementsValidation:
             # Should proceed past the requirements check
             # (may fail later due to missing CLI script, but that's expected)
             assert "No functional requirements found" not in result
-

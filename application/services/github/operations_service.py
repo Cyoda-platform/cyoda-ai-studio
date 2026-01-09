@@ -6,12 +6,12 @@ All functionality has been split into focused modules within operations_service/
 
 # Re-export all public APIs from the package
 from .operations_service import (
-    GitHubOperationsService,
-    extract_repository_name_from_url,
-    determine_repository_path,
-    verify_repository_exists,
-    get_authenticated_clone_url,
     BUILDS_DIR,
+    GitHubOperationsService,
+    determine_repository_path,
+    extract_repository_name_from_url,
+    get_authenticated_clone_url,
+    verify_repository_exists,
 )
 
 # Maintain backward compatibility with underscore-prefixed names

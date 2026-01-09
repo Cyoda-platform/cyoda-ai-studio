@@ -52,7 +52,9 @@ LOG_INDEX_PATTERN_ENVIRONMENT = "logs-client-{org_namespace}-{env_namespace}*"
 
 # Elasticsearch index pattern for application logs
 # Example: logs-client-1-myorg-dev-myapp*
-LOG_INDEX_PATTERN_APPLICATION = "logs-client-1-{org_namespace}-{env_namespace}-{app_namespace}*"
+LOG_INDEX_PATTERN_APPLICATION = (
+    "logs-client-1-{org_namespace}-{env_namespace}-{app_namespace}*"
+)
 
 # ============================================================================
 # Token Expiry Configuration

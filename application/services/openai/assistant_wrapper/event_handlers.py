@@ -27,7 +27,7 @@ class EventHandlers:
         Returns:
             Tuple of (updated_accumulated_content, content_to_yield)
         """
-        if hasattr(event.data, 'delta'):
+        if hasattr(event.data, "delta"):
             content = event.data.delta
             if content:
                 logger.debug(f"Raw response delta: {content[:50]}")
@@ -48,15 +48,15 @@ class EventHandlers:
         Returns:
             Tuple of (updated_accumulated_content, content_to_yield)
         """
-        if not hasattr(event, 'item'):
+        if not hasattr(event, "item"):
             return accumulated_content, None
 
         # Handle message output items
         if event.item.type == ITEM_TYPE_MESSAGE_OUTPUT:
-            if hasattr(event.item, 'content'):
+            if hasattr(event.item, "content"):
                 # Content is a list of content blocks
                 for content_block in event.item.content:
-                    if hasattr(content_block, 'text'):
+                    if hasattr(content_block, "text"):
                         text = content_block.text
                         if text and text not in accumulated_content:
                             logger.debug(f"Message output: {text[:50]}")

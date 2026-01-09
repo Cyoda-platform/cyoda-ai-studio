@@ -127,11 +127,9 @@ class VisionService:
         Raises:
             ValueError: If no image or multiple images provided
         """
-        image_count = sum([
-            image_url is not None,
-            image_path is not None,
-            image_bytes is not None
-        ])
+        image_count = sum(
+            [image_url is not None, image_path is not None, image_bytes is not None]
+        )
 
         if image_count == 0:
             raise ValueError("At least one image source must be provided")
@@ -158,10 +156,7 @@ class VisionService:
         """
         if image_url:
             logger.debug(f"Building vision message with URL: {image_url}")
-            return {
-                "type": "image_url",
-                "image_url": {"url": image_url}
-            }
+            return {"type": "image_url", "image_url": {"url": image_url}}
 
         if image_path:
             logger.debug(f"Building vision message with file: {image_path}")
@@ -170,16 +165,14 @@ class VisionService:
                 "type": "image_url",
                 "image_url": {
                     "url": f"data:image/{image_format};base64,{base64_image}"
-                }
+                },
             }
 
         base64_image = VisionService.encode_image_from_bytes(image_bytes, image_format)
         logger.debug(f"Building vision message with bytes: {len(image_bytes)} bytes")
         return {
             "type": "image_url",
-            "image_url": {
-                "url": f"data:image/{image_format};base64,{base64_image}"
-            }
+            "image_url": {"url": f"data:image/{image_format};base64,{base64_image}"},
         }
 
     @staticmethod
@@ -251,21 +244,20 @@ class VisionService:
             for i, image in enumerate(images):
                 if isinstance(image, str):
                     # Assume it's a URL
-                    content.append({
-                        "type": "image_url",
-                        "image_url": {"url": image}
-                    })
+                    content.append({"type": "image_url", "image_url": {"url": image}})
                 elif isinstance(image, bytes):
                     # Encode bytes to base64
                     base64_image = VisionService.encode_image_from_bytes(
                         image, image_format
                     )
-                    content.append({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/{image_format};base64,{base64_image}"
+                    content.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/{image_format};base64,{base64_image}"
+                            },
                         }
-                    })
+                    )
                 else:
                     raise ValueError(f"Invalid image type at index {i}: {type(image)}")
 
@@ -296,4 +288,3 @@ class VisionService:
         else:
             logger.warning(f"Model {model} may not support vision, using gpt-4o")
             return "gpt-4o"
-

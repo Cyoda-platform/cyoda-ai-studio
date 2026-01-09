@@ -13,7 +13,9 @@ from ...common.formatters.knowledge_formatters import (
 )
 
 
-async def explain_cyoda_pattern(tool_context: ToolContext, pattern: str) -> dict[str, Any]:
+async def explain_cyoda_pattern(
+    tool_context: ToolContext, pattern: str
+) -> dict[str, Any]:
     """Explain Cyoda design patterns and best practices.
 
     Args:

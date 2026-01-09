@@ -8,9 +8,10 @@ Outputs full API documentation map to the outputs directory.
 import json
 import os
 import time
-import requests
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+
+import requests
 
 
 def fetch_openapi_spec(url: str) -> Dict[str, Any]:
@@ -56,9 +57,15 @@ def format_endpoint_doc(path: str, method: str, operation: Dict[str, Any]) -> st
         for param in operation["parameters"]:
             param_name = param.get("name", "")
             param_in = param.get("in", "")
-            param_required = " (required)" if param.get("required", False) else " (optional)"
+            param_required = (
+                " (required)" if param.get("required", False) else " (optional)"
+            )
             param_desc = param.get("description", "")
-            param_type = param.get("schema", {}).get("type", "") if "schema" in param else param.get("type", "")
+            param_type = (
+                param.get("schema", {}).get("type", "")
+                if "schema" in param
+                else param.get("type", "")
+            )
 
             doc_lines.append(f"  - {param_name} ({param_in}){param_required}")
             if param_type:
@@ -80,7 +87,9 @@ def format_endpoint_doc(path: str, method: str, operation: Dict[str, Any]) -> st
             for content_type, content_schema in request_body["content"].items():
                 doc_lines.append(f"  Content-Type: {content_type}")
                 if "schema" in content_schema:
-                    doc_lines.append(f"  Schema: {json.dumps(content_schema['schema'], indent=4)}")
+                    doc_lines.append(
+                        f"  Schema: {json.dumps(content_schema['schema'], indent=4)}"
+                    )
         doc_lines.append("")
 
     # Responses
@@ -94,7 +103,7 @@ def format_endpoint_doc(path: str, method: str, operation: Dict[str, Any]) -> st
                 for content_type, content_schema in response["content"].items():
                     doc_lines.append(f"    Content-Type: {content_type}")
                     if "schema" in content_schema:
-                        schema_str = json.dumps(content_schema['schema'], indent=6)
+                        schema_str = json.dumps(content_schema["schema"], indent=6)
                         doc_lines.append(f"    Schema: {schema_str}")
             doc_lines.append("")
 
@@ -136,7 +145,7 @@ def scrape_cyoda_api_docs():
 
     # Save the full OpenAPI spec
     spec_file = output_dir / "openapi_spec.json"
-    with open(spec_file, 'w', encoding='utf-8') as f:
+    with open(spec_file, "w", encoding="utf-8") as f:
         json.dump(spec, f, indent=2, ensure_ascii=False)
     print(f"Saved full OpenAPI spec to {spec_file}")
     print("")
@@ -181,7 +190,7 @@ def scrape_cyoda_api_docs():
 
     # Save all endpoints in one file
     all_endpoints_file = output_dir / "all_api_endpoints.txt"
-    with open(all_endpoints_file, 'w', encoding='utf-8') as f:
+    with open(all_endpoints_file, "w", encoding="utf-8") as f:
         f.write(f"CYODA API DOCUMENTATION\n")
         f.write(f"{'=' * 80}\n\n")
         f.write(f"Total Endpoints: {len(all_endpoints)}\n")
@@ -197,7 +206,7 @@ def scrape_cyoda_api_docs():
         "openapi_version": spec.get("openapi", ""),
         "base_url": base_url,
         "openapi_spec_url": openapi_url,
-        "scraped_at": time.strftime('%Y-%m-%d %H:%M:%S'),
+        "scraped_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "total_endpoints": len(all_endpoints),
         "endpoints": all_endpoints,
         "servers": spec.get("servers", []),
@@ -205,7 +214,7 @@ def scrape_cyoda_api_docs():
     }
 
     map_file = output_dir / "api_docs_map.json"
-    with open(map_file, 'w', encoding='utf-8') as f:
+    with open(map_file, "w", encoding="utf-8") as f:
         json.dump(map_data, f, indent=2, ensure_ascii=False)
 
     print(f"Saved API map to {map_file}")
@@ -220,7 +229,7 @@ def scrape_cyoda_api_docs():
 
     # Save grouped by tags
     tags_file = output_dir / "api_endpoints_by_tag.txt"
-    with open(tags_file, 'w', encoding='utf-8') as f:
+    with open(tags_file, "w", encoding="utf-8") as f:
         f.write(f"CYODA API ENDPOINTS GROUPED BY TAG\n")
         f.write(f"{'=' * 80}\n\n")
 
@@ -229,7 +238,7 @@ def scrape_cyoda_api_docs():
             f.write(f"{'-' * 80}\n")
             for endpoint in endpoints:
                 f.write(f"{endpoint['method']:7} {endpoint['path']}\n")
-                if endpoint['summary']:
+                if endpoint["summary"]:
                     f.write(f"        {endpoint['summary']}\n")
             f.write("\n")
 
@@ -237,7 +246,7 @@ def scrape_cyoda_api_docs():
 
     # Create sitemap for LLMs
     sitemap_file = output_dir / "cyoda-api-sitemap-llms.txt"
-    with open(sitemap_file, 'w', encoding='utf-8') as f:
+    with open(sitemap_file, "w", encoding="utf-8") as f:
         f.write(f"# Cyoda API Reference\n\n")
         f.write(f"Base URL: `{base_url}`\n")
         f.write(f"OpenAPI Spec: `{openapi_url}`\n\n")
@@ -246,16 +255,16 @@ def scrape_cyoda_api_docs():
             f.write(f"## {tag}\n\n")
             for endpoint in endpoints:
                 # Create URL-safe tag and path
-                tag_safe = tag.replace(', ', '-').replace(' ', '-')
-                path_safe = endpoint['path'].replace('{', '%7B').replace('}', '%7D')
-                method = endpoint['method']
+                tag_safe = tag.replace(", ", "-").replace(" ", "-")
+                path_safe = endpoint["path"].replace("{", "%7B").replace("}", "%7D")
+                method = endpoint["method"]
 
                 # Build the URL
                 url = f"{base_url}#tag/{tag_safe}/{method}{path_safe}"
 
                 # Write the line
                 f.write(f"- [{method} {endpoint['path']}]({url})")
-                if endpoint['summary']:
+                if endpoint["summary"]:
                     f.write(f" - {endpoint['summary']}")
                 f.write("\n")
             f.write("\n")
@@ -264,7 +273,7 @@ def scrape_cyoda_api_docs():
 
     # Create descriptions document for LLMs
     descriptions_file = output_dir / "cyoda-api-descriptions-llms.txt"
-    with open(descriptions_file, 'w', encoding='utf-8') as f:
+    with open(descriptions_file, "w", encoding="utf-8") as f:
         f.write(f"# Cyoda API Reference - Sections\n\n")
         f.write(f"Base URL: `{base_url}`\n")
         f.write(f"OpenAPI Spec: `{openapi_url}`\n\n")
@@ -273,12 +282,14 @@ def scrape_cyoda_api_docs():
 
         # Create a map of tag descriptions from spec
         tags_info = spec.get("tags", [])
-        tag_descriptions = {tag.get("name", ""): tag.get("description", "") for tag in tags_info}
+        tag_descriptions = {
+            tag.get("name", ""): tag.get("description", "") for tag in tags_info
+        }
 
         # Iterate through all tags found in endpoints
         for tag in sorted(tags_map.keys()):
             # Create URL-safe tag identifier (lowercase, spaces/commas to hyphens)
-            tag_url_safe = tag.lower().replace(', ', '-').replace(' ', '-')
+            tag_url_safe = tag.lower().replace(", ", "-").replace(" ", "-")
 
             # Build the description URL
             desc_url = f"{base_url}#description/{tag_url_safe}"
@@ -307,7 +318,9 @@ def scrape_cyoda_api_docs():
     print("")
     print("Generated files:")
     print(f"  - {sitemap_file.name} (API sitemap with navigation links for LLMs)")
-    print(f"  - {descriptions_file.name} (API section descriptions with navigation links)")
+    print(
+        f"  - {descriptions_file.name} (API section descriptions with navigation links)"
+    )
     print(f"  - {spec_file.name} (Full OpenAPI spec)")
     print(f"  - {map_file.name} (API map with all endpoints)")
     print(f"  - {all_endpoints_file.name} (All endpoints documentation)")
@@ -321,4 +334,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()

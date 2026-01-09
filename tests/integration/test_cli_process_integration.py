@@ -3,6 +3,7 @@
 import asyncio
 import tempfile
 from pathlib import Path
+
 import pytest
 
 from application.agents.shared.repository_tools.cli_process import start_cli_process
@@ -12,13 +13,14 @@ from application.agents.shared.repository_tools.cli_process import start_cli_pro
 async def test_start_cli_process_actual_subprocess():
     """Test starting a real subprocess and verifying it runs."""
     # Create a simple test script
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
         f.write('#!/bin/bash\necho "test output"\nexit 0\n')
         script_path = f.name
 
     try:
         # Make the script executable
         import os
+
         os.chmod(script_path, 0o755)
 
         # Start the process
@@ -42,6 +44,7 @@ async def test_start_cli_process_actual_subprocess():
     finally:
         # Cleanup
         import os
+
         if Path(script_path).exists():
             os.unlink(script_path)
 
@@ -50,13 +53,14 @@ async def test_start_cli_process_actual_subprocess():
 async def test_start_cli_process_with_error():
     """Test starting a subprocess that fails."""
     # Create a test script that fails
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
-        f.write('#!/bin/bash\nexit 1\n')
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
+        f.write("#!/bin/bash\nexit 1\n")
         script_path = f.name
 
     try:
         # Make the script executable
         import os
+
         os.chmod(script_path, 0o755)
 
         # Start the process
@@ -78,6 +82,7 @@ async def test_start_cli_process_with_error():
     finally:
         # Cleanup
         import os
+
         if Path(script_path).exists():
             os.unlink(script_path)
 
@@ -96,7 +101,7 @@ async def test_start_cli_process_file_output():
         stderr_path = stderr_file.name
 
     # Create a test script
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
         f.write('#!/bin/bash\necho "stdout message"\necho "stderr message" >&2\n')
         script_path = f.name
 
@@ -123,7 +128,7 @@ async def test_start_cli_process_file_output():
         await process.wait()
 
         # Check output files contain data
-        with open(stdout_path, 'r') as f:
+        with open(stdout_path, "r") as f:
             stdout_content = f.read()
             assert len(stdout_content) > 0
 

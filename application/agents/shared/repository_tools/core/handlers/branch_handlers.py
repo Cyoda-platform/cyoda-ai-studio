@@ -14,10 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _handle_new_branch(
-    target_path: Path,
-    base_branch: str,
-    branch_name: str,
-    user_repo_url: Optional[str]
+    target_path: Path, base_branch: str, branch_name: str, user_repo_url: Optional[str]
 ) -> tuple[bool, Optional[str]]:
     """Create new branch and return success status.
 
@@ -36,8 +33,7 @@ async def _handle_new_branch(
 
 
 async def _handle_existing_branch(
-    target_path: Path,
-    branch_name: str
+    target_path: Path, branch_name: str
 ) -> tuple[bool, Optional[str]]:
     """Checkout existing branch and return success status.
 
@@ -76,6 +72,7 @@ async def _handle_branch_setup(
         Error message if failed, None if successful
     """
     from common.config.config import CLIENT_GIT_BRANCH
+
     base_branch = CLIENT_GIT_BRANCH
 
     if use_existing_branch:

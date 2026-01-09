@@ -8,13 +8,15 @@ import logging
 import os
 from typing import Optional
 
-from common.config.config import (
-    PROJECT_DIR,
-    CLIENT_GIT_BRANCH,
-    CLONE_REPO,
+from application.services.github.auth.installation_token_manager import (
+    InstallationTokenManager,
 )
 from application.services.github.models.types import GitOperationResult
-from application.services.github.auth.installation_token_manager import InstallationTokenManager
+from common.config.config import (
+    CLIENT_GIT_BRANCH,
+    CLONE_REPO,
+    PROJECT_DIR,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +37,12 @@ async def _perform_git_clone(repo_url: str, clone_dir: str) -> Optional[str]:
         Error message if clone failed, None if successful.
     """
     clone_process = await asyncio.create_subprocess_exec(
-        'git', 'clone', repo_url, clone_dir,
+        "git",
+        "clone",
+        repo_url,
+        clone_dir,
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await clone_process.communicate()
 
@@ -50,9 +55,7 @@ async def _perform_git_clone(repo_url: str, clone_dir: str) -> Optional[str]:
 
 
 async def _checkout_base_and_create_branch(
-    clone_dir: str,
-    git_branch_id: str,
-    base_branch: Optional[str]
+    clone_dir: str, git_branch_id: str, base_branch: Optional[str]
 ) -> Optional[str]:
     """Checkout base branch and create new feature branch.
 
@@ -68,10 +71,15 @@ async def _checkout_base_and_create_branch(
 
     # Checkout base branch
     base_checkout_process = await asyncio.create_subprocess_exec(
-        'git', '--git-dir', f"{clone_dir}/.git", '--work-tree', clone_dir,
-        'checkout', base_branch,
+        "git",
+        "--git-dir",
+        f"{clone_dir}/.git",
+        "--work-tree",
+        clone_dir,
+        "checkout",
+        base_branch,
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await base_checkout_process.communicate()
 
@@ -82,10 +90,16 @@ async def _checkout_base_and_create_branch(
 
     # Create new branch
     checkout_process = await asyncio.create_subprocess_exec(
-        'git', '--git-dir', f"{clone_dir}/.git", '--work-tree', clone_dir,
-        'checkout', '-b', str(git_branch_id),
+        "git",
+        "--git-dir",
+        f"{clone_dir}/.git",
+        "--work-tree",
+        clone_dir,
+        "checkout",
+        "-b",
+        str(git_branch_id),
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await checkout_process.communicate()
 

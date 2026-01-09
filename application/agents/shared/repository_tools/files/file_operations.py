@@ -67,7 +67,9 @@ async def _save_all_files(files: list[dict[str, str]], target_dir: Path) -> list
         content = file_info.get("content")
 
         if not filename or not content:
-            logger.warning(f"⚠️ Skipping file with missing filename or content: {file_info}")
+            logger.warning(
+                f"⚠️ Skipping file with missing filename or content: {file_info}"
+            )
             continue
 
         if _save_file_to_disk(filename, content, target_dir):

@@ -18,23 +18,26 @@ from application.agents.github.tool_definitions.common.utils import (
 from ..authentication import (
     CommitContext,
     _extract_auth_from_context,
-    _validate_auth_params,
     _refresh_git_authentication,
+    _validate_auth_params,
 )
 from .diff_operations import DiffResult, _get_staged_diff
 from .git_commands import (
-    _stage_all_changes,
-    _configure_git_user,
     _commit_changes,
+    _configure_git_user,
     _get_current_remote_url,
     _push_changes,
+    _stage_all_changes,
 )
 
 logger = logging.getLogger(__name__)
 
 
 async def _execute_commit_push_workflow(
-    repository_path_str: str, branch_name: str, repo_url: Optional[str], installation_id: Optional[str]
+    repository_path_str: str,
+    branch_name: str,
+    repo_url: Optional[str],
+    installation_id: Optional[str],
 ) -> tuple[bool, DiffResult, Optional[str]]:
     """Execute the commit and push workflow steps.
 
@@ -49,7 +52,9 @@ async def _execute_commit_push_workflow(
     """
     # Step 1: Refresh authentication if credentials available
     if repo_url and installation_id:
-        await _refresh_git_authentication(repository_path_str, repo_url, installation_id)
+        await _refresh_git_authentication(
+            repository_path_str, repo_url, installation_id
+        )
 
     # Step 2: Stage all changes
     await _stage_all_changes(repository_path_str)

@@ -16,8 +16,8 @@ __all__ = ["ToolContext"]
 from application.agents.cyoda_data_agent.user_service_container import (
     UserServiceContainer,
 )
-from common.service.entity_service import SearchConditionRequest
 from common.search import CyodaOperator
+from common.service.entity_service import SearchConditionRequest
 
 logger = logging.getLogger(__name__)
 
@@ -44,14 +44,18 @@ async def get_entity(
         Entity data or error information
     """
     try:
-        logger.info(f"Getting entity {entity_id} from {cyoda_host} with client {client_id}")
+        logger.info(
+            f"Getting entity {entity_id} from {cyoda_host} with client {client_id}"
+        )
         container = UserServiceContainer(
             client_id=client_id,
             client_secret=client_secret,
             cyoda_host=cyoda_host,
         )
         entity_service = container.get_entity_service()
-        result = await entity_service.get_by_id(entity_id, entity_model, entity_version="1")
+        result = await entity_service.get_by_id(
+            entity_id, entity_model, entity_version="1"
+        )
         return {"success": True, "data": result}
     except Exception as e:
         logger.exception(f"Failed to get entity: {e}")
@@ -90,18 +94,20 @@ async def search_entities(
 
         # Convert dict conditions to SearchConditionRequest
         from common.service.entity_service import SearchCondition
+
         conditions = [
             SearchCondition(field=k, operator=CyodaOperator.EQUALS, value=v)
             for k, v in search_conditions.items()
         ]
         search_request = SearchConditionRequest(conditions=conditions)
 
-        results = await entity_service.search(entity_model, search_request, entity_version="1")
+        results = await entity_service.search(
+            entity_model, search_request, entity_version="1"
+        )
         return {"success": True, "data": results}
     except Exception as e:
         logger.exception(f"Failed to search entities: {e}")
         return {"success": False, "error": str(e)}
-
 
 
 async def find_all_entities(
@@ -124,7 +130,9 @@ async def find_all_entities(
         List of all entities or error information
     """
     try:
-        logger.info(f"Finding all {entity_model} in {cyoda_host} with client {client_id}")
+        logger.info(
+            f"Finding all {entity_model} in {cyoda_host} with client {client_id}"
+        )
         container = UserServiceContainer(
             client_id=client_id,
             client_secret=client_secret,
@@ -136,4 +144,3 @@ async def find_all_entities(
     except Exception as e:
         logger.exception(f"Failed to find all entities: {e}")
         return {"success": False, "error": str(e)}
-

@@ -10,13 +10,13 @@ import pytest
 
 from common.entity.cyoda_entity import CyodaEntity
 from common.repository.crud_repository import CrudRepository
+from common.search import CyodaOperator
 from common.service.entity_service import (
     EntityMetadata,
     EntityResponse,
     LogicalOperator,
     SearchConditionRequest,
 )
-from common.search import CyodaOperator
 from common.service.service import EntityServiceError, EntityServiceImpl
 
 
@@ -1091,7 +1091,6 @@ class TestEntityServiceImpl:
             )
 
         assert result is None
-
 
     @pytest.mark.asyncio
     async def test_get_items_by_condition_exception(self, service, repository):

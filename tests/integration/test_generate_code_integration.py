@@ -4,11 +4,12 @@ import asyncio
 import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from application.agents.github.tool_definitions.code_generation.tools.generate_code_tool.process_management import (
-    _start_and_register_process,
     _create_and_setup_background_task,
+    _start_and_register_process,
 )
 
 
@@ -41,11 +42,13 @@ async def test_start_and_register_process_creates_output_file():
                 ) as mock_rename:
                     mock_rename.return_value = "/tmp/output_12345.log"
 
-                    success, error_msg, process, output_file = await _start_and_register_process(
-                        mock_context,
-                        Path("/tmp/script.sh"),
-                        "test-model",
-                        prompt_path,
+                    success, error_msg, process, output_file = (
+                        await _start_and_register_process(
+                            mock_context,
+                            Path("/tmp/script.sh"),
+                            "test-model",
+                            prompt_path,
+                        )
                     )
 
                     assert success is True
@@ -82,26 +85,19 @@ async def test_create_and_setup_background_task_with_monitoring():
 
         with patch(
             "application.agents.github.tool_definitions.code_generation.tools.generate_code_tool.process_management._start_monitoring_task",
-            side_effect=async_monitoring_task
+            side_effect=async_monitoring_task,
         ):
-            with patch(
-                "application.agents.github.tool_definitions.code_generation.tools.generate_code_tool.process_management._create_codegen_hook"
-            ) as mock_create_hook:
-                mock_create_hook.return_value = {"type": "hook"}
+            task_id, hook = await _create_and_setup_background_task(
+                mock_context,
+                mock_process,
+                "/tmp/prompt.txt",
+                "/tmp/output.log",
+                "Test request",
+            )
 
-                task_id, hook = await _create_and_setup_background_task(
-                    mock_context,
-                    mock_process,
-                    "/tmp/prompt.txt",
-                    "/tmp/output.log",
-                    "Test request",
-                )
-
-                assert task_id == "task-123"
-                assert hook == {"type": "hook"}
-
-                # Verify hook was created
-                mock_create_hook.assert_called_once()
+            assert task_id == "task-123"
+            # Hook framework removed
+            assert hook is None
 
 
 @pytest.mark.asyncio
@@ -140,19 +136,16 @@ async def test_monitoring_task_actually_starts():
             "application.agents.github.tool_definitions.code_generation.tools.generate_code_tool.process_management._start_monitoring_task",
             side_effect=mock_monitoring_task,
         ) as mock_start_monitoring:
-            with patch(
-                "application.agents.github.tool_definitions.code_generation.tools.generate_code_tool.process_management._create_codegen_hook"
-            ) as mock_create_hook:
-                mock_create_hook.return_value = {}
+            task_id, hook = await _create_and_setup_background_task(
+                mock_context,
+                mock_process,
+                "/tmp/prompt.txt",
+                "/tmp/output.log",
+                "Test request",
+            )
 
-                task_id, hook = await _create_and_setup_background_task(
-                    mock_context,
-                    mock_process,
-                    "/tmp/prompt.txt",
-                    "/tmp/output.log",
-                    "Test request",
-                )
-
-                # Verify the monitoring task was actually awaited
-                assert monitoring_awaited is True
-                assert task_id == "task-123"
+            # Verify the monitoring task was actually awaited
+            assert monitoring_awaited is True
+            assert task_id == "task-123"
+            # Hook framework removed
+            assert hook is None

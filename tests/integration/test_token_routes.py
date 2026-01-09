@@ -9,13 +9,14 @@ Tests the complete HTTP request/response cycle including:
 - Authentication
 """
 
+import json
+from datetime import datetime, timedelta
+
 import pytest
 from quart import Quart
-from datetime import datetime, timedelta
-import json
 
-from application.routes.token import token_bp
 from application.routes.common.error_handlers import register_error_handlers
+from application.routes.token import token_bp
 
 
 @pytest.fixture
@@ -36,6 +37,7 @@ def client(app):
 class TestGetGuestToken:
     """Test guest token generation endpoint."""
 
+
 class TestGenerateTestToken:
     """Test test token generation endpoint."""
 
@@ -43,17 +45,10 @@ class TestGenerateTestToken:
     async def test_generate_test_token_superuser(self, client):
         """Test generating superuser token."""
         # Arrange
-        request_data = {
-            "user_id": "admin",
-            "is_superuser": True,
-            "expiry_hours": 1
-        }
+        request_data = {"user_id": "admin", "is_superuser": True, "expiry_hours": 1}
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
         data = await response.get_json()
 
         # Assert
@@ -71,10 +66,7 @@ class TestGenerateTestToken:
         }
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
         data = await response.get_json()
 
         # Assert
@@ -90,15 +82,10 @@ class TestGenerateTestTokenValidation:
     async def test_missing_user_id(self, client):
         """Test validation fails when user_id is missing."""
         # Arrange
-        request_data = {
-            "is_superuser": False
-        }
+        request_data = {"is_superuser": False}
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
         data = await response.get_json()
 
         # Assert
@@ -112,16 +99,10 @@ class TestGenerateTestTokenValidation:
     async def test_empty_user_id(self, client):
         """Test validation fails when user_id is empty."""
         # Arrange
-        request_data = {
-            "user_id": "",
-            "is_superuser": False
-        }
+        request_data = {"user_id": "", "is_superuser": False}
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
         data = await response.get_json()
 
         # Assert
@@ -132,16 +113,10 @@ class TestGenerateTestTokenValidation:
     async def test_user_id_too_long(self, client):
         """Test validation fails when user_id exceeds max length."""
         # Arrange
-        request_data = {
-            "user_id": "a" * 101,  # Max is 100
-            "is_superuser": False
-        }
+        request_data = {"user_id": "a" * 101, "is_superuser": False}  # Max is 100
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
         data = await response.get_json()
 
         # Assert
@@ -152,16 +127,10 @@ class TestGenerateTestTokenValidation:
     async def test_invalid_expiry_hours_negative(self, client):
         """Test validation fails when expiry_hours is negative."""
         # Arrange
-        request_data = {
-            "user_id": "alice",
-            "expiry_hours": -1
-        }
+        request_data = {"user_id": "alice", "expiry_hours": -1}
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
         data = await response.get_json()
 
         # Assert
@@ -174,14 +143,11 @@ class TestGenerateTestTokenValidation:
         # Arrange
         request_data = {
             "user_id": "alice",
-            "expiry_hours": 9000  # Max is 8760 (1 year)
+            "expiry_hours": 9000,  # Max is 8760 (1 year)
         }
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
         data = await response.get_json()
 
         # Assert
@@ -199,10 +165,7 @@ class TestResponseFormatting:
         request_data = {"user_id": ""}  # Invalid
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
         data = await response.get_json()
 
         # Assert
@@ -219,16 +182,10 @@ class TestEdgeCases:
     async def test_user_id_with_special_characters(self, client):
         """Test user_id with special characters is handled."""
         # Arrange
-        request_data = {
-            "user_id": "user@example.com",
-            "is_superuser": False
-        }
+        request_data = {"user_id": "user@example.com", "is_superuser": False}
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
 
         # Assert - should succeed
         assert response.status_code == 200
@@ -237,16 +194,10 @@ class TestEdgeCases:
     async def test_user_id_with_spaces_trimmed(self, client):
         """Test user_id with leading/trailing spaces is trimmed."""
         # Arrange
-        request_data = {
-            "user_id": "  alice  ",
-            "is_superuser": False
-        }
+        request_data = {"user_id": "  alice  ", "is_superuser": False}
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
         data = await response.get_json()
 
         # Assert
@@ -257,16 +208,10 @@ class TestEdgeCases:
     async def test_expiry_hours_min_boundary(self, client):
         """Test minimum valid expiry_hours (1)."""
         # Arrange
-        request_data = {
-            "user_id": "alice",
-            "expiry_hours": 1
-        }
+        request_data = {"user_id": "alice", "expiry_hours": 1}
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
 
         # Assert
         assert response.status_code == 200
@@ -275,16 +220,10 @@ class TestEdgeCases:
     async def test_expiry_hours_max_boundary(self, client):
         """Test maximum valid expiry_hours (8760 = 1 year)."""
         # Arrange
-        request_data = {
-            "user_id": "alice",
-            "expiry_hours": 8760
-        }
+        request_data = {"user_id": "alice", "expiry_hours": 8760}
 
         # Act
-        response = await client.post(
-            "/api/v1/generate_test_token",
-            json=request_data
-        )
+        response = await client.post("/api/v1/generate_test_token", json=request_data)
 
         # Assert
         assert response.status_code == 200

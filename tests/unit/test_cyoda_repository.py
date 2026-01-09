@@ -1082,7 +1082,12 @@ class TestCyodaRepository:
             }
 
             criteria = {"name": "Test"}
-            result = await repository._send_search_request(sample_meta, criteria, None)
+            search_path = (
+                f"search/{sample_meta['entity_model']}/{sample_meta['entity_version']}"
+            )
+            result = await repository._send_search_request(
+                method="post", path=search_path, data=json.dumps(criteria)
+            )
 
             assert result["status"] == 200
             assert len(result["json"]) == 1
@@ -1098,7 +1103,12 @@ class TestCyodaRepository:
             ]
 
             criteria = {"name": "Test"}
-            result = await repository._send_search_request(sample_meta, criteria, None)
+            search_path = (
+                f"search/{sample_meta['entity_model']}/{sample_meta['entity_version']}"
+            )
+            result = await repository._send_search_request(
+                method="post", path=search_path, data=json.dumps(criteria)
+            )
 
             assert result["status"] == 200
             assert mock_request.call_count == 2

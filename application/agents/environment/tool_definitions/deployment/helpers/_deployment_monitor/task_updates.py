@@ -20,13 +20,13 @@ SUCCESS_LOG_TEMPLATE = "Deployment {build_id} completed successfully"
 
 
 async def _update_task_failed(
-        task_id: str,
-        build_id: str,
-        message: str,
-        error: str,
-        namespace: Optional[str],
-        env_url: Optional[str],
-        state: str,
+    task_id: str,
+    build_id: str,
+    message: str,
+    error: str,
+    namespace: Optional[str],
+    env_url: Optional[str],
+    state: str,
 ) -> None:
     """Update task status to failed.
 
@@ -57,11 +57,11 @@ async def _update_task_failed(
 
 
 async def _update_task_completed(
-        task_id: str,
-        build_id: str,
-        message: str,
-        namespace: Optional[str],
-        env_url: Optional[str],
+    task_id: str,
+    build_id: str,
+    message: str,
+    namespace: Optional[str],
+    env_url: Optional[str],
 ) -> None:
     """Update task status to completed.
 
@@ -88,14 +88,14 @@ async def _update_task_completed(
 
 
 async def _update_task_progress(
-        task_id: str,
-        build_id: str,
-        state: str,
-        status: str,
-        progress: int,
-        check_num: int,
-        namespace: Optional[str],
-        env_url: Optional[str],
+    task_id: str,
+    build_id: str,
+    state: str,
+    status: str,
+    progress: int,
+    check_num: int,
+    namespace: Optional[str],
+    env_url: Optional[str],
 ) -> None:
     """Add progress update to task.
 

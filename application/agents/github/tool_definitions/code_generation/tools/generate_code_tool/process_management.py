@@ -13,7 +13,6 @@ from typing import Optional
 
 from application.agents.github.tool_definitions.code_generation.helpers import (
     _create_background_task,
-    _create_codegen_hook,
     _create_output_log_file,
     _rename_output_file_with_pid,
     _start_monitoring_task,
@@ -162,17 +161,5 @@ async def _create_and_setup_background_task(
         logger.error(f"Failed to setup code generation tracking: {error_msg}")
         return None, None
 
-    # Create hook if task was created successfully
-    hook = None
-    if task_id:
-        hook = _create_codegen_hook(
-            task_id=task_id,
-            user_request=user_request,
-            language=context.language,
-            branch_name=context.branch_name,
-            process_pid=process.pid,
-            conversation_id=context.conversation_id,
-        )
-        context.tool_context.state["last_tool_hook"] = hook
-
-    return task_id, hook
+    # Hooks removed - UI auto-detects code generation operations
+    return task_id, None

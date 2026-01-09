@@ -135,4 +135,3 @@ class ProgressStreamProcessor:
         )
         self.event_counter += 1
         return event.to_sse()
-

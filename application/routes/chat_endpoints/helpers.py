@@ -101,18 +101,24 @@ def process_content_event(
         content_chunk = event_data.get("chunk") or event_data.get("content")
 
         if content_chunk:
-            logger.debug(f"📝 [helper] Extracting content chunk: '{content_chunk[:50]}...' (length: {len(content_chunk)})")
+            logger.debug(
+                f"📝 [helper] Extracting content chunk: '{content_chunk[:50]}...' (length: {len(content_chunk)})"
+            )
             accumulated_response += content_chunk
-            logger.debug(f"📝 [helper] New accumulated length: {len(accumulated_response)}")
+            logger.debug(
+                f"📝 [helper] New accumulated length: {len(accumulated_response)}"
+            )
         else:
-            logger.warning(f"⚠️ [helper] Content event has no 'chunk' or 'content' field: {event_data}")
+            logger.warning(
+                f"⚠️ [helper] Content event has no 'chunk' or 'content' field: {event_data}"
+            )
 
         # Store the full event data for debugging/timeline display
         streaming_events.append(
             {
                 "type": "content",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "data": event_data
+                "data": event_data,
             }
         )
     except (json.JSONDecodeError, ValueError) as e:
@@ -124,7 +130,9 @@ def process_content_event(
 
 def process_done_event(
     sse_event: str, accumulated_response: str, streaming_events: List[Dict[str, Any]]
-) -> tuple[bool, str | None, str, str | None, Dict[str, Any] | None, List[Dict[str, Any]]]:
+) -> tuple[
+    bool, str | None, str, str | None, Dict[str, Any] | None, List[Dict[str, Any]]
+]:
     """Process a done event from the stream."""
     done_event_sent = True
     done_event_to_send = None
@@ -147,7 +155,7 @@ def process_done_event(
             {
                 "type": "done",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "data": event_data
+                "data": event_data,
             }
         )
     except (json.JSONDecodeError, ValueError) as e:
@@ -166,7 +174,9 @@ def process_done_event(
 def get_event_type(sse_event: str) -> str:
     """Determine event type from SSE event string."""
     if "event: " in sse_event:
-        event_line = [line for line in sse_event.split("\n") if line.startswith("event: ")]
+        event_line = [
+            line for line in sse_event.split("\n") if line.startswith("event: ")
+        ]
         if event_line:
             return event_line[0].replace("event: ", "").strip()
     return "unknown"

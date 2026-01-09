@@ -17,102 +17,63 @@ import asyncio
 import logging
 import os
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from google.adk.tools.tool_context import ToolContext
-from services.services import get_task_service
 
-from application.agents.shared.hooks import (
-    create_option_selection_hook,
-    wrap_response_with_hook,
-)
-from application.agents.shared.tool_context_helpers import get_conversation_id
 from application.agents.shared.repository_tools.constants import (
     PROTECTED_BRANCHES,
 )
 from application.agents.shared.repository_tools.validation import (
     _is_protected_branch,
 )
+
+# Hooks removed - using markdown format for options
+from application.agents.shared.tool_context_helpers import get_conversation_id
+from services.services import get_task_service
+
 # Re-export from operations modules for backward compatibility
 from .operations import (
-    validate_and_prepare_build_wrapper as _validate_and_prepare_build_impl,
-    _extract_context_params,
-    _validate_build_not_in_progress,
-    _validate_required_params,
-    _verify_repository,
-    _validate_tool_context,
-    _validate_question,
-    _validate_options,
-    _get_requirements_directory_path,
-    _check_requirements_exist,
+    AUGMENT_CLI_SCRIPT,
+    DEFAULT_REPOSITORY_NAME,
+    JAVA_REPO_NAME,
+    PYTHON_REPO_NAME,
     _build_augment_command,
     _build_repository_url,
-    _format_success_response as _format_utils_response,
-    _load_prompt_template,
-    DEFAULT_REPOSITORY_NAME,
-    PYTHON_REPO_NAME,
-    JAVA_REPO_NAME,
-    AUGMENT_CLI_SCRIPT,
-    _start_and_register_process,
-    _deploy_environment_if_needed,
+    _check_requirements_exist,
     _create_build_task,
+    _deploy_environment_if_needed,
+    _extract_context_params,
+)
+from .operations import _format_success_response as _format_utils_response
+from .operations import (
+    _get_requirements_directory_path,
+    _load_prompt_template,
+)
+from .operations import _prepare_build_command as _prepare_build_command_impl
+from .operations import _setup_build_tracking as _setup_build_tracking_impl
+from .operations import (
+    _start_and_register_process,
     _start_background_monitoring,
-    _validate_build_environment as _validate_build_environment_impl,
-    _prepare_build_command as _prepare_build_command_impl,
-    _start_build_process as _start_build_process_impl,
-    _setup_build_tracking as _setup_build_tracking_impl,
+)
+from .operations import _start_build_process as _start_build_process_impl
+from .operations import _validate_build_environment as _validate_build_environment_impl
+from .operations import (
+    _validate_build_not_in_progress,
+    _validate_options,
+    _validate_question,
+    _validate_required_params,
+    _validate_tool_context,
+    _verify_repository,
+)
+from .operations import (
+    validate_and_prepare_build_wrapper as _validate_and_prepare_build_impl,
 )
 
 logger = logging.getLogger(__name__)
 
 
-async def ask_user_to_select_option(
-    question: str,
-    options: list[Dict[str, str]],
-    selection_type: str = "single",
-    context: Optional[str] = None,
-    tool_context: Optional[ToolContext] = None,
-) -> str:
-    """Show interactive UI for the user to select from a list of options.
-
-    This is a generic tool that can be used whenever you need to ask the user to choose from multiple options.
-    The UI will display clickable buttons or checkboxes for the user to make their selection.
-
-    **CRITICAL PATTERN - YOU MUST ALWAYS PROVIDE THE 'options' PARAMETER:**
-    This tool REQUIRES the 'options' parameter. You MUST provide a list of at least one option.
-    Each option MUST be a dictionary with 'value' and 'label' fields.
-    NEVER call this tool without the 'options' parameter.
-    Example: options=[{"value": "yes", "label": "Yes"}, {"value": "no", "label": "No"}]
-
-    Args:
-        question: The question to ask the user (required, cannot be empty)
-        options: List of option dictionaries with 'value' and 'label' fields (required)
-        selection_type: Either "single" (radio buttons) or "multiple" (checkboxes). Default: "single"
-        context: Optional additional context or information to display
-        tool_context: Execution context (auto-injected)
-
-    Returns:
-        Message with hook for UI to display selection interface
-    """
-    _validate_tool_context(tool_context)
-    _validate_question(question)
-    _validate_options(options)
-
-    # Get conversation_id with fallback to session.id for standalone ADK web mode
-    conversation_id = get_conversation_id(tool_context)
-
-    hook = create_option_selection_hook(
-        conversation_id=conversation_id,
-        question=question,
-        options=options,
-        selection_type=selection_type,
-        context=context,
-    )
-
-    tool_context.state["last_tool_hook"] = hook
-    message = f"{question}\n\nPlease select your choice(s) using the options below."
-
-    return wrap_response_with_hook(message, hook)
+# ask_user_to_select_option removed - agents now write markdown format directly
 
 
 async def generate_application(
@@ -142,8 +103,10 @@ async def generate_application(
         raise ValueError("requirements parameter is required and cannot be empty")
 
     try:
-        language, repository_path, branch_name, error_msg = await _validate_and_prepare_build_impl(
-            requirements, language, repository_path, branch_name, tool_context
+        language, repository_path, branch_name, error_msg = (
+            await _validate_and_prepare_build_impl(
+                requirements, language, repository_path, branch_name, tool_context
+            )
         )
         if error_msg:
             return error_msg
@@ -160,7 +123,9 @@ async def generate_application(
             return error_msg
 
         # Start build process using shared CLI process starter
-        from application.agents.shared.repository_tools.cli_process import start_cli_process
+        from application.agents.shared.repository_tools.cli_process import (
+            start_cli_process,
+        )
 
         success, error_msg, process = await start_cli_process(
             command=command,
@@ -172,16 +137,25 @@ async def generate_application(
 
         # Setup task tracking and monitoring (build uses legacy flow with helpers)
         build_task_id, env_task_id = await _setup_build_tracking_impl(
-            tool_context, language, branch_name, repository_path, requirements, process.pid
+            tool_context,
+            language,
+            branch_name,
+            repository_path,
+            requirements,
+            process.pid,
         )
 
-        await _start_background_monitoring(process, repository_path, branch_name, tool_context)
+        await _start_background_monitoring(
+            process, repository_path, branch_name, tool_context
+        )
 
         logger.info(
             f"✅ Build started successfully (PID: {process.pid}, Build Task: {build_task_id}, Env Task: {env_task_id})"
         )
 
-        return _format_success_response_public(branch_name, language, build_task_id, env_task_id)
+        return _format_success_response_public(
+            branch_name, language, build_task_id, env_task_id
+        )
 
     except Exception as e:
         logger.error(f"❌ Failed to generate application: {e}", exc_info=True)
@@ -211,7 +185,9 @@ def _format_success_response_public(
     if env_task_id:
         task_ids.append(env_task_id)
 
-    base_msg = f"SUCCESS: Build started successfully on branch {branch_name} ({language})."
+    base_msg = (
+        f"SUCCESS: Build started successfully on branch {branch_name} ({language})."
+    )
     setup_msg = "Once the build completes, please call the setup assistant to configure your application."
 
     if task_ids:
@@ -308,7 +284,6 @@ async def wait_before_next_check(seconds: int = 30) -> str:
 
 __all__ = [
     # Public API
-    "ask_user_to_select_option",
     "generate_application",
     "check_build_status",
     "wait_before_next_check",

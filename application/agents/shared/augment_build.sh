@@ -3,7 +3,7 @@ set -euo pipefail
 
 # CLI Automation Script for Cyoda Client Application Generation
 # Following https://docs.augmentcode.com/cli/automation best practices
-# 
+#
 # This script generates controllers, processors, and criteria for a Cyoda client application
 # based on functional requirements and entity definitions.
 #

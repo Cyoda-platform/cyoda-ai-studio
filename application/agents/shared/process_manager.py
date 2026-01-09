@@ -138,4 +138,3 @@ def get_process_manager(max_concurrent: int = 5) -> CLIProcessManager:
     if _process_manager is None:
         _process_manager = CLIProcessManager(max_concurrent_processes=max_concurrent)
     return _process_manager
-

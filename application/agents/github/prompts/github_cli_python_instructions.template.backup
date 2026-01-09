@@ -73,18 +73,18 @@ from common.entity.cyoda_entity import CyodaEntity
 
 class EntityName(CyodaEntity):
     """Entity description."""
-    
+
     # Constants (REQUIRED)
     ENTITY_NAME: str = "EntityName"
     ENTITY_VERSION: int = 1
-    
+
     # Business ID field (REQUIRED)
     entity_id: str = Field(..., description="Business identifier")
-    
+
     # Business fields
     field_name: str = Field(..., description="Field description")
     optional_field: str | None = Field(None, description="Optional field")
-    
+
     # Nested structures (if needed)
     class NestedData(BaseModel):
         nested_field: str
@@ -205,18 +205,18 @@ from services.services import get_entity_service
 
 class EntityProcessor(CyodaProcessor):
     """Processor description."""
-    
+
     async def process(self, entity: dict) -> dict:
         """Process entity logic."""
         # Cast to typed entity
         typed_entity = cast_entity(entity, EntityName)
-        
+
         # Access other entities via EntityService
         entity_service = get_entity_service()
-        
+
         # Business logic here
         # ...
-        
+
         # Return modified entity
         return typed_entity.model_dump()
 ```
@@ -263,13 +263,13 @@ async def create_entity():
     """Create new entity."""
     entity_service = get_entity_service()
     data = await request.get_json()
-    
+
     # Parse to entity model
     entity = EntityName(**data)
-    
+
     # Create via EntityService
     result = await entity_service.create(entity)
-    
+
     # Return technical ID
     return {"id": result.id}
 
@@ -278,20 +278,20 @@ async def update_entity(entity_id: str):
     """Update entity."""
     entity_service = get_entity_service()
     data = await request.get_json()
-    
+
     # Get existing entity
     existing = await entity_service.get_by_id(
-        entity_id, 
-        EntityName.ENTITY_NAME, 
+        entity_id,
+        EntityName.ENTITY_NAME,
         str(EntityName.ENTITY_VERSION)
     )
-    
+
     # Update fields
     updated = existing.data.model_copy(update=data)
-    
+
     # Save with manual transition
     result = await entity_service.update(updated, transition="update_entity")
-    
+
     return {"id": result.id}
 ```
 
@@ -352,4 +352,3 @@ This codebase follows a clean, modular architecture with:
 - **Routes** as thin API proxies
 
 All components follow established patterns from `example_application/` and must validate against schema files and code quality tools.
-

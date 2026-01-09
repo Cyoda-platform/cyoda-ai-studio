@@ -35,7 +35,9 @@ class APIResponse:
         return jsonify(data), status
 
     @staticmethod
-    def error(message: str, status: int = 400, details: Any = None) -> Tuple[Response, int]:
+    def error(
+        message: str, status: int = 400, details: Any = None
+    ) -> Tuple[Response, int]:
         """
         Create an error response.
 

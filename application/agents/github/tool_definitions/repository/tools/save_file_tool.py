@@ -130,6 +130,7 @@ async def _write_file_to_disk(full_path: Path, content: str) -> None:
         full_path: Full path to file
         content: File content to write
     """
+
     def _write():
         full_path.parent.mkdir(parents=True, exist_ok=True)
         with open(full_path, "w") as f:
@@ -139,40 +140,7 @@ async def _write_file_to_disk(full_path: Path, content: str) -> None:
     await loop.run_in_executor(None, _write)
 
 
-async def _create_canvas_hook_response(
-    save_context: SaveFileContext, tab_name: str, tool_context: ToolContext
-) -> Optional[str]:
-    """Create canvas hook and return formatted response.
-
-    Args:
-        save_context: File save context
-        tab_name: Canvas tab name
-        tool_context: The ADK tool context
-
-    Returns:
-        Formatted response with hook, or None if hook couldn't be created
-    """
-    if not save_context.conversation_id:
-        return None
-
-    from application.agents.shared.hooks import (
-        create_open_canvas_tab_hook,
-        wrap_response_with_hook,
-    )
-
-    hook = create_open_canvas_tab_hook(
-        conversation_id=save_context.conversation_id,
-        tab_name=tab_name,
-    )
-
-    # Store hook in context for SSE streaming
-    tool_context.state["last_tool_hook"] = hook
-
-    message = CANVAS_SUCCESS_TEMPLATE.format(
-        file_path=save_context.file_path,
-        tab_name=tab_name.title(),
-    )
-    return wrap_response_with_hook(message, hook)
+# Hooks removed - UI will auto-detect canvas resources
 
 
 async def save_file_to_repository(
@@ -215,18 +183,11 @@ async def save_file_to_repository(
         await _write_file_to_disk(full_path, content)
         logger.info(FILE_SAVE_LOG_TEMPLATE.format(file_path=file_path))
 
-        # Step 4: Detect canvas tab and create hook if applicable
-        tab_name = _detect_canvas_tab_name(file_path)
-        if tab_name:
-            hook_response = await _create_canvas_hook_response(
-                save_context, tab_name, tool_context
-            )
-            if hook_response:
-                return hook_response
-
-        # Step 5: Return success message
+        # Step 4: Return success message (UI will auto-detect canvas resources)
         return SUCCESS_MESSAGE_TEMPLATE.format(file_path=file_path)
 
     except Exception as e:
-        logger.error(FILE_SAVE_ERROR_TEMPLATE.format(file_path=file_path, error=e), exc_info=True)
+        logger.error(
+            FILE_SAVE_ERROR_TEMPLATE.format(file_path=file_path, error=e), exc_info=True
+        )
         return f"ERROR: {str(e)}{STOP_ON_ERROR}"

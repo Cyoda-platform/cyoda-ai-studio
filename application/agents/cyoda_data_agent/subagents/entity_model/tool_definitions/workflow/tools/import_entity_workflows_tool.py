@@ -38,6 +38,10 @@ async def import_entity_workflows(
     Returns:
         Import result or error information
     """
-    logger.info(f"Importing workflows for {entity_name} v{model_version} to {cyoda_host}")
+    logger.info(
+        f"Importing workflows for {entity_name} v{model_version} to {cyoda_host}"
+    )
     container = get_user_service_container(client_id, client_secret, cyoda_host)
-    return format_model_success({"message": "Import workflows endpoint not yet implemented"})
+    return format_model_success(
+        {"message": "Import workflows endpoint not yet implemented"}
+    )

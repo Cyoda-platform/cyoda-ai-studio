@@ -20,7 +20,9 @@ canvas_bp = Blueprint("chat_canvas", __name__)
 google_adk_service = GoogleADKService()
 
 
-async def _parse_canvas_question_request() -> tuple[str | None, str | None, Dict[str, Any]]:
+async def _parse_canvas_question_request() -> (
+    tuple[str | None, str | None, Dict[str, Any]]
+):
     """Parse canvas question request data."""
     data = await request.get_json()
     return data.get("question"), data.get("response_type"), data.get("context", {})
@@ -37,7 +39,9 @@ def _validate_canvas_question_input(
     return None
 
 
-def _validate_response_type(service: CanvasQuestionService, response_type: str) -> tuple[Any, int] | None:
+def _validate_response_type(
+    service: CanvasQuestionService, response_type: str
+) -> tuple[Any, int] | None:
     """Validate response type. Returns error response if invalid."""
     is_valid, error_msg = service.validate_response_type(response_type)
     if not is_valid:
@@ -54,7 +58,10 @@ def _validate_response_type(service: CanvasQuestionService, response_type: str) 
 
 
 async def _generate_structured_response(
-    service: CanvasQuestionService, response_type: str, question: str, context: Dict[str, Any]
+    service: CanvasQuestionService,
+    response_type: str,
+    question: str,
+    context: Dict[str, Any],
 ) -> tuple[Dict[str, Any], str]:
     """Generate structured response using Google ADK."""
     schema = service.get_schema(response_type)
@@ -67,7 +74,9 @@ async def _generate_structured_response(
             "Generate valid, production-ready configurations."
         ),
     )
-    message = f"I've created a {response_type.replace('_', ' ')} based on your requirements."
+    message = (
+        f"I've created a {response_type.replace('_', ' ')} based on your requirements."
+    )
     return generated_data, message
 
 
@@ -93,14 +102,18 @@ async def _generate_canvas_response(
     """Generate canvas response using service or fallback to mock."""
     try:
         if google_adk_service.is_configured() and response_type != "text":
-            return await _generate_structured_response(service, response_type, question, context)
+            return await _generate_structured_response(
+                service, response_type, question, context
+            )
 
         if response_type == "text":
             return await _generate_text_response(question)
 
         logger.warning("Google ADK not configured - using mock response")
-        generated_data = service.generate_mock_response(response_type, question, context)
-        response_name = response_type.replace('_', ' ')
+        generated_data = service.generate_mock_response(
+            response_type, question, context
+        )
+        response_name = response_type.replace("_", " ")
         message = (
             f"[MOCK] I've created a {response_name} based on your requirements. "
             f"Please configure GOOGLE_API_KEY for real AI generation."
@@ -130,7 +143,9 @@ async def submit_canvas_question() -> tuple[Any, int]:
         if error_response:
             return error_response
 
-        generated_data, message = await _generate_canvas_response(service, response_type, question, context)
+        generated_data, message = await _generate_canvas_response(
+            service, response_type, question, context
+        )
 
         return (
             jsonify(

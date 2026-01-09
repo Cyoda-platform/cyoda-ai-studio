@@ -39,13 +39,14 @@ async def scale_application(
         httpx.HTTPStatusError: If the API call fails
     """
     namespace = construct_namespace(user_id, env_name)
-    logger.info(f"Scaling application: namespace={namespace}, app={app_name}, replicas={replicas}")
+    logger.info(
+        f"Scaling application: namespace={namespace}, app={app_name}, replicas={replicas}"
+    )
 
     client = await get_cloud_manager_service()
     payload = {"replicas": replicas}
     response = await client.patch(
-        f"/k8s/namespaces/{namespace}/deployments/{app_name}/scale",
-        json=payload
+        f"/k8s/namespaces/{namespace}/deployments/{app_name}/scale", json=payload
     )
 
     logger.info(f"Scaled {app_name} in {namespace} to {replicas} replicas")
@@ -105,7 +106,9 @@ async def update_application_image(
         httpx.HTTPStatusError: If the API call fails
     """
     namespace = construct_namespace(user_id, env_name)
-    logger.info(f"Updating application image: namespace={namespace}, app={app_name}, image={image}")
+    logger.info(
+        f"Updating application image: namespace={namespace}, app={app_name}, image={image}"
+    )
 
     client = await get_cloud_manager_service()
     payload = {"image": image}
@@ -114,7 +117,7 @@ async def update_application_image(
 
     response = await client.patch(
         f"/k8s/namespaces/{namespace}/deployments/{app_name}/rollout/update",
-        json=payload
+        json=payload,
     )
 
     logger.info(f"Updated {app_name} image to {image}")
@@ -175,12 +178,14 @@ async def list_environments(
             env_name = ns_name.replace(user_namespace_prefix, "")
             # Skip app namespaces
             if "-app-" not in env_name and not ns_name.startswith("client-1-"):
-                user_environments.append({
-                    "name": env_name,
-                    "namespace": ns_name,
-                    "status": ns.get("status", "Unknown"),
-                    "created": ns.get("creationTimestamp", ""),
-                })
+                user_environments.append(
+                    {
+                        "name": env_name,
+                        "namespace": ns_name,
+                        "status": ns.get("status", "Unknown"),
+                        "created": ns.get("creationTimestamp", ""),
+                    }
+                )
 
     logger.info(f"Found {len(user_environments)} environments for user {user_id}")
     return user_environments
@@ -247,7 +252,9 @@ async def get_application_status(
     """
     namespace = construct_namespace(user_id, env_name)
     client = await get_cloud_manager_service()
-    response = await client.get(f"/k8s/namespaces/{namespace}/deployments/{app_name}/status")
+    response = await client.get(
+        f"/k8s/namespaces/{namespace}/deployments/{app_name}/status"
+    )
 
     return response.json()
 

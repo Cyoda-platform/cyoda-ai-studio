@@ -9,7 +9,7 @@ import json
 import logging
 from typing import Any, Callable, get_type_hints
 
-from agents import function_tool, RunContextWrapper
+from agents import RunContextWrapper, function_tool
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,12 @@ def adapt_adk_tool_to_openai(adk_tool_func: Callable) -> Callable:
 
     # Get function parameters (excluding tool_context)
     params = list(sig.parameters.keys())
-    has_tool_context = 'tool_context' in params
-    other_params = [p for p in params if p != 'tool_context']
+    has_tool_context = "tool_context" in params
+    other_params = [p for p in params if p != "tool_context"]
 
     # Create wrapper function with same signature (minus tool_context)
     if is_async:
+
         async def openai_wrapper(context: RunContextWrapper, **kwargs: Any) -> str:
             """Wrapper that adapts OpenAI context to ADK tool."""
             # Call function with appropriate parameters
@@ -49,7 +50,11 @@ def adapt_adk_tool_to_openai(adk_tool_func: Callable) -> Callable:
                     def __init__(self, run_context: RunContextWrapper):
                         self._run_context = run_context
                         # Point state to the actual context state (shared across tools)
-                        self.state = run_context.context_variables if hasattr(run_context, 'context_variables') else {}
+                        self.state = (
+                            run_context.context_variables
+                            if hasattr(run_context, "context_variables")
+                            else {}
+                        )
 
                 result = await adk_tool_func(ToolContextAdapter(context), **kwargs)
             else:
@@ -62,7 +67,9 @@ def adapt_adk_tool_to_openai(adk_tool_func: Callable) -> Callable:
                 return json.dumps(result)
             else:
                 return str(result)
+
     else:
+
         def openai_wrapper(context: RunContextWrapper, **kwargs: Any) -> str:
             """Wrapper that adapts OpenAI context to ADK tool."""
             # Call function with appropriate parameters
@@ -72,7 +79,11 @@ def adapt_adk_tool_to_openai(adk_tool_func: Callable) -> Callable:
                     def __init__(self, run_context: RunContextWrapper):
                         self._run_context = run_context
                         # Point state to the actual context state (shared across tools)
-                        self.state = run_context.context_variables if hasattr(run_context, 'context_variables') else {}
+                        self.state = (
+                            run_context.context_variables
+                            if hasattr(run_context, "context_variables")
+                            else {}
+                        )
 
                 result = adk_tool_func(ToolContextAdapter(context), **kwargs)
             else:
@@ -96,10 +107,10 @@ def adapt_adk_tool_to_openai(adk_tool_func: Callable) -> Callable:
 
 def adapt_adk_tools_list(adk_tools: list[Callable]) -> list[Callable]:
     """Adapt a list of Google ADK tools to OpenAI SDK format.
-    
+
     Args:
         adk_tools: List of Google ADK tool functions
-        
+
     Returns:
         List of adapted functions ready for OpenAI SDK
     """
@@ -111,6 +122,5 @@ def adapt_adk_tools_list(adk_tools: list[Callable]) -> list[Callable]:
             logger.debug(f"✓ Adapted tool: {tool.__name__}")
         except Exception as e:
             logger.warning(f"Failed to adapt tool {tool.__name__}: {e}")
-    
-    return adapted
 
+    return adapted

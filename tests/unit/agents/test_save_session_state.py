@@ -1,7 +1,8 @@
 """Tests for CyodaAssistantWrapper._save_session_state function."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from application.agents.cyoda_assistant import CyodaAssistantWrapper
 from common.service.service import EntityServiceError
@@ -16,17 +17,29 @@ class TestSaveSessionState:
         mock_entity_service = AsyncMock()
         mock_conversation = MagicMock()
         mock_conversation.workflow_cache = {}
-        mock_conversation.model_dump.return_value = {"id": "conv-123", "user_id": "user-123"}
+        mock_conversation.model_dump.return_value = {
+            "id": "conv-123",
+            "user_id": "user-123",
+        }
 
         mock_response = MagicMock()
-        mock_response.data = {"id": "conv-123", "user_id": "user-123", "workflow_cache": {}}
+        mock_response.data = {
+            "id": "conv-123",
+            "user_id": "user-123",
+            "workflow_cache": {},
+        }
 
         mock_entity_service.get_by_id = AsyncMock(return_value=mock_response)
         mock_entity_service.update = AsyncMock()
 
-        wrapper = CyodaAssistantWrapper(adk_agent=MagicMock(), entity_service=mock_entity_service)
+        wrapper = CyodaAssistantWrapper(
+            adk_agent=MagicMock(), entity_service=mock_entity_service
+        )
 
-        with patch("application.agents.cyoda_assistant.Conversation", return_value=mock_conversation):
+        with patch(
+            "application.agents.cyoda_assistant.Conversation",
+            return_value=mock_conversation,
+        ):
             await wrapper._save_session_state("conv-123", {"state": "test"})
 
             # Verify update was called with the conversation data
@@ -39,12 +52,14 @@ class TestSaveSessionState:
         """Test save session state when conversation not found."""
         mock_entity_service = AsyncMock()
         mock_entity_service.get_by_id = AsyncMock(return_value=None)
-        
-        wrapper = CyodaAssistantWrapper(adk_agent=MagicMock(), entity_service=mock_entity_service)
-        
+
+        wrapper = CyodaAssistantWrapper(
+            adk_agent=MagicMock(), entity_service=mock_entity_service
+        )
+
         # Should not raise, just return
         await wrapper._save_session_state("conv-123", {"state": "test"})
-        
+
         assert not mock_entity_service.update.called
 
     @pytest.mark.asyncio
@@ -53,22 +68,33 @@ class TestSaveSessionState:
         mock_entity_service = AsyncMock()
         mock_conversation = MagicMock()
         mock_conversation.workflow_cache = {}
-        mock_conversation.model_dump.return_value = {"id": "conv-123", "user_id": "user-123"}
+        mock_conversation.model_dump.return_value = {
+            "id": "conv-123",
+            "user_id": "user-123",
+        }
 
         mock_response = MagicMock()
-        mock_response.data = {"id": "conv-123", "user_id": "user-123", "workflow_cache": {}}
+        mock_response.data = {
+            "id": "conv-123",
+            "user_id": "user-123",
+            "workflow_cache": {},
+        }
 
         mock_entity_service.get_by_id = AsyncMock(return_value=mock_response)
 
         # First call fails with version conflict, second succeeds
-        mock_entity_service.update = AsyncMock(side_effect=[
-            EntityServiceError("422 version mismatch"),
-            None
-        ])
+        mock_entity_service.update = AsyncMock(
+            side_effect=[EntityServiceError("422 version mismatch"), None]
+        )
 
-        wrapper = CyodaAssistantWrapper(adk_agent=MagicMock(), entity_service=mock_entity_service)
+        wrapper = CyodaAssistantWrapper(
+            adk_agent=MagicMock(), entity_service=mock_entity_service
+        )
 
-        with patch("application.agents.cyoda_assistant.Conversation", return_value=mock_conversation):
+        with patch(
+            "application.agents.cyoda_assistant.Conversation",
+            return_value=mock_conversation,
+        ):
             with patch("asyncio.sleep"):
                 await wrapper._save_session_state("conv-123", {"state": "test"})
 
@@ -81,10 +107,17 @@ class TestSaveSessionState:
         mock_entity_service = AsyncMock()
         mock_conversation = MagicMock()
         mock_conversation.workflow_cache = {}
-        mock_conversation.model_dump.return_value = {"id": "conv-123", "user_id": "user-123"}
+        mock_conversation.model_dump.return_value = {
+            "id": "conv-123",
+            "user_id": "user-123",
+        }
 
         mock_response = MagicMock()
-        mock_response.data = {"id": "conv-123", "user_id": "user-123", "workflow_cache": {}}
+        mock_response.data = {
+            "id": "conv-123",
+            "user_id": "user-123",
+            "workflow_cache": {},
+        }
 
         mock_entity_service.get_by_id = AsyncMock(return_value=mock_response)
 
@@ -93,9 +126,14 @@ class TestSaveSessionState:
             side_effect=EntityServiceError("422 version mismatch")
         )
 
-        wrapper = CyodaAssistantWrapper(adk_agent=MagicMock(), entity_service=mock_entity_service)
+        wrapper = CyodaAssistantWrapper(
+            adk_agent=MagicMock(), entity_service=mock_entity_service
+        )
 
-        with patch("application.agents.cyoda_assistant.Conversation", return_value=mock_conversation):
+        with patch(
+            "application.agents.cyoda_assistant.Conversation",
+            return_value=mock_conversation,
+        ):
             with patch("asyncio.sleep"):
                 # Should not raise, just log and return
                 await wrapper._save_session_state("conv-123", {"state": "test"})
@@ -109,17 +147,31 @@ class TestSaveSessionState:
         mock_entity_service = AsyncMock()
         mock_conversation = MagicMock()
         mock_conversation.workflow_cache = {}
-        mock_conversation.model_dump.return_value = {"id": "conv-123", "user_id": "user-123"}
+        mock_conversation.model_dump.return_value = {
+            "id": "conv-123",
+            "user_id": "user-123",
+        }
 
         mock_response = MagicMock()
-        mock_response.data = {"id": "conv-123", "user_id": "user-123", "workflow_cache": {}}
+        mock_response.data = {
+            "id": "conv-123",
+            "user_id": "user-123",
+            "workflow_cache": {},
+        }
 
         mock_entity_service.get_by_id = AsyncMock(return_value=mock_response)
-        mock_entity_service.update = AsyncMock(side_effect=EntityServiceError("403 Forbidden"))
+        mock_entity_service.update = AsyncMock(
+            side_effect=EntityServiceError("403 Forbidden")
+        )
 
-        wrapper = CyodaAssistantWrapper(adk_agent=MagicMock(), entity_service=mock_entity_service)
+        wrapper = CyodaAssistantWrapper(
+            adk_agent=MagicMock(), entity_service=mock_entity_service
+        )
 
-        with patch("application.agents.cyoda_assistant.Conversation", return_value=mock_conversation):
+        with patch(
+            "application.agents.cyoda_assistant.Conversation",
+            return_value=mock_conversation,
+        ):
             # Should not raise, just log and return
             await wrapper._save_session_state("conv-123", {"state": "test"})
 
@@ -130,10 +182,14 @@ class TestSaveSessionState:
     async def test_save_session_state_unexpected_error(self):
         """Test save session state handles unexpected errors gracefully."""
         mock_entity_service = AsyncMock()
-        mock_entity_service.get_by_id = AsyncMock(side_effect=Exception("Unexpected error"))
-        
-        wrapper = CyodaAssistantWrapper(adk_agent=MagicMock(), entity_service=mock_entity_service)
-        
+        mock_entity_service.get_by_id = AsyncMock(
+            side_effect=Exception("Unexpected error")
+        )
+
+        wrapper = CyodaAssistantWrapper(
+            adk_agent=MagicMock(), entity_service=mock_entity_service
+        )
+
         # Should not raise, just log and return
         await wrapper._save_session_state("conv-123", {"state": "test"})
 
@@ -143,21 +199,32 @@ class TestSaveSessionState:
         mock_entity_service = AsyncMock()
         mock_conversation = MagicMock()
         mock_conversation.workflow_cache = {"existing_key": "existing_value"}
-        mock_conversation.model_dump.return_value = {"id": "conv-123", "user_id": "user-123"}
+        mock_conversation.model_dump.return_value = {
+            "id": "conv-123",
+            "user_id": "user-123",
+        }
 
         mock_response = MagicMock()
-        mock_response.data = {"id": "conv-123", "user_id": "user-123", "workflow_cache": {"existing_key": "existing_value"}}
+        mock_response.data = {
+            "id": "conv-123",
+            "user_id": "user-123",
+            "workflow_cache": {"existing_key": "existing_value"},
+        }
 
         mock_entity_service.get_by_id = AsyncMock(return_value=mock_response)
         mock_entity_service.update = AsyncMock()
 
-        wrapper = CyodaAssistantWrapper(adk_agent=MagicMock(), entity_service=mock_entity_service)
+        wrapper = CyodaAssistantWrapper(
+            adk_agent=MagicMock(), entity_service=mock_entity_service
+        )
 
-        with patch("application.agents.cyoda_assistant.Conversation", return_value=mock_conversation):
+        with patch(
+            "application.agents.cyoda_assistant.Conversation",
+            return_value=mock_conversation,
+        ):
             await wrapper._save_session_state("conv-123", {"state": "test"})
 
             # Verify update was called (which means workflow_cache was preserved and updated)
             assert mock_entity_service.update.called
             call_args = mock_entity_service.update.call_args
             assert call_args[1]["entity_id"] == "conv-123"
-

@@ -14,9 +14,9 @@ from typing import Any, Dict, Optional
 from application.entity.background_task import BackgroundTask
 from common.service.entity_service import EntityService
 
-from .task_operations import create_task, get_task
+from .progress_tracking import add_progress_update, update_task_status
 from .retry_logic import update_task_with_retry
-from .progress_tracking import update_task_status, add_progress_update
+from .task_operations import create_task, get_task
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,9 @@ class TaskService:
         """Get a task by technical ID."""
         return await get_task(self.entity_service, task_id)
 
-    async def update_task(self, task: BackgroundTask, max_retries: int = 5) -> BackgroundTask:
+    async def update_task(
+        self, task: BackgroundTask, max_retries: int = 5
+    ) -> BackgroundTask:
         """Update a task entity in Cyoda with retry logic."""
         return await update_task_with_retry(self.entity_service, task, max_retries)
 

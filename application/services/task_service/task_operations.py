@@ -107,7 +107,9 @@ async def create_task(
     return created_task
 
 
-async def get_task(entity_service: EntityService, task_id: str) -> Optional[BackgroundTask]:
+async def get_task(
+    entity_service: EntityService, task_id: str
+) -> Optional[BackgroundTask]:
     """Get a task by technical ID."""
     try:
         response = await entity_service.get_by_id(

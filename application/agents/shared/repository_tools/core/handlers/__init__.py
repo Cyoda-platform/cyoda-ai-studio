@@ -10,22 +10,20 @@ from __future__ import annotations
 
 # Re-export all public APIs from submodules
 from .branch_handlers import (
-    _handle_new_branch,
-    _handle_existing_branch,
     _handle_branch_setup,
+    _handle_existing_branch,
+    _handle_new_branch,
 )
-
 from .clone_operations import (
-    _handle_already_cloned_repo,
     _build_target_path,
     _determine_repo_url,
-    _validate_and_check_protected_branch,
     _extract_repo_name_and_owner,
-    _setup_repository_clone,
-    _perform_clone_and_branch,
+    _handle_already_cloned_repo,
     _handle_push_and_finalize,
+    _perform_clone_and_branch,
+    _setup_repository_clone,
+    _validate_and_check_protected_branch,
 )
-
 from .finalization import (
     _finalize_clone,
     _format_clone_success_message,

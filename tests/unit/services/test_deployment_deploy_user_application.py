@@ -1,8 +1,9 @@
 """Tests for deploy_user_application method in EnvironmentDeploymentService."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
+import pytest
 
 from application.services.environment.deployment import EnvironmentDeploymentService
 
@@ -17,55 +18,19 @@ class TestDeployUserApplication:
         auth_service.get_token = AsyncMock(return_value="token-123")
 
         deployment_service = EnvironmentDeploymentService(auth_service)
-        
-        mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={
-            "build_id": "build-123",
-            "build_namespace": "ns-123"
-        })
-        
-        with patch("httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=None)
-            mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value = mock_client
-            
-            result = await deployment_service.deploy_user_application(
-                user_id="user-1",
-                chat_id="chat-1",
-                env_name="env-1",
-                app_name="app-1",
-                repository_url="https://github.com/test/repo",
-                branch_name="main",
-                cyoda_client_id="client-id",
-                cyoda_client_secret="client-secret"
-            )
-            
-            assert result["build_id"] == "build-123"
-            assert result["namespace"] == "ns-123"
 
-    @pytest.mark.asyncio
-    async def test_deploy_user_application_with_installation_id(self):
-        """Test deployment with explicit installation_id."""
-        auth_service = AsyncMock()
-        auth_service.get_token = AsyncMock(return_value="token-123")
-        
-        deployment_service = EnvironmentDeploymentService(auth_service)
-        
         mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={
-            "build_id": "build-123",
-            "namespace": "ns-123"
-        })
-        
+        mock_response.json = MagicMock(
+            return_value={"build_id": "build-123", "build_namespace": "ns-123"}
+        )
+
         with patch("httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=None)
             mock_client.post = AsyncMock(return_value=mock_response)
             mock_client_class.return_value = mock_client
-            
+
             result = await deployment_service.deploy_user_application(
                 user_id="user-1",
                 chat_id="chat-1",
@@ -75,9 +40,43 @@ class TestDeployUserApplication:
                 branch_name="main",
                 cyoda_client_id="client-id",
                 cyoda_client_secret="client-secret",
-                installation_id="inst-123"
             )
-            
+
+            assert result["build_id"] == "build-123"
+            assert result["namespace"] == "ns-123"
+
+    @pytest.mark.asyncio
+    async def test_deploy_user_application_with_installation_id(self):
+        """Test deployment with explicit installation_id."""
+        auth_service = AsyncMock()
+        auth_service.get_token = AsyncMock(return_value="token-123")
+
+        deployment_service = EnvironmentDeploymentService(auth_service)
+
+        mock_response = MagicMock()
+        mock_response.json = MagicMock(
+            return_value={"build_id": "build-123", "namespace": "ns-123"}
+        )
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=None)
+            mock_client.post = AsyncMock(return_value=mock_response)
+            mock_client_class.return_value = mock_client
+
+            result = await deployment_service.deploy_user_application(
+                user_id="user-1",
+                chat_id="chat-1",
+                env_name="env-1",
+                app_name="app-1",
+                repository_url="https://github.com/test/repo",
+                branch_name="main",
+                cyoda_client_id="client-id",
+                cyoda_client_secret="client-secret",
+                installation_id="inst-123",
+            )
+
             # Verify installation_id was included in payload
             call_args = mock_client.post.call_args
             payload = call_args[1]["json"]
@@ -88,22 +87,21 @@ class TestDeployUserApplication:
         """Test deployment with private repository."""
         auth_service = AsyncMock()
         auth_service.get_token = AsyncMock(return_value="token-123")
-        
+
         deployment_service = EnvironmentDeploymentService(auth_service)
-        
+
         mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={
-            "build_id": "build-123",
-            "namespace": "ns-123"
-        })
-        
+        mock_response.json = MagicMock(
+            return_value={"build_id": "build-123", "namespace": "ns-123"}
+        )
+
         with patch("httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=None)
             mock_client.post = AsyncMock(return_value=mock_response)
             mock_client_class.return_value = mock_client
-            
+
             result = await deployment_service.deploy_user_application(
                 user_id="user-1",
                 chat_id="chat-1",
@@ -113,9 +111,9 @@ class TestDeployUserApplication:
                 branch_name="main",
                 cyoda_client_id="client-id",
                 cyoda_client_secret="client-secret",
-                is_public=False
+                is_public=False,
             )
-            
+
             # Verify is_public was set to false
             call_args = mock_client.post.call_args
             payload = call_args[1]["json"]
@@ -126,27 +124,26 @@ class TestDeployUserApplication:
         """Test public repo deployment uses env installation_id."""
         auth_service = AsyncMock()
         auth_service.get_token = AsyncMock(return_value="token-123")
-        
+
         deployment_service = EnvironmentDeploymentService(auth_service)
-        
+
         mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={
-            "build_id": "build-123",
-            "namespace": "ns-123"
-        })
-        
+        mock_response.json = MagicMock(
+            return_value={"build_id": "build-123", "namespace": "ns-123"}
+        )
+
         with patch("httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=None)
             mock_client.post = AsyncMock(return_value=mock_response)
             mock_client_class.return_value = mock_client
-            
+
             with patch("os.getenv") as mock_getenv:
                 mock_getenv.side_effect = lambda key, default=None: {
                     "GITHUB_PUBLIC_REPO_INSTALLATION_ID": "env-inst-123"
                 }.get(key, default)
-                
+
                 result = await deployment_service.deploy_user_application(
                     user_id="user-1",
                     chat_id="chat-1",
@@ -156,9 +153,9 @@ class TestDeployUserApplication:
                     branch_name="main",
                     cyoda_client_id="client-id",
                     cyoda_client_secret="client-secret",
-                    is_public=True
+                    is_public=True,
                 )
-                
+
                 # Verify env installation_id was used
                 call_args = mock_client.post.call_args
                 payload = call_args[1]["json"]
@@ -169,22 +166,21 @@ class TestDeployUserApplication:
         """Test that user/env/app names are sanitized."""
         auth_service = AsyncMock()
         auth_service.get_token = AsyncMock(return_value="token-123")
-        
+
         deployment_service = EnvironmentDeploymentService(auth_service)
-        
+
         mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={
-            "build_id": "build-123",
-            "namespace": "ns-123"
-        })
-        
+        mock_response.json = MagicMock(
+            return_value={"build_id": "build-123", "namespace": "ns-123"}
+        )
+
         with patch("httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=None)
             mock_client.post = AsyncMock(return_value=mock_response)
             mock_client_class.return_value = mock_client
-            
+
             result = await deployment_service.deploy_user_application(
                 user_id="user_1",
                 chat_id="chat-1",
@@ -193,9 +189,9 @@ class TestDeployUserApplication:
                 repository_url="https://github.com/test/repo",
                 branch_name="main",
                 cyoda_client_id="client-id",
-                cyoda_client_secret="client-secret"
+                cyoda_client_secret="client-secret",
             )
-            
+
             # Verify namespaces were created
             call_args = mock_client.post.call_args
             payload = call_args[1]["json"]
@@ -207,22 +203,21 @@ class TestDeployUserApplication:
         """Test that long env/app names are truncated."""
         auth_service = AsyncMock()
         auth_service.get_token = AsyncMock(return_value="token-123")
-        
+
         deployment_service = EnvironmentDeploymentService(auth_service)
-        
+
         mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={
-            "build_id": "build-123",
-            "namespace": "ns-123"
-        })
-        
+        mock_response.json = MagicMock(
+            return_value={"build_id": "build-123", "namespace": "ns-123"}
+        )
+
         with patch("httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=None)
             mock_client.post = AsyncMock(return_value=mock_response)
             mock_client_class.return_value = mock_client
-            
+
             result = await deployment_service.deploy_user_application(
                 user_id="user-1",
                 chat_id="chat-1",
@@ -231,9 +226,9 @@ class TestDeployUserApplication:
                 repository_url="https://github.com/test/repo",
                 branch_name="main",
                 cyoda_client_id="client-id",
-                cyoda_client_secret="client-secret"
+                cyoda_client_secret="client-secret",
             )
-            
+
             assert result["build_id"] == "build-123"
 
     @pytest.mark.asyncio
@@ -241,22 +236,21 @@ class TestDeployUserApplication:
         """Test that authorization header is included."""
         auth_service = AsyncMock()
         auth_service.get_token = AsyncMock(return_value="token-123")
-        
+
         deployment_service = EnvironmentDeploymentService(auth_service)
-        
+
         mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={
-            "build_id": "build-123",
-            "namespace": "ns-123"
-        })
-        
+        mock_response.json = MagicMock(
+            return_value={"build_id": "build-123", "namespace": "ns-123"}
+        )
+
         with patch("httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=None)
             mock_client.post = AsyncMock(return_value=mock_response)
             mock_client_class.return_value = mock_client
-            
+
             result = await deployment_service.deploy_user_application(
                 user_id="user-1",
                 chat_id="chat-1",
@@ -265,9 +259,9 @@ class TestDeployUserApplication:
                 repository_url="https://github.com/test/repo",
                 branch_name="main",
                 cyoda_client_id="client-id",
-                cyoda_client_secret="client-secret"
+                cyoda_client_secret="client-secret",
             )
-            
+
             # Verify auth header was included
             call_args = mock_client.post.call_args
             headers = call_args[1]["headers"]
@@ -279,22 +273,21 @@ class TestDeployUserApplication:
         """Test that namespace fallback works when build_namespace not present."""
         auth_service = AsyncMock()
         auth_service.get_token = AsyncMock(return_value="token-123")
-        
+
         deployment_service = EnvironmentDeploymentService(auth_service)
-        
+
         mock_response = MagicMock()
-        mock_response.json = MagicMock(return_value={
-            "build_id": "build-123",
-            "namespace": "ns-123"
-        })
-        
+        mock_response.json = MagicMock(
+            return_value={"build_id": "build-123", "namespace": "ns-123"}
+        )
+
         with patch("httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=None)
             mock_client.post = AsyncMock(return_value=mock_response)
             mock_client_class.return_value = mock_client
-            
+
             result = await deployment_service.deploy_user_application(
                 user_id="user-1",
                 chat_id="chat-1",
@@ -303,8 +296,7 @@ class TestDeployUserApplication:
                 repository_url="https://github.com/test/repo",
                 branch_name="main",
                 cyoda_client_id="client-id",
-                cyoda_client_secret="client-secret"
+                cyoda_client_secret="client-secret",
             )
-            
-            assert result["namespace"] == "ns-123"
 
+            assert result["namespace"] == "ns-123"

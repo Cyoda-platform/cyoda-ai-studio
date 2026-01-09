@@ -7,16 +7,16 @@ from typing import Any, AsyncGenerator, Dict, Optional
 from google.genai import types
 
 from application.services.streaming.constants import (
-    STREAM_TIMEOUT,
     HEARTBEAT_INTERVAL,
     MAX_EVENTS_PER_STREAM,
+    STREAM_TIMEOUT,
 )
+from application.services.streaming.event_handlers import EventHandlers
 from application.services.streaming.events import StreamEvent
 from application.services.streaming.loop_detector import LoopDetector
 from application.services.streaming.session_manager import (
     load_or_create_session,
 )
-from application.services.streaming.event_handlers import EventHandlers
 
 logger = logging.getLogger(__name__)
 
@@ -61,18 +61,27 @@ class AgentStreamProcessor:
             await self._initialize_session()
             async for event in self._process_agent_stream():
                 if "event: done" in event:
-                    logger.info(f"🔄 [process] Yielding DONE event from _process_agent_stream")
+                    logger.info(
+                        f"🔄 [process] Yielding DONE event from _process_agent_stream"
+                    )
                 yield event
         except Exception as e:
             yield self._handle_error(e)
         finally:
-            logger.info(f"🔚 [process] Entering finally block, calling _finalize_stream()")
+            logger.info(
+                f"🔚 [process] Entering finally block, calling _finalize_stream()"
+            )
             from .finalization import finalize_stream
+
             async for event in finalize_stream(self):
                 if "event: done" in event:
-                    logger.info(f"🔚 [process] Yielding DONE event from _finalize_stream()")
+                    logger.info(
+                        f"🔚 [process] Yielding DONE event from _finalize_stream()"
+                    )
                 yield event
-            logger.info(f"🔚 [process] Finished yielding events from _finalize_stream()")
+            logger.info(
+                f"🔚 [process] Finished yielding events from _finalize_stream()"
+            )
 
     def _send_start_event(self) -> str:
         """Send initial start event."""
@@ -91,37 +100,36 @@ class AgentStreamProcessor:
         """Initialize or load session."""
         session_state = {}
 
-        if self.conversation_id and hasattr(
-            self.agent_wrapper, "_load_session_state"
-        ):
+        if self.conversation_id and hasattr(self.agent_wrapper, "_load_session_state"):
             session_state = await self.agent_wrapper._load_session_state(
                 self.conversation_id
             )
 
-        session_state.update({
-            "conversation_history": self.conversation_history,
-            "user_id": self.user_id,
-            "conversation_id": self.conversation_id,
-        })
+        session_state.update(
+            {
+                "conversation_history": self.conversation_history,
+                "user_id": self.user_id,
+                "conversation_id": self.conversation_id,
+            }
+        )
 
         logger.info(
             f"Streaming for session_id={self.conversation_id}, user_id={self.user_id}, "
             f"adk_session_id={self.adk_session_id}"
         )
 
-        self.session, self.session_technical_id = (
-            await load_or_create_session(
-                self.agent_wrapper,
-                self.conversation_id,
-                self.adk_session_id,
-                self.user_id,
-                session_state,
-            )
+        self.session, self.session_technical_id = await load_or_create_session(
+            self.agent_wrapper,
+            self.conversation_id,
+            self.adk_session_id,
+            self.user_id,
+            session_state,
         )
 
     async def _process_agent_stream(self) -> AsyncGenerator[str, None]:
         """Process events from agent runner."""
         from .event_processing import process_agent_stream_events
+
         async for event in process_agent_stream_events(self):
             yield event
 

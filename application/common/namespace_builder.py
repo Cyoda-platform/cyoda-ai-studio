@@ -268,12 +268,7 @@ def build_cyoda_namespace(org_id: str, env_name: str) -> str:
         >>> ns = build_cyoda_namespace("myorg", "dev")
         >>> print(ns)  # "client-myorg-dev"
     """
-    return (
-        NamespaceBuilder()
-        .for_org(org_id)
-        .in_environment(env_name)
-        .build()
-    )
+    return NamespaceBuilder().for_org(org_id).in_environment(env_name).build()
 
 
 def build_app_namespace(org_id: str, env_name: str, app_name: str) -> str:

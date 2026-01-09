@@ -45,6 +45,8 @@ async def update_multiple_entities(
         if not entity_id:
             logger.warning("Entity missing 'id' field, skipping")
             continue
-        result = await entity_service.update(entity_id, entity, entity_model, entity_version="1")
+        result = await entity_service.update(
+            entity_id, entity, entity_model, entity_version="1"
+        )
         results.append({"id": result.get_id(), "entity": result.data})
     return format_entity_success(results)

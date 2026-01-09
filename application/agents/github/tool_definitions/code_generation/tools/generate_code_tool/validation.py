@@ -97,7 +97,9 @@ async def _validate_repository_and_config(
     logger.info(f"✅ Repository verified at: {context.repository_path}")
 
     # Check CLI invocation limit
-    is_allowed, error_msg, cli_count = _validate_cli_invocation_limit(context.session_id)
+    is_allowed, error_msg, cli_count = _validate_cli_invocation_limit(
+        context.session_id
+    )
     if not is_allowed:
         return False, error_msg, None, None
 
@@ -107,13 +109,17 @@ async def _validate_repository_and_config(
         return False, f"ERROR: CLI script not found at {script_path}", None, None
 
     provider_name = CLI_PROVIDER.capitalize()
-    logger.info(f"🤖 Generating code with {provider_name} CLI in {context.repository_path}")
+    logger.info(
+        f"🤖 Generating code with {provider_name} CLI in {context.repository_path}"
+    )
     logger.info(f"📝 User request: {user_request[:100]}...")
     logger.info(f"🎯 Model: {cli_model}")
 
     # Validate model for Augment CLI
     if CLI_PROVIDER == "augment" and cli_model != AUGMENT_CLI_SUPPORTED_MODEL:
-        logger.error(f"Invalid model for Augment CLI: {cli_model}. Only {AUGMENT_CLI_SUPPORTED_MODEL} is supported.")
+        logger.error(
+            f"Invalid model for Augment CLI: {cli_model}. Only {AUGMENT_CLI_SUPPORTED_MODEL} is supported."
+        )
         return (
             False,
             f"ERROR: Augment CLI only supports {AUGMENT_CLI_SUPPORTED_MODEL} model. Current model: {cli_model}",

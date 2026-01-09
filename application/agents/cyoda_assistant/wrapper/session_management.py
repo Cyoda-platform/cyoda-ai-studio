@@ -38,15 +38,11 @@ async def _get_session_by_technical_id(runner, technical_id: str) -> Any:
         return None
 
     try:
-        adk_session_entity = (
-            await runner.session_service.get_session_by_technical_id(
-                technical_id
-            )
+        adk_session_entity = await runner.session_service.get_session_by_technical_id(
+            technical_id
         )
         if adk_session_entity:
-            return runner.session_service._to_adk_session(
-                adk_session_entity
-            )
+            return runner.session_service._to_adk_session(adk_session_entity)
     except Exception as e:
         logger.debug(f"Failed to get session by technical_id: {e}")
 
@@ -96,15 +92,11 @@ async def _get_or_create_session(
         logger.info(f"Session created: {created_session.id}")
 
         # Get technical ID from created session
-        session_technical_id = created_session.state.get(
-            _SESSION_TECHNICAL_ID_KEY
-        )
+        session_technical_id = created_session.state.get(_SESSION_TECHNICAL_ID_KEY)
         if session_technical_id:
             logger.info(f"AdkSession technical_id: {session_technical_id}")
         else:
-            logger.warning(
-                "Created session does not have technical_id in state!"
-            )
+            logger.warning("Created session does not have technical_id in state!")
 
         return created_session, session_technical_id
 
@@ -113,9 +105,7 @@ async def _get_or_create_session(
             f"Failed to create session {session_id}: {create_error}",
             exc_info=True,
         )
-        raise ValueError(
-            f"Failed to create session: {create_error}"
-        ) from create_error
+        raise ValueError(f"Failed to create session: {create_error}") from create_error
 
 
 async def _load_session_state(entity_service, conversation_id: str) -> dict[str, Any]:
@@ -174,9 +164,7 @@ async def _save_session_state(
                 )
                 return
 
-            conversation_data = (
-                response.data if hasattr(response, "data") else response
-            )
+            conversation_data = response.data if hasattr(response, "data") else response
             conversation = Conversation(**conversation_data)
 
             # Update workflow_cache with session state
@@ -191,9 +179,7 @@ async def _save_session_state(
                 entity_version=str(Conversation.ENTITY_VERSION),
             )
 
-            logger.debug(
-                f"✓ Saved session state for conversation {conversation_id}"
-            )
+            logger.debug(f"✓ Saved session state for conversation {conversation_id}")
             if attempt > 0:
                 logger.info(
                     f"Successfully saved session state after {attempt + 1} attempts"
@@ -248,10 +234,8 @@ async def _verify_session_retrievable(
         return
 
     logger.debug(f"Verifying session by technical_id: {session_technical_id}")
-    adk_session_entity = (
-        await runner.session_service.get_session_by_technical_id(
-            session_technical_id
-        )
+    adk_session_entity = await runner.session_service.get_session_by_technical_id(
+        session_technical_id
     )
     if adk_session_entity:
         logger.info(f"Session {session_id} verified as retrievable by technical_id")

@@ -1,33 +1,33 @@
 """Chat service core - Re-exports for backward compatibility."""
 
-from .models import PaginationResult, CacheResult
+from .cache import ChatCacheManager
 from .constants import (
-    FIELD_DATE,
-    FIELD_TECHNICAL_ID,
-    FIELD_NAME,
-    FIELD_DESCRIPTION,
     FIELD_CREATED_AT,
+    FIELD_DATE,
+    FIELD_DESCRIPTION,
+    FIELD_NAME,
+    FIELD_TECHNICAL_ID,
+    RESPONSE_KEY_CACHED,
     RESPONSE_KEY_CHATS,
+    RESPONSE_KEY_HAS_MORE,
     RESPONSE_KEY_LIMIT,
     RESPONSE_KEY_NEXT_CURSOR,
-    RESPONSE_KEY_HAS_MORE,
-    RESPONSE_KEY_CACHED,
-)
-from .cache import ChatCacheManager
-from .formatters import (
-    calculate_pagination,
-    format_response,
-    extract_conversations_from_response,
 )
 from .conversation_operations import (
     create_conversation,
-    get_conversation,
-    update_conversation,
     delete_conversation,
-    validate_ownership,
+    get_conversation,
     transfer_guest_chats,
+    update_conversation,
+    validate_ownership,
+)
+from .formatters import (
+    calculate_pagination,
+    extract_conversations_from_response,
+    format_response,
 )
 from .list_operations import list_conversations
+from .models import CacheResult, PaginationResult
 
 
 class ChatService:
@@ -106,7 +106,7 @@ class ChatService:
         result = await self.list_conversations(
             user_id=user_id,
             limit=1000,  # High enough limit to get all chats
-            use_cache=False  # Don't use cache for counts
+            use_cache=False,  # Don't use cache for counts
         )
         return len(result.get("chats", []))
 

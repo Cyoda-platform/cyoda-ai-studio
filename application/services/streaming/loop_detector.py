@@ -60,7 +60,7 @@ class LoopDetector:
         if len(self.tool_call_history) < self.max_consecutive_same:
             return False
 
-        recent = self.tool_call_history[-self.max_consecutive_same:]
+        recent = self.tool_call_history[-self.max_consecutive_same :]
         return all(call == recent[0] for call in recent)
 
     def _get_consecutive_calls_error(self, tool_name: str) -> str:
@@ -75,4 +75,3 @@ class LoopDetector:
         """Reset loop detector for new stream."""
         self.tool_call_history = []
         self.tool_call_count = 0
-

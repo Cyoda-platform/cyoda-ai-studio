@@ -7,22 +7,22 @@ This test suite is organized into focused modules:
 
 from __future__ import annotations
 
+from .advanced_tests import (
+    test_append_event,
+    test_get_session_with_config,
+    test_session_persistence_simulation,
+)
+
 # Re-export all test functions and fixtures
 from .crud_tests import (
     mock_entity_service,
     session_service,
     test_create_session,
     test_create_session_generates_id,
+    test_delete_session,
     test_get_session,
     test_get_session_not_found,
     test_list_sessions,
-    test_delete_session,
-)
-
-from .advanced_tests import (
-    test_get_session_with_config,
-    test_append_event,
-    test_session_persistence_simulation,
 )
 
 __all__ = [

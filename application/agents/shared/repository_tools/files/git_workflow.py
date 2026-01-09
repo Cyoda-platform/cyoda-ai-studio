@@ -34,26 +34,32 @@ async def _configure_git_user(repo_path: Path) -> bool:
 
     # Set git user.name
     name_process = await asyncio.create_subprocess_exec(
-        "git", "config", "user.name", GIT_USER_NAME,
+        "git",
+        "config",
+        "user.name",
+        GIT_USER_NAME,
         cwd=str(repo_path),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
     name_stdout, name_stderr = await name_process.communicate()
     if name_process.returncode != 0:
-        error_msg = name_stderr.decode('utf-8') if name_stderr else 'Unknown error'
+        error_msg = name_stderr.decode("utf-8") if name_stderr else "Unknown error"
         logger.warning(f"⚠️ Failed to set git user.name: {error_msg}")
 
     # Set git user.email
     email_process = await asyncio.create_subprocess_exec(
-        "git", "config", "user.email", GIT_USER_EMAIL,
+        "git",
+        "config",
+        "user.email",
+        GIT_USER_EMAIL,
         cwd=str(repo_path),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
     email_stdout, email_stderr = await email_process.communicate()
     if email_process.returncode != 0:
-        error_msg = email_stderr.decode('utf-8') if email_stderr else 'Unknown error'
+        error_msg = email_stderr.decode("utf-8") if email_stderr else "Unknown error"
         logger.warning(f"⚠️ Failed to set git user.email: {error_msg}")
 
     logger.info("✅ Git user configured")
@@ -72,7 +78,9 @@ async def _add_files_to_git(repo_path: Path, func_req_dir: Path) -> str:
     """
     logger.info(f"📝 Adding files from {func_req_dir} to git...")
     process = await asyncio.create_subprocess_exec(
-        "git", "add", str(func_req_dir),
+        "git",
+        "add",
+        str(func_req_dir),
         cwd=str(repo_path),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -104,7 +112,9 @@ async def _check_git_status(repo_path: Path) -> str:
         Git status output.
     """
     process = await asyncio.create_subprocess_exec(
-        "git", "status", "--short",
+        "git",
+        "status",
+        "--short",
         cwd=str(repo_path),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -127,7 +137,10 @@ async def _commit_files_to_git(repo_path: Path, saved_files: list[str]) -> str:
     """
     commit_message = f"Add functional requirements files: {', '.join(saved_files)}"
     process = await asyncio.create_subprocess_exec(
-        "git", "commit", "-m", commit_message,
+        "git",
+        "commit",
+        "-m",
+        commit_message,
         cwd=str(repo_path),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -175,7 +188,9 @@ async def _update_remote_authentication(
     if repository_type == "private" and user_repository_url and installation_id:
         repo_url_to_use = user_repository_url
         installation_id_to_use = installation_id
-        logger.info(f"🔐 Refreshing authentication for private repository: {repo_url_to_use}")
+        logger.info(
+            f"🔐 Refreshing authentication for private repository: {repo_url_to_use}"
+        )
     elif repository_type == "public":
         if language.lower() == "python":
             repo_url_to_use = PYTHON_PUBLIC_REPO_URL
@@ -184,7 +199,9 @@ async def _update_remote_authentication(
         else:
             repo_url_to_use = None
         installation_id_to_use = GITHUB_PUBLIC_REPO_INSTALLATION_ID
-        logger.info(f"🔐 Refreshing authentication for public repository: {repo_url_to_use}")
+        logger.info(
+            f"🔐 Refreshing authentication for public repository: {repo_url_to_use}"
+        )
     else:
         return
 
@@ -192,10 +209,16 @@ async def _update_remote_authentication(
         return
 
     try:
-        authenticated_url = await _get_authenticated_repo_url_sync(repo_url_to_use, installation_id_to_use)
+        authenticated_url = await _get_authenticated_repo_url_sync(
+            repo_url_to_use, installation_id_to_use
+        )
 
         set_url_process = await asyncio.create_subprocess_exec(
-            "git", "remote", "set-url", "origin", authenticated_url,
+            "git",
+            "remote",
+            "set-url",
+            "origin",
+            authenticated_url,
             cwd=str(repo_path),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -222,7 +245,11 @@ async def _push_to_remote(repo_path: Path, branch_name: str) -> str:
         Empty string if successful, error message otherwise.
     """
     process = await asyncio.create_subprocess_exec(
-        "git", "push", "--set-upstream", "origin", branch_name,
+        "git",
+        "push",
+        "--set-upstream",
+        "origin",
+        branch_name,
         cwd=str(repo_path),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -264,7 +291,9 @@ async def _commit_and_push_files(
     """
     from .file_operations import _log_directory_debug_info
 
-    logger.info(f"📦 Committing and pushing {len(saved_files)} files to branch {branch_name}...")
+    logger.info(
+        f"📦 Committing and pushing {len(saved_files)} files to branch {branch_name}..."
+    )
 
     try:
         # Configure git user
@@ -278,7 +307,9 @@ async def _commit_and_push_files(
         # Check status before commit
         status_output = await _check_git_status(repo_path)
         if not status_output.strip():
-            logger.warning("⚠️ No staged changes detected. Files may not have been added properly.")
+            logger.warning(
+                "⚠️ No staged changes detected. Files may not have been added properly."
+            )
             _log_directory_debug_info(func_req_dir, saved_files)
 
         # Commit files
@@ -300,9 +331,11 @@ async def _commit_and_push_files(
                 f"Push to remote failed (may not have remote configured)."
             )
 
-        logger.info(f"🎉 Successfully saved, committed, and pushed {len(saved_files)} files")
+        logger.info(
+            f"🎉 Successfully saved, committed, and pushed {len(saved_files)} files"
+        )
         rel_path = func_req_dir.relative_to(repo_path)
-        files_str = ', '.join(saved_files)
+        files_str = ", ".join(saved_files)
         return (
             f"SUCCESS: Saved {len(saved_files)} file(s) to {rel_path}, committed, "
             f"and pushed to branch {branch_name}. Files: {files_str}"

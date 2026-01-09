@@ -16,6 +16,7 @@ from typing import Any, Callable, Optional
 
 import httpx
 from google.adk.tools.tool_context import ToolContext
+
 from common.config.config import ADK_TEST_MODE
 
 logger = logging.getLogger(__name__)
@@ -55,11 +56,14 @@ def require_authenticated_user(func: Callable) -> Callable:
     Returns:
         Wrapped function that validates authentication first
     """
+
     @wraps(func)
     async def wrapper(tool_context: ToolContext, *args, **kwargs):
         # Check if ADK test mode is enabled
         if ADK_TEST_MODE:
-            logger.info(f"ADK_TEST_MODE=true: Skipping authentication check for {func.__name__}")
+            logger.info(
+                f"ADK_TEST_MODE=true: Skipping authentication check for {func.__name__}"
+            )
             return await func(tool_context, *args, **kwargs)
 
         user_id = tool_context.state.get("user_id", "guest")
@@ -94,6 +98,7 @@ def handle_tool_errors(func: Callable) -> Callable:
     Returns:
         Wrapped function with standardized error handling
     """
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
         try:
@@ -105,7 +110,9 @@ def handle_tool_errors(func: Callable) -> Callable:
 
             # Determine if this is a 404 (common case)
             if e.response.status_code == 404:
-                resource_name = kwargs.get('env_name', kwargs.get('app_name', 'resource'))
+                resource_name = kwargs.get(
+                    "env_name", kwargs.get("app_name", "resource")
+                )
                 return json.dumps({"error": f"Resource '{resource_name}' not found."})
 
             return json.dumps({"error": error_msg})
@@ -170,6 +177,7 @@ def format_error_response(error_message: str, as_json: bool = True) -> str:
 # Service Getters (Module-level instead of in functions)
 # ============================================================================
 
+
 def get_task_service():
     """Get task service instance.
 
@@ -177,6 +185,7 @@ def get_task_service():
         Task service instance
     """
     from services.services import get_task_service as _get_task_service
+
     return _get_task_service()
 
 
@@ -187,4 +196,5 @@ def get_deployment_status_tool():
         get_deployment_status function
     """
     from application.agents.environment.tools import get_deployment_status
+
     return get_deployment_status

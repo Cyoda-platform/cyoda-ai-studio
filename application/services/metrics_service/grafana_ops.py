@@ -59,9 +59,7 @@ class GrafanaOperations:
         )
 
         if sa_list_response.status_code != 200:
-            raise Exception(
-                f"Failed to list service accounts: {sa_list_response.text}"
-            )
+            raise Exception(f"Failed to list service accounts: {sa_list_response.text}")
 
         service_accounts = sa_list_response.json()
         existing_sa = next(

@@ -34,7 +34,9 @@ def _parse_list_chats_params(is_superuser: bool) -> tuple[str | None, int, str |
     return query_user_id, limit, point_in_time
 
 
-def _build_list_chats_response(result: Dict[str, Any], point_in_time: str | None) -> Dict[str, Any]:
+def _build_list_chats_response(
+    result: Dict[str, Any], point_in_time: str | None
+) -> Dict[str, Any]:
     """Build the list chats response."""
     return {
         "chats": result["chats"],
@@ -82,7 +84,7 @@ async def list_chats():
             user_id=query_user_id,
             limit=limit,
             before=point_in_time,
-            use_cache=(not point_in_time and limit == 100 and query_user_id is not None),
+            use_cache=False,  # Disable caching to always return fresh chat list
         )
 
         return APIResponse.success(_build_list_chats_response(result, point_in_time))

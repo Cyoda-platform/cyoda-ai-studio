@@ -92,10 +92,7 @@ def _is_failure_status(state: str, status: str) -> bool:
     failure_statuses = ["UNKNOWN", "FAILURE", "FAILED", "ERROR"]
     failure_states = ["FAILED", "ERROR"]
 
-    return (
-        status.upper() in failure_statuses or
-        state.upper() in failure_states
-    )
+    return status.upper() in failure_statuses or state.upper() in failure_states
 
 
 def _is_success_state(state: str) -> bool:
@@ -110,7 +107,9 @@ def _is_success_state(state: str) -> bool:
     return state.upper() in ["COMPLETE", "SUCCESS", "FINISHED"]
 
 
-def _build_deployment_status(state: str, status: str, done_flag: str) -> DeploymentStatus:
+def _build_deployment_status(
+    state: str, status: str, done_flag: str
+) -> DeploymentStatus:
     """Build deployment status from parsed values.
 
     Args:

@@ -457,12 +457,11 @@ class EntityServiceImpl(EntityService):
 
             # Pass limit and offset to repository for server-side pagination
             data = await self._repository.find_all_by_criteria(
-                meta,
-                criteria,
-                limit=condition.limit,
-                offset=condition.offset
+                meta, criteria, limit=condition.limit, offset=condition.offset
             )
-            logger.info(f"🔍 Repository returned {len(data) if isinstance(data, list) else 0} results")
+            logger.info(
+                f"🔍 Repository returned {len(data) if isinstance(data, list) else 0} results"
+            )
 
             # Handle repository errors
             data = self._handle_repository_error(data, "search", entity_class)
@@ -502,7 +501,9 @@ class EntityServiceImpl(EntityService):
         Returns:
             The same SearchConditionRequest object
         """
-        logger.debug(f"🔍 Using unified search converter for {len(condition.conditions)} conditions")
+        logger.debug(
+            f"🔍 Using unified search converter for {len(condition.conditions)} conditions"
+        )
         return condition
 
     # ========================================
@@ -575,9 +576,7 @@ class EntityServiceImpl(EntityService):
             EntityResponse with updated entity and metadata
         """
         try:
-            meta = await self._get_repository_meta(
-                "", entity_class, entity_version, {}
-            )
+            meta = await self._get_repository_meta("", entity_class, entity_version, {})
 
             updated_id = await self._repository.update(meta, entity_id, entity)
 
@@ -907,7 +906,9 @@ class EntityServiceImpl(EntityService):
 
             if not updated_id:
                 raise EntityServiceError(
-                    "Transition execution returned no entity ID", entity_class, entity_id
+                    "Transition execution returned no entity ID",
+                    entity_class,
+                    entity_id,
                 )
 
             # Add technical_id to entity data

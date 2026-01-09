@@ -23,8 +23,8 @@ async def _fetch_conversation_entity(
     Returns:
         Conversation response or None
     """
-    from services.services import get_entity_service
     from application.entity.conversation.version_1.conversation import Conversation
+    from services.services import get_entity_service
 
     entity_service = get_entity_service()
     response = await entity_service.get_by_id(
@@ -70,17 +70,15 @@ def _update_workflow_cache(conversation: any, build_id: str, namespace: str) -> 
     logger.info(f"Updated workflow_cache: build_id={build_id}, namespace={namespace}")
 
 
-async def _persist_conversation(
-    conversation_id: str, conversation: any
-) -> None:
+async def _persist_conversation(conversation_id: str, conversation: any) -> None:
     """Persist conversation changes to database.
 
     Args:
         conversation_id: Conversation ID
         conversation: Conversation object
     """
-    from services.services import get_entity_service
     from application.entity.conversation.version_1.conversation import Conversation
+    from services.services import get_entity_service
 
     entity_service = get_entity_service()
     entity_dict = conversation.model_dump(by_alias=False)

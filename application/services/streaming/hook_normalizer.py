@@ -36,11 +36,4 @@ def normalize_hook(hook: Dict[str, Any]) -> Dict[str, Any]:
         return hook
 
     logger.info("🎣 Normalizing hook: unwrapping options from list to dict")
-    return {
-        **hook,
-        "data": {
-            **hook["data"],
-            "options": options[0]
-        }
-    }
-
+    return {**hook, "data": {**hook["data"], "options": options[0]}}

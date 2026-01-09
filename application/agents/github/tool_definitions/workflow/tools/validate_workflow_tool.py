@@ -16,7 +16,9 @@ from application.agents.github.tool_definitions.common.constants import STOP_ON_
 logger = logging.getLogger(__name__)
 
 
-def _format_validation_error(error: jsonschema.ValidationError, idx: int | None = None) -> str:
+def _format_validation_error(
+    error: jsonschema.ValidationError, idx: int | None = None
+) -> str:
     """Format validation error message.
 
     Args:
@@ -26,7 +28,9 @@ def _format_validation_error(error: jsonschema.ValidationError, idx: int | None 
     Returns:
         Formatted error message
     """
-    error_path = ".".join(str(p) for p in error.absolute_path) if error.absolute_path else "root"
+    error_path = (
+        ".".join(str(p) for p in error.absolute_path) if error.absolute_path else "root"
+    )
     location = f"workflows[{idx}]" if idx is not None else "root"
 
     error_msg = f"❌ Workflow validation failed in {location}:\n"
@@ -34,7 +38,9 @@ def _format_validation_error(error: jsonschema.ValidationError, idx: int | None 
     error_msg += f"   Error: {error.message}\n"
 
     if "required" in str(error.message).lower():
-        error_msg += "   Hint: Check that all required fields are present in your workflow.\n"
+        error_msg += (
+            "   Hint: Check that all required fields are present in your workflow.\n"
+        )
     elif "enum" in str(error.message).lower():
         error_msg += "   Hint: Check that field values match the allowed options.\n"
 
@@ -61,9 +67,7 @@ def _validate_wrapper_format(workflow: dict) -> str:
     return ""
 
 
-async def _validate_workflows_in_wrapper(
-    workflows: list, schema: dict
-) -> str:
+async def _validate_workflows_in_wrapper(workflows: list, schema: dict) -> str:
     """Validate each workflow in wrapper format.
 
     Args:
@@ -106,7 +110,11 @@ async def validate_workflow_against_schema(workflow_json: str) -> str:
         - Detailed error messages if validation fails
     """
     try:
-        schema_path = Path(__file__).parent.parent.parent.parent / "prompts" / "workflow_schema.json"
+        schema_path = (
+            Path(__file__).parent.parent.parent.parent
+            / "prompts"
+            / "workflow_schema.json"
+        )
         if not schema_path.exists():
             return f"ERROR: Workflow schema not found at {schema_path}.{STOP_ON_ERROR}"
 
@@ -125,7 +133,9 @@ async def validate_workflow_against_schema(workflow_json: str) -> str:
             if error_msg:
                 return error_msg
 
-            error_msg = await _validate_workflows_in_wrapper(workflow["workflows"], schema)
+            error_msg = await _validate_workflows_in_wrapper(
+                workflow["workflows"], schema
+            )
             if error_msg:
                 return error_msg
 

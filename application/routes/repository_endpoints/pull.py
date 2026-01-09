@@ -57,29 +57,29 @@ def _extract_repository_info(conversation_data: Any) -> Dict[str, Optional[str]]
     """
     if isinstance(conversation_data, dict):
         return {
-            'repository_path': (
-                conversation_data.get('workflow_cache', {})
-                .get('adk_session_state', {})
-                .get('repository_path')
+            "repository_path": (
+                conversation_data.get("workflow_cache", {})
+                .get("adk_session_state", {})
+                .get("repository_path")
             ),
-            'repository_branch': conversation_data.get('repository_branch'),
-            'repository_url': conversation_data.get('repository_url'),
-            'installation_id': conversation_data.get('installation_id'),
-            'repository_name': conversation_data.get('repository_name'),
-            'repository_owner': conversation_data.get('repository_owner'),
+            "repository_branch": conversation_data.get("repository_branch"),
+            "repository_url": conversation_data.get("repository_url"),
+            "installation_id": conversation_data.get("installation_id"),
+            "repository_name": conversation_data.get("repository_name"),
+            "repository_owner": conversation_data.get("repository_owner"),
         }
     else:
         return {
-            'repository_path': (
-                getattr(conversation_data, 'workflow_cache', {})
-                .get('adk_session_state', {})
-                .get('repository_path')
+            "repository_path": (
+                getattr(conversation_data, "workflow_cache", {})
+                .get("adk_session_state", {})
+                .get("repository_path")
             ),
-            'repository_branch': getattr(conversation_data, 'repository_branch', None),
-            'repository_url': getattr(conversation_data, 'repository_url', None),
-            'installation_id': getattr(conversation_data, 'installation_id', None),
-            'repository_name': getattr(conversation_data, 'repository_name', None),
-            'repository_owner': getattr(conversation_data, 'repository_owner', None),
+            "repository_branch": getattr(conversation_data, "repository_branch", None),
+            "repository_url": getattr(conversation_data, "repository_url", None),
+            "installation_id": getattr(conversation_data, "installation_id", None),
+            "repository_name": getattr(conversation_data, "repository_name", None),
+            "repository_owner": getattr(conversation_data, "repository_owner", None),
         }
 
 
@@ -125,11 +125,7 @@ def _format_pull_response(success: bool, message: str, branch: str) -> Dict[str,
     Returns:
         Response dictionary.
     """
-    return {
-        "success": success,
-        "message": message,
-        "branch": branch
-    }
+    return {"success": success, "message": message, "branch": branch}
 
 
 async def handle_pull_repository() -> ResponseReturnValue:
@@ -159,12 +155,12 @@ async def handle_pull_repository() -> ResponseReturnValue:
 
         # Extract repository information
         repo_info = _extract_repository_info(conversation_data)
-        repository_path = repo_info['repository_path']
-        repository_branch = repo_info['repository_branch']
-        repository_url = repo_info['repository_url']
-        installation_id = repo_info['installation_id']
-        repository_name = repo_info['repository_name']
-        repository_owner = repo_info['repository_owner']
+        repository_path = repo_info["repository_path"]
+        repository_branch = repo_info["repository_branch"]
+        repository_url = repo_info["repository_url"]
+        installation_id = repo_info["installation_id"]
+        repository_name = repo_info["repository_name"]
+        repository_owner = repo_info["repository_owner"]
 
         # Validate branch is configured
         if not repository_branch:
@@ -176,10 +172,12 @@ async def handle_pull_repository() -> ResponseReturnValue:
                 return APIResponse.error(
                     "Repository not available and repository_url not configured. "
                     "Please ensure the conversation has repository_url configured.",
-                    400
+                    400,
                 )
 
-            logger.info(f"Repository not available at {repository_path}, attempting to clone from {repository_url}")
+            logger.info(
+                f"Repository not available at {repository_path}, attempting to clone from {repository_url}"
+            )
             success, message, cloned_path = await ensure_repository_cloned(
                 repository_url=repository_url,
                 repository_branch=repository_branch,
@@ -197,10 +195,12 @@ async def handle_pull_repository() -> ResponseReturnValue:
         # Pull changes
         from application.agents.github.tools import pull_repository_changes
 
-        tool_context = _SimpleToolContext(state={
-            "conversation_id": conversation_id,
-            "repository_path": repository_path
-        })
+        tool_context = _SimpleToolContext(
+            state={
+                "conversation_id": conversation_id,
+                "repository_path": repository_path,
+            }
+        )
 
         result = await pull_repository_changes(tool_context)
 
@@ -209,17 +209,12 @@ async def handle_pull_repository() -> ResponseReturnValue:
 
         # Format and return success response
         response = _format_pull_response(
-            success=True,
-            message=result,
-            branch=repository_branch
+            success=True, message=result, branch=repository_branch
         )
         return APIResponse.success(response)
 
     except Exception as e:
         logger.error(f"❌ Error pulling repository: {e}", exc_info=True)
         return APIResponse.error(
-            "Failed to pull repository",
-            500,
-            details={"message": str(e)}
+            "Failed to pull repository", 500, details={"message": str(e)}
         )
-

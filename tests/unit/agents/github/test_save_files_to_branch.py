@@ -1,11 +1,12 @@
 """Unit tests for save_files_to_branch tool."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from pathlib import Path
-import tempfile
 import shutil
 import subprocess
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from application.agents.shared.repository_tools import save_files_to_branch
 
@@ -19,8 +20,16 @@ class TestSaveFilesToBranch:
         temp_dir = tempfile.mkdtemp()
         # Initialize git repo
         subprocess.run(["git", "init"], cwd=temp_dir, capture_output=True)
-        subprocess.run(["git", "config", "user.name", "Test User"], cwd=temp_dir, capture_output=True)
-        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=temp_dir, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.name", "Test User"],
+            cwd=temp_dir,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=temp_dir,
+            capture_output=True,
+        )
         yield temp_dir
         shutil.rmtree(temp_dir, ignore_errors=True)
 
@@ -52,7 +61,9 @@ class TestSaveFilesToBranch:
 
         # Verify files were saved
         repo_path = Path(mock_tool_context.state["repository_path"])
-        func_req_dir = repo_path / "application" / "resources" / "functional_requirements"
+        func_req_dir = (
+            repo_path / "application" / "resources" / "functional_requirements"
+        )
         assert (func_req_dir / "requirements.txt").exists()
         assert (func_req_dir / "spec.md").exists()
 
@@ -71,7 +82,9 @@ class TestSaveFilesToBranch:
 
         # Verify files were saved to Java path
         repo_path = Path(mock_tool_context.state["repository_path"])
-        func_req_dir = repo_path / "src" / "main" / "resources" / "functional_requirements"
+        func_req_dir = (
+            repo_path / "src" / "main" / "resources" / "functional_requirements"
+        )
         assert (func_req_dir / "api.yaml").exists()
 
     @pytest.mark.asyncio
@@ -113,7 +126,9 @@ class TestSaveFilesToBranch:
             await save_files_to_branch(files=files, tool_context=mock_tool_context)
 
     @pytest.mark.asyncio
-    async def test_save_files_to_branch_directory_traversal_prevention(self, mock_tool_context):
+    async def test_save_files_to_branch_directory_traversal_prevention(
+        self, mock_tool_context
+    ):
         """Test that directory traversal attempts are prevented."""
         files = [
             {"filename": "../../../etc/passwd", "content": "malicious"},
@@ -123,7 +138,9 @@ class TestSaveFilesToBranch:
 
         # Should save only the filename, not the path
         repo_path = Path(mock_tool_context.state["repository_path"])
-        func_req_dir = repo_path / "application" / "resources" / "functional_requirements"
+        func_req_dir = (
+            repo_path / "application" / "resources" / "functional_requirements"
+        )
 
         # Should not create files outside functional_requirements
         assert not (repo_path / "etc" / "passwd").exists()

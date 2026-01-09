@@ -66,4 +66,3 @@ class AnalyzeRepositoryResponse(BaseModel):
     entities: List[EntityResponse]
     workflows: List[WorkflowResponse]
     requirements: List[RequirementResponse]
-

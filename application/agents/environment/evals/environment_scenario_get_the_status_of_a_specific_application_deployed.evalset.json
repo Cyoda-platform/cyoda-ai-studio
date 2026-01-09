@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_get_the_status_of_a_specific_application_deployed",
+  "name": "environment_scenario_get_the_status_of_a_specific_application_deployed",
+  "description": "Test case for: As a user, I want to get the status of a specific application deployed in a Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_get_app_status",
+      "conversation": [
+        {
+          "invocation_id": "e-08f83d43-5431-423a-9d5d-798838de1475",
+          "user_content": {
+            "parts": [
+              {
+                "text": "get the status of a specific application deployed in a Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I can fetch that \u2014 which environment (e.g., **dev**, **staging**, **prod**) and **application name** should I check? If you don't know the deployment name I can list apps in the environment first.\n\n[options-single-choice: Provide environment & app, List Environments, Cancel]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8053048
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.805305
+    }
+  ],
+  "creation_timestamp": 1767903917.8053052
+}

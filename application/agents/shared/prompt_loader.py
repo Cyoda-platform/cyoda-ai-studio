@@ -138,9 +138,14 @@ def _extract_session_variables(context: ReadonlyContext) -> Dict[str, Any]:
 
         # Common variable names to extract
         variable_names = [
-            "git_branch", "programming_language", "repository_name",
-            "environment", "cyoda_version", "project_type",
-            "entity_name", "language"
+            "git_branch",
+            "programming_language",
+            "repository_name",
+            "environment",
+            "cyoda_version",
+            "project_type",
+            "entity_name",
+            "language",
         ]
 
         for var_name in variable_names:
@@ -226,7 +231,9 @@ def _substitute_variables(
         return template_content.format(**variables)
     except KeyError as e:
         missing_var = str(e).strip("'")
-        return f"{template_content}\n\n[ERROR: Missing required variable: {missing_var}]"
+        return (
+            f"{template_content}\n\n[ERROR: Missing required variable: {missing_var}]"
+        )
     except (IndexError, ValueError) as e:
         error_msg = (
             f"{template_content}\n\n[ERROR: Template formatting error: {str(e)}. "
@@ -318,4 +325,3 @@ def extract_session_variable(
         return getattr(session_state, variable_name, default)
     except (AttributeError, KeyError):
         return default
-

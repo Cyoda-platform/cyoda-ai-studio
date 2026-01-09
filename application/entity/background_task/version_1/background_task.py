@@ -9,11 +9,11 @@ Tracks task progress, status, and results.
 from .background_task import (
     BackgroundTask,
     add_progress_message,
-    update_status,
+    calculate_statistics,
     format_duration,
     get_status_message,
-    calculate_statistics,
     to_api_response,
+    update_status,
 )
 
 __all__ = [

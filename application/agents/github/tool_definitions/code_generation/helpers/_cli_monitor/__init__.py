@@ -9,27 +9,28 @@ from __future__ import annotations
 # Re-export all public components
 from application.agents.github.tool_definitions.git import _commit_and_push_changes
 from application.agents.github.tool_definitions.repository import get_repository_diff
+
 from .commit_operations import (
     AuthInfo,
+    _commit_progress,
     _extract_auth_info,
     _get_diff_summary,
-    _send_initial_commit,
     _send_final_commit,
-    _commit_progress,
-)
-from .task_updates import (
-    _update_task_on_completion,
-    _update_task_progress,
-    _update_task_with_commit_info,
-    _handle_process_timeout_task_update,
+    _send_initial_commit,
 )
 from .process_monitoring import (
     MonitorConfig,
-    _unregister_process,
     _handle_normal_completion,
     _handle_periodic_updates,
     _handle_process_timeout,
+    _unregister_process,
     monitor_cli_process,
+)
+from .task_updates import (
+    _handle_process_timeout_task_update,
+    _update_task_on_completion,
+    _update_task_progress,
+    _update_task_with_commit_info,
 )
 
 __all__ = [

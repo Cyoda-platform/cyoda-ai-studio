@@ -10,14 +10,14 @@ import logging
 from typing import Any
 
 from .wrapper import (
-    _get_session_by_technical_id,
-    _get_or_create_session,
-    _load_session_state,
-    _save_session_state,
-    _verify_session_retrievable,
     _build_initial_session_state,
     _execute_agent_and_extract_response,
     _extract_metadata_from_session,
+    _get_or_create_session,
+    _get_session_by_technical_id,
+    _load_session_state,
+    _save_session_state,
+    _verify_session_retrievable,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,8 +40,9 @@ class CyodaAssistantWrapper:
             entity_service: Cyoda entity service for persistence
         """
         from google.adk.runners import Runner
-        from application.services.cyoda_session_service import CyodaSessionService
+
         from application.agents.shared.cyoda_response_plugin import CyodaResponsePlugin
+        from application.services.cyoda_session_service import CyodaSessionService
 
         self.agent = adk_agent
         self.entity_service = entity_service

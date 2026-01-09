@@ -38,4 +38,6 @@ async def delete_entity_model(
     """
     logger.info(f"Deleting {entity_name} v{model_version} from {cyoda_host}")
     container = get_user_service_container(client_id, client_secret, cyoda_host)
-    return format_model_success({"message": "Delete model endpoint not yet implemented"})
+    return format_model_success(
+        {"message": "Delete model endpoint not yet implemented"}
+    )

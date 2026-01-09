@@ -9,14 +9,45 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from common.config.config import ENTITY_VERSION
+from common.search import CyodaOperator
 from common.service.entity_service import (
     EntityService,
     LogicalOperator,
     SearchConditionRequest,
 )
-from common.search import CyodaOperator
 
 logger = logging.getLogger(__name__)
+
+
+def _get_search_operator(op_str: str) -> CyodaOperator:
+    """Convert operator string to CyodaOperator enum.
+
+    Args:
+        op_str: Operator string (eq, ne, gt, lt, gte, lte, etc.)
+
+    Returns:
+        CyodaOperator enum value
+    """
+    operator_map = {
+        "eq": CyodaOperator.EQUALS,
+        "equals": CyodaOperator.EQUALS,
+        "ne": CyodaOperator.NOT_EQUAL,
+        "not_equal": CyodaOperator.NOT_EQUAL,
+        "gt": CyodaOperator.GREATER_THAN,
+        "greater_than": CyodaOperator.GREATER_THAN,
+        "lt": CyodaOperator.LESS_THAN,
+        "less_than": CyodaOperator.LESS_THAN,
+        "gte": CyodaOperator.GREATER_OR_EQUAL,
+        "greater_or_equal": CyodaOperator.GREATER_OR_EQUAL,
+        "lte": CyodaOperator.LESS_OR_EQUAL,
+        "less_or_equal": CyodaOperator.LESS_OR_EQUAL,
+        "contains": CyodaOperator.CONTAINS,
+        "starts_with": CyodaOperator.STARTS_WITH,
+        "ends_with": CyodaOperator.ENDS_WITH,
+        "is_null": CyodaOperator.IS_NULL,
+        "not_null": CyodaOperator.NOT_NULL,
+    }
+    return operator_map.get(op_str.lower(), CyodaOperator.EQUALS)
 
 
 class SearchService:

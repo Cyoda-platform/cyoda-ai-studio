@@ -13,10 +13,10 @@ from application.repositories.task_repository import TaskRepository
 from application.services.chat.service import ChatService
 from application.services.chat.stream_service import ChatStreamService
 from application.services.core.config_service import ConfigService, get_config_service
+from application.services.core.logs_service import LogsService
 from application.services.edge_message_persistence_service import (
     EdgeMessagePersistenceService,
 )
-from application.services.core.logs_service import LogsService
 from application.services.metrics_service import MetricsService
 from services.services import get_entity_service, get_task_service
 
@@ -81,6 +81,7 @@ class ServiceFactory:
         """
         if self._persistence_service is None:
             from services.services import get_repository
+
             repository = get_repository()
             self._persistence_service = EdgeMessagePersistenceService(repository)
             logger.debug("EdgeMessagePersistenceService initialized")

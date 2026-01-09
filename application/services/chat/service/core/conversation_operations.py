@@ -6,6 +6,7 @@ from typing import List, Optional
 
 from application.entity.conversation import Conversation
 from application.repositories.conversation_repository import ConversationRepository
+
 from .cache import ChatCacheManager
 
 logger = logging.getLogger(__name__)

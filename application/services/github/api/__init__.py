@@ -8,9 +8,9 @@ Handles all GitHub REST API interactions including:
 """
 
 from application.services.github.api.client import GitHubAPIClient
-from application.services.github.api.workflows import WorkflowOperations
-from application.services.github.api.repositories import RepositoryOperations
 from application.services.github.api.collaborators import CollaboratorOperations
+from application.services.github.api.repositories import RepositoryOperations
+from application.services.github.api.workflows import WorkflowOperations
 
 __all__ = [
     "GitHubAPIClient",
@@ -18,4 +18,3 @@ __all__ = [
     "RepositoryOperations",
     "CollaboratorOperations",
 ]
-

@@ -11,7 +11,9 @@ from google.adk.tools.tool_context import ToolContext
 from pydantic import BaseModel
 
 from application.agents.github.tool_definitions.common.constants import STOP_ON_ERROR
-from application.agents.github.tool_definitions.common.utils import ensure_repository_available
+from application.agents.github.tool_definitions.common.utils import (
+    ensure_repository_available,
+)
 from application.agents.github.tool_definitions.repository.helpers._github_service import (
     get_entity_service,
 )
@@ -29,7 +31,9 @@ class GitConfiguration(BaseModel):
     commit_message: str
 
 
-async def _validate_and_extract_context(tool_context: ToolContext) -> tuple[bool, str, str, str, str]:
+async def _validate_and_extract_context(
+    tool_context: ToolContext,
+) -> tuple[bool, str, str, str, str]:
     """Validate context and extract repository info.
 
     Args:
@@ -43,12 +47,20 @@ async def _validate_and_extract_context(tool_context: ToolContext) -> tuple[bool
         return (
             False,
             f"ERROR: repository_path not found in context. Repository must be cloned first.{STOP_ON_ERROR}",
-            "", "", ""
+            "",
+            "",
+            "",
         )
 
     conversation_id = tool_context.state.get("conversation_id")
     if not conversation_id:
-        return False, f"ERROR: conversation_id not found in context.{STOP_ON_ERROR}", "", "", ""
+        return (
+            False,
+            f"ERROR: conversation_id not found in context.{STOP_ON_ERROR}",
+            "",
+            "",
+            "",
+        )
 
     # Try context state first (most up-to-date source)
     branch_name = tool_context.state.get("branch_name")
@@ -65,22 +77,50 @@ async def _validate_and_extract_context(tool_context: ToolContext) -> tuple[bool
         )
 
         if not conversation_response:
-            return False, f"ERROR: Conversation {conversation_id} not found.{STOP_ON_ERROR}", "", "", ""
+            return (
+                False,
+                f"ERROR: Conversation {conversation_id} not found.{STOP_ON_ERROR}",
+                "",
+                "",
+                "",
+            )
 
         conversation_data = conversation_response.data
         if isinstance(conversation_data, dict):
-            branch_name = branch_name or conversation_data.get('repository_branch')
-            repository_name = repository_name or conversation_data.get('repository_name')
-            repository_owner = repository_owner or conversation_data.get('repository_owner')
+            branch_name = branch_name or conversation_data.get("repository_branch")
+            repository_name = repository_name or conversation_data.get(
+                "repository_name"
+            )
+            repository_owner = repository_owner or conversation_data.get(
+                "repository_owner"
+            )
         else:
-            branch_name = branch_name or getattr(conversation_data, 'repository_branch', None)
-            repository_name = repository_name or getattr(conversation_data, 'repository_name', None)
-            repository_owner = repository_owner or getattr(conversation_data, 'repository_owner', None)
+            branch_name = branch_name or getattr(
+                conversation_data, "repository_branch", None
+            )
+            repository_name = repository_name or getattr(
+                conversation_data, "repository_name", None
+            )
+            repository_owner = repository_owner or getattr(
+                conversation_data, "repository_owner", None
+            )
 
     if not branch_name:
-        return False, f"ERROR: No branch configured for this conversation.{STOP_ON_ERROR}", "", "", ""
+        return (
+            False,
+            f"ERROR: No branch configured for this conversation.{STOP_ON_ERROR}",
+            "",
+            "",
+            "",
+        )
     if not repository_name:
-        return False, f"ERROR: No repository configured for this conversation.{STOP_ON_ERROR}", "", "", ""
+        return (
+            False,
+            f"ERROR: No repository configured for this conversation.{STOP_ON_ERROR}",
+            "",
+            "",
+            "",
+        )
 
     return True, "", repository_path, branch_name, conversation_id
 
@@ -114,9 +154,11 @@ async def _prepare_repository_and_git(
     try:
         os.chdir(repository_path)
         status_process = await asyncio.create_subprocess_exec(
-            'git', 'status', '--porcelain',
+            "git",
+            "status",
+            "--porcelain",
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
         status_stdout, _ = await status_process.communicate()
 

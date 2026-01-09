@@ -78,8 +78,9 @@ class SearchConditionConverter:
             operator = cyoda_condition.get("operator", "AND").lower()
             if operator in ["and", "or"]:
                 builder.operator(
-                    __import__("common.search.operators", fromlist=["LogicalOperator"])
-                    .LogicalOperator[operator.upper()]
+                    __import__(
+                        "common.search.operators", fromlist=["LogicalOperator"]
+                    ).LogicalOperator[operator.upper()]
                 )
 
             conditions = cyoda_condition.get("conditions", [])
@@ -106,7 +107,9 @@ class SearchConditionConverter:
             value = cyoda_condition.get("value")
         elif condition_type == "simple":
             json_path = cyoda_condition.get("jsonPath", "")
-            field = json_path.replace("$.", "") if json_path.startswith("$.") else json_path
+            field = (
+                json_path.replace("$.", "") if json_path.startswith("$.") else json_path
+            )
             operator_type = cyoda_condition.get("operatorType", "EQUALS")
             value = cyoda_condition.get("value")
         else:
@@ -115,4 +118,3 @@ class SearchConditionConverter:
         # Use CyodaOperator directly
         cyoda_operator = CyodaOperator(operator_type)
         builder.add_condition(field, cyoda_operator, value)
-

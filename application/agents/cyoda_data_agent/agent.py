@@ -17,7 +17,6 @@ from .subagents.entity_management import entity_management_agent
 from .subagents.entity_model import entity_model_agent
 from .subagents.search import search_agent
 
-
 root_agent = LlmAgent(
     name="cyoda_data_agent",
     model=get_model_config(),

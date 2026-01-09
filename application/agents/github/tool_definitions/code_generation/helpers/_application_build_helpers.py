@@ -105,7 +105,9 @@ def _load_build_prompt_template(language: str) -> tuple[bool, str, Optional[str]
     except FileNotFoundError:
         logger.debug(f"Optimized template not found, trying standard template")
     except Exception as e:
-        logger.warning(f"Failed to load optimized template: {e}, trying standard template")
+        logger.warning(
+            f"Failed to load optimized template: {e}, trying standard template"
+        )
 
     # Fallback to standard template
     template_name = f"build_{language.lower()}_instructions"
@@ -148,9 +150,7 @@ def _load_pattern_catalog(language: str) -> str:
         return ""
 
 
-def _build_full_prompt(
-    template: str, pattern_catalog: str, requirements: str
-) -> str:
+def _build_full_prompt(template: str, pattern_catalog: str, requirements: str) -> str:
     """Build full prompt from template, catalog, and requirements.
 
     Args:

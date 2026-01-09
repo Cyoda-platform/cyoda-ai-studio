@@ -1,6 +1,7 @@
 """Tests for OpenAPI converter."""
 
 import pytest
+
 from llm_docs.converters.openapi_converter import OpenAPIConverter
 
 
@@ -13,10 +14,7 @@ def minimal_openapi_spec():
             "title": "Test API",
             "version": "1.0.0",
             "description": "A test API for unit testing.",
-            "contact": {
-                "name": "Test Team",
-                "email": "test@example.com"
-            }
+            "contact": {"name": "Test Team", "email": "test@example.com"},
         },
         "servers": [
             {"url": "https://api.example.com", "description": "Production server"}
@@ -36,9 +34,9 @@ def minimal_openapi_spec():
                                         "$ref": "#/components/schemas/TestResponse"
                                     }
                                 }
-                            }
+                            },
                         }
-                    }
+                    },
                 }
             }
         },
@@ -49,22 +47,20 @@ def minimal_openapi_spec():
                     "description": "Test response schema",
                     "properties": {
                         "id": {"type": "string", "description": "Unique identifier"},
-                        "name": {"type": "string", "description": "Name field"}
+                        "name": {"type": "string", "description": "Name field"},
                     },
-                    "required": ["id"]
+                    "required": ["id"],
                 }
             },
             "securitySchemes": {
                 "bearerAuth": {
                     "type": "http",
                     "scheme": "bearer",
-                    "bearerFormat": "JWT"
+                    "bearerFormat": "JWT",
                 }
-            }
+            },
         },
-        "tags": [
-            {"name": "Test", "description": "Test endpoints"}
-        ]
+        "tags": [{"name": "Test", "description": "Test endpoints"}],
     }
 
 
@@ -86,7 +82,7 @@ class TestOpenAPIConverter:
 
         # Write spec to temp file
         spec_file = tmp_path / "openapi.json"
-        with open(spec_file, 'w') as f:
+        with open(spec_file, "w") as f:
             json.dump(minimal_openapi_spec, f)
 
         # Load from file
@@ -134,15 +130,16 @@ class TestOpenAPIConverter:
         assert converter._get_schema_type({"type": "string"}) == "string"
 
         # Test array type
-        assert converter._get_schema_type({
-            "type": "array",
-            "items": {"type": "string"}
-        }) == "array<string>"
+        assert (
+            converter._get_schema_type({"type": "array", "items": {"type": "string"}})
+            == "array<string>"
+        )
 
         # Test reference
-        assert converter._get_schema_type({
-            "$ref": "#/components/schemas/TestResponse"
-        }) == "TestResponse"
+        assert (
+            converter._get_schema_type({"$ref": "#/components/schemas/TestResponse"})
+            == "TestResponse"
+        )
 
     def test_extract_summary(self, minimal_openapi_spec):
         """Test summary extraction."""

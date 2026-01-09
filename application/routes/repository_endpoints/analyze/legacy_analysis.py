@@ -5,7 +5,7 @@ structure and content, parsing entities, workflows, and requirements.
 """
 
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from quart.typing import ResponseReturnValue
 
@@ -26,7 +26,9 @@ from application.services.repository_parser import RepositoryParser
 logger = logging.getLogger(__name__)
 
 
-def _get_github_service(installation_id: str, owner: str, repository_name: str):
+def _get_github_service(
+    installation_id: Optional[int], owner: str, repository_name: str
+) -> Any:
     """Get appropriate GitHub service based on installation ID.
 
     Args:
@@ -54,7 +56,7 @@ def _get_github_service(installation_id: str, owner: str, repository_name: str):
 
 async def _fetch_requirements_with_content(
     github_service: Any, structure: Any, repository_name: str, branch: str
-) -> list:
+) -> list[RequirementResponse]:
     """Fetch content for all requirements.
 
     Args:
@@ -123,13 +125,15 @@ def _build_workflow_responses(structure: Any) -> list[WorkflowResponse]:
             name=w.workflow_file or w.entity_name,
             entity_name=w.entity_name,
             file_path=w.file_path,
-            content=None
+            content=None,
         )
         for w in structure.workflows
     ]
 
 
-async def analyze_repository_legacy(req: AnalyzeRepositoryRequest) -> ResponseReturnValue:
+async def analyze_repository_legacy(
+    req: AnalyzeRepositoryRequest,
+) -> ResponseReturnValue:
     """Analyze repository using legacy GitHub API approach.
 
     Parses repository structure, fetches requirements content, and formats

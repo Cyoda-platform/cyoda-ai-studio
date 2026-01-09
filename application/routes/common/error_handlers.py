@@ -51,19 +51,11 @@ def register_error_handlers(app: Quart) -> None:
         for err in error.errors():
             field = " -> ".join(str(loc) for loc in err["loc"])
             message = err["msg"]
-            errors.append({
-                "field": field,
-                "message": message,
-                "type": err["type"]
-            })
+            errors.append({"field": field, "message": message, "type": err["type"]})
 
         logger.warning(f"Validation error: {errors}")
 
-        return APIResponse.error(
-            "Validation failed",
-            400,
-            details={"errors": errors}
-        )
+        return APIResponse.error("Validation failed", 400, details={"errors": errors})
 
     @app.errorhandler(TokenExpiredError)
     async def handle_token_expired(error: TokenExpiredError):
@@ -114,11 +106,12 @@ def register_error_handlers(app: Quart) -> None:
         """
         logger.info(f"HTTP exception: {error.code} - {error.description}")
 
-        return jsonify({
-            "error": error.name,
-            "message": error.description,
-            "status": "error"
-        }), error.code
+        return (
+            jsonify(
+                {"error": error.name, "message": error.description, "status": "error"}
+            ),
+            error.code,
+        )
 
     @app.errorhandler(404)
     async def handle_not_found(error):
@@ -200,7 +193,11 @@ def create_error_handler_wrapper(handler: Callable):
 # Dummy functions for scope (replaced by actual handlers when registered)
 async def handle_validation_error(error):
     """Placeholder for validation error handler."""
-    errors = [{"field": str(loc), "message": err["msg"]} for err in error.errors() for loc in err["loc"]]
+    errors = [
+        {"field": str(loc), "message": err["msg"]}
+        for err in error.errors()
+        for loc in err["loc"]
+    ]
     return APIResponse.error("Validation failed", 400, details={"errors": errors})
 
 

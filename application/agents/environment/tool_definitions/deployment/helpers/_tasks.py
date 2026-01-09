@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 async def create_deployment_task(
-        user_id: str,
-        conversation_id: str,
-        deployment_type: str,
-        task_name: str,
-        task_description: str,
-        build_id: str,
-        namespace: str,
-        env_url: Optional[str],
+    user_id: str,
+    conversation_id: str,
+    deployment_type: str,
+    task_name: str,
+    task_description: str,
+    build_id: str,
+    namespace: str,
+    env_url: Optional[str],
 ) -> Optional[str]:
     """Create a background task for tracking deployment.
 
@@ -65,16 +65,15 @@ async def create_deployment_task(
 
     except Exception as e:
         logger.error(
-            f"Failed to create BackgroundTask for {deployment_type}: {e}",
-            exc_info=True
+            f"Failed to create BackgroundTask for {deployment_type}: {e}", exc_info=True
         )
         return None
 
 
 async def update_task_to_in_progress(
-        task_id: str,
-        namespace: str,
-        metadata: dict[str, Any],
+    task_id: str,
+    namespace: str,
+    metadata: dict[str, Any],
 ) -> None:
     """Update task status to in_progress.
 
@@ -108,9 +107,7 @@ async def add_task_to_conversation(conversation_id: str, task_id: str) -> None:
         task_id: Task ID
     """
     try:
-        from application.agents.shared.repository_tools import (
-            _add_task_to_conversation
-        )
+        from application.agents.shared.repository_tools import _add_task_to_conversation
 
         logger.info(f"Adding task {task_id} to conversation {conversation_id}")
         await _add_task_to_conversation(conversation_id, task_id)
@@ -119,5 +116,5 @@ async def add_task_to_conversation(conversation_id: str, task_id: str) -> None:
     except Exception as e:
         logger.error(
             f"Failed to add task {task_id} to conversation {conversation_id}: {e}",
-            exc_info=True
+            exc_info=True,
         )

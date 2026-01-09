@@ -3,24 +3,24 @@
 import logging
 from typing import List, Optional
 
+from ..branch_management import (
+    checkout_base_and_create_branch,
+    checkout_branch_if_exists,
+    create_branch_from_base,
+    ensure_branch_exists,
+    set_upstream_tracking,
+)
 from ..local_operations import (
     add_files_to_git,
     commit_changes,
-    push_to_remote,
-    run_git_fetch,
-    run_git_diff,
     configure_pull_strategy,
-    run_git_pull,
     perform_git_clone,
-    run_git_config,
+    push_to_remote,
     repo_exists,
-)
-from ..branch_management import (
-    checkout_branch_if_exists,
-    create_branch_from_base,
-    checkout_base_and_create_branch,
-    set_upstream_tracking,
-    ensure_branch_exists,
+    run_git_config,
+    run_git_diff,
+    run_git_fetch,
+    run_git_pull,
 )
 
 logger = logging.getLogger(__name__)

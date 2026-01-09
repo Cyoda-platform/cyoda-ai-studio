@@ -133,4 +133,3 @@ You: Transfer to environment_agent with request for help setting up credentials
 6. **Respect privacy** - never expose credentials or sensitive data
 7. **Transfer to GitHub Agent** - When you need file contents from the repository
 8. **Transfer to Environment Agent** - For core environment operations or setup help
-

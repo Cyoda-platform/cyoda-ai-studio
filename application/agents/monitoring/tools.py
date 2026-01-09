@@ -22,7 +22,9 @@ from .tool_definitions.deployment.tools.check_deployment_tool import (
 from .tool_definitions.deployment.tools.wait_tool import wait_before_next_check
 
 # Export all tools
-__all__.extend([
-    "check_deployment_and_decide",
-    "wait_before_next_check",
-])
+__all__.extend(
+    [
+        "check_deployment_and_decide",
+        "wait_before_next_check",
+    ]
+)

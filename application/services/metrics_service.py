@@ -6,10 +6,10 @@ All functionality has been split into focused modules within metrics_service/.
 
 # Re-export all public APIs from the package
 from .metrics_service import (
-    MetricsService,
-    PrometheusQueryBuilder,
     GrafanaOperations,
+    MetricsService,
     PrometheusOperations,
+    PrometheusQueryBuilder,
 )
 
 __all__ = [

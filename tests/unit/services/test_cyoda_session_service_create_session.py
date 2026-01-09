@@ -1,8 +1,9 @@
 """Tests for create_session method in CyodaSessionService."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from application.services.cyoda_session_service import CyodaSessionService
 
@@ -35,13 +36,14 @@ class TestCreateSession:
         entity_service.save = AsyncMock(return_value=response)
         entity_service.execute_transition = AsyncMock()
 
-        with patch("application.services.session_service.initialization.AdkSession") as mock_adk:
+        with patch(
+            "application.services.session_service.initialization.AdkSession"
+        ) as mock_adk:
             mock_session = self._create_mock_session()
             mock_adk.from_adk_session = MagicMock(return_value=mock_session)
 
             result = await session_service.create_session(
-                app_name="test-app",
-                user_id="user-1"
+                app_name="test-app", user_id="user-1"
             )
 
             assert result is not None
@@ -59,14 +61,14 @@ class TestCreateSession:
         entity_service.save = AsyncMock(return_value=response)
         entity_service.execute_transition = AsyncMock()
 
-        with patch("application.services.session_service.initialization.AdkSession") as mock_adk:
+        with patch(
+            "application.services.session_service.initialization.AdkSession"
+        ) as mock_adk:
             mock_session = self._create_mock_session("custom-id")
             mock_adk.from_adk_session = MagicMock(return_value=mock_session)
 
             result = await session_service.create_session(
-                app_name="test-app",
-                user_id="user-1",
-                session_id="custom-id"
+                app_name="test-app", user_id="user-1", session_id="custom-id"
             )
 
             assert result is not None
@@ -87,14 +89,14 @@ class TestCreateSession:
 
         initial_state = {"key": "value"}
 
-        with patch("application.services.session_service.initialization.AdkSession") as mock_adk:
+        with patch(
+            "application.services.session_service.initialization.AdkSession"
+        ) as mock_adk:
             mock_session = self._create_mock_session()
             mock_adk.from_adk_session = MagicMock(return_value=mock_session)
 
             result = await session_service.create_session(
-                app_name="test-app",
-                user_id="user-1",
-                state=initial_state
+                app_name="test-app", user_id="user-1", state=initial_state
             )
 
             assert result is not None
@@ -113,13 +115,14 @@ class TestCreateSession:
         entity_service.save = AsyncMock(return_value=response)
         entity_service.execute_transition = AsyncMock()
 
-        with patch("application.services.session_service.initialization.AdkSession") as mock_adk:
+        with patch(
+            "application.services.session_service.initialization.AdkSession"
+        ) as mock_adk:
             mock_session = self._create_mock_session()
             mock_adk.from_adk_session = MagicMock(return_value=mock_session)
 
             result = await session_service.create_session(
-                app_name="test-app",
-                user_id="user-1"
+                app_name="test-app", user_id="user-1"
             )
 
             assert result is not None
@@ -140,14 +143,14 @@ class TestCreateSession:
         entity_service.save = AsyncMock(return_value=response)
         entity_service.execute_transition = AsyncMock()
 
-        with patch("application.services.session_service.initialization.AdkSession") as mock_adk:
+        with patch(
+            "application.services.session_service.initialization.AdkSession"
+        ) as mock_adk:
             mock_session = self._create_mock_session("custom-id")
             mock_adk.from_adk_session = MagicMock(return_value=mock_session)
 
             result = await session_service.create_session(
-                app_name="test-app",
-                user_id="user-1",
-                session_id="  custom-id  "
+                app_name="test-app", user_id="user-1", session_id="  custom-id  "
             )
 
             assert result is not None
@@ -166,13 +169,14 @@ class TestCreateSession:
         entity_service.save = AsyncMock(return_value=response)
         entity_service.execute_transition = AsyncMock()
 
-        with patch("application.services.session_service.initialization.AdkSession") as mock_adk:
+        with patch(
+            "application.services.session_service.initialization.AdkSession"
+        ) as mock_adk:
             mock_session = self._create_mock_session()
             mock_adk.from_adk_session = MagicMock(return_value=mock_session)
 
             result = await session_service.create_session(
-                app_name="test-app",
-                user_id="user-1"
+                app_name="test-app", user_id="user-1"
             )
 
             assert result is not None
@@ -190,15 +194,18 @@ class TestCreateSession:
         response.metadata.id = "session-123"
         response.metadata.state = "active"
         entity_service.save = AsyncMock(return_value=response)
-        entity_service.execute_transition = AsyncMock(side_effect=Exception("Activation failed"))
+        entity_service.execute_transition = AsyncMock(
+            side_effect=Exception("Activation failed")
+        )
 
-        with patch("application.services.session_service.initialization.AdkSession") as mock_adk:
+        with patch(
+            "application.services.session_service.initialization.AdkSession"
+        ) as mock_adk:
             mock_session = self._create_mock_session()
             mock_adk.from_adk_session = MagicMock(return_value=mock_session)
 
             result = await session_service.create_session(
-                app_name="test-app",
-                user_id="user-1"
+                app_name="test-app", user_id="user-1"
             )
 
             assert result is not None
@@ -215,15 +222,15 @@ class TestCreateSession:
         entity_service.save = AsyncMock(return_value=response)
         entity_service.execute_transition = AsyncMock()
 
-        with patch("application.services.session_service.initialization.AdkSession") as mock_adk:
+        with patch(
+            "application.services.session_service.initialization.AdkSession"
+        ) as mock_adk:
             mock_session = self._create_mock_session()
             mock_adk.from_adk_session = MagicMock(return_value=mock_session)
 
             result = await session_service.create_session(
-                app_name="test-app",
-                user_id="user-1"
+                app_name="test-app", user_id="user-1"
             )
 
             assert result is not None
             assert "__cyoda_technical_id__" in result.state
-

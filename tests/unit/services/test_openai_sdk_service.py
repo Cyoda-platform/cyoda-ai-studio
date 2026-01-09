@@ -3,8 +3,9 @@ Unit tests for OpenAI SDK Service
 """
 
 import os
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from pydantic import BaseModel
 
 from application.services.openai.sdk_service import OpenAISDKService
@@ -12,6 +13,7 @@ from application.services.openai.sdk_service import OpenAISDKService
 
 class TestPerson(BaseModel):
     """Test schema for structured output."""
+
     name: str
     age: int
     email: str
@@ -31,7 +33,7 @@ def mock_env(monkeypatch):
 @pytest.fixture
 def service(mock_env):
     """Create service instance with mocked client."""
-    with patch('application.services.openai.sdk_service.AsyncOpenAI'):
+    with patch("application.services.openai.sdk_service.AsyncOpenAI"):
         service = OpenAISDKService()
         service.client = AsyncMock()
         return service
@@ -42,7 +44,7 @@ class TestOpenAISDKServiceInit:
 
     def test_init_with_api_key(self, mock_env):
         """Test initialization with API key."""
-        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
+        with patch("application.services.openai.sdk_service.AsyncOpenAI"):
             service = OpenAISDKService()
             assert service.api_key == "sk-test-key"
             assert service.model_name == "gpt-4o"
@@ -54,7 +56,7 @@ class TestOpenAISDKServiceInit:
     def test_init_without_api_key(self, monkeypatch):
         """Test initialization without API key."""
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
+        with patch("application.services.openai.sdk_service.AsyncOpenAI"):
             service = OpenAISDKService()
             assert service.api_key is None
             assert service.client is None
@@ -65,7 +67,7 @@ class TestOpenAISDKServiceInit:
 
     def test_is_configured_false(self, mock_env):
         """Test is_configured returns False when client is None."""
-        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
+        with patch("application.services.openai.sdk_service.AsyncOpenAI"):
             service = OpenAISDKService()
             service.client = None
             assert service.is_configured() is False
@@ -93,7 +95,7 @@ class TestGenerateResponse:
 
         context = [
             {"role": "user", "content": "Hi"},
-            {"role": "assistant", "content": "Hello"}
+            {"role": "assistant", "content": "Hello"},
         ]
         response = await service.generate_response("How are you?", context=context)
         assert response == "Response"
@@ -106,15 +108,14 @@ class TestGenerateResponse:
         service.client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         response = await service.generate_response(
-            "Hello",
-            system_instruction="You are helpful"
+            "Hello", system_instruction="You are helpful"
         )
         assert response == "Response"
 
     @pytest.mark.asyncio
     async def test_generate_response_not_configured(self, mock_env):
         """Test response generation when not configured."""
-        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
+        with patch("application.services.openai.sdk_service.AsyncOpenAI"):
             service = OpenAISDKService()
             service.client = None
 
@@ -207,7 +208,7 @@ class TestGenerateResponse:
 
         context = [
             {"role": "user", "content": "First"},
-            {"role": "assistant", "content": "Second"}
+            {"role": "assistant", "content": "Second"},
         ]
 
         await service.generate_response("Third", context=context)
@@ -254,11 +255,12 @@ class TestGenerateStructuredOutput:
         mock_person = TestPerson(name="John", age=30, email="john@example.com")
         mock_response = MagicMock()
         mock_response.choices = [MagicMock(message=MagicMock(parsed=mock_person))]
-        service.client.beta.chat.completions.parse = AsyncMock(return_value=mock_response)
+        service.client.beta.chat.completions.parse = AsyncMock(
+            return_value=mock_response
+        )
 
         result = await service.generate_structured_output(
-            "Extract person info",
-            TestPerson
+            "Extract person info", TestPerson
         )
         assert result.name == "John"
         assert result.age == 30
@@ -267,7 +269,7 @@ class TestGenerateStructuredOutput:
     @pytest.mark.asyncio
     async def test_generate_structured_output_not_configured(self, mock_env):
         """Test structured output when not configured."""
-        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
+        with patch("application.services.openai.sdk_service.AsyncOpenAI"):
             service = OpenAISDKService()
             service.client = None
 
@@ -307,7 +309,7 @@ class TestStreamResponse:
     @pytest.mark.asyncio
     async def test_stream_response_not_configured(self, mock_env):
         """Test streaming when not configured."""
-        with patch('application.services.openai.sdk_service.AsyncOpenAI'):
+        with patch("application.services.openai.sdk_service.AsyncOpenAI"):
             service = OpenAISDKService()
             service.client = None
 
@@ -329,8 +331,7 @@ class TestBuildMessages:
     def test_build_messages_with_system(self, service):
         """Test building message with system instruction."""
         messages = service._build_messages(
-            "Hello",
-            system_instruction="You are helpful"
+            "Hello", system_instruction="You are helpful"
         )
         assert len(messages) == 2
         assert messages[0]["role"] == "system"
@@ -340,7 +341,7 @@ class TestBuildMessages:
         """Test building message with context."""
         context = [
             {"role": "user", "content": "Hi"},
-            {"role": "assistant", "content": "Hello"}
+            {"role": "assistant", "content": "Hello"},
         ]
         messages = service._build_messages("How are you?", context=context)
         assert len(messages) == 3
@@ -352,16 +353,13 @@ class TestBuildMessages:
         """Test building message with all parameters."""
         context = [
             {"role": "user", "content": "Hi"},
-            {"role": "assistant", "content": "Hello"}
+            {"role": "assistant", "content": "Hello"},
         ]
         messages = service._build_messages(
-            "How are you?",
-            context=context,
-            system_instruction="You are helpful"
+            "How are you?", context=context, system_instruction="You are helpful"
         )
         assert len(messages) == 4
         assert messages[0]["role"] == "system"
         assert messages[1]["role"] == "user"
         assert messages[2]["role"] == "assistant"
         assert messages[3]["role"] == "user"
-

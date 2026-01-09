@@ -19,52 +19,26 @@ def _create_google_adk_assistant(entity_service: Any) -> Any:
     Returns:
         CyodaAssistantWrapper with Google ADK agent
     """
-    from google.adk.agents import LlmAgent
-    from application.agents.shared import get_model_config
-    from application.agents.shared.prompts import create_instruction_provider
+    # Import coordinator agent (single source of truth)
+    from application.agents.coordinator.agent import root_agent as coordinator_agent
     from common.config.config import AI_MODEL
-
-    # Import all sub-agents
-    from application.agents.cyoda_data_agent.agent import root_agent as cyoda_data_agent
-    from application.agents.environment.agent import root_agent as environment_agent
-    from application.agents.github.agent import root_agent as github_agent
-    from application.agents.qa.agent import root_agent as qa_agent
-    from application.agents.setup.agent import root_agent as setup_agent
 
     # Import wrapper
     from .wrapper import CyodaAssistantWrapper
 
     logger.info("Initializing Google ADK Assistant")
-
-    # Get model configuration with retry support
-    model_config = get_model_config()
     logger.info(f"Using model: {AI_MODEL} with retry support")
 
-    # Create coordinator agent with sub-agents
-    coordinator = LlmAgent(
-        name="cyoda_assistant",
-        model=model_config,
-        description="Cyoda AI Assistant - helps users build and edit event-driven applications naturally",
-        instruction=create_instruction_provider("coordinator"),
-        tools=[],
-        sub_agents=[
-            qa_agent,
-            setup_agent,
-            environment_agent,
-            github_agent,
-            cyoda_data_agent,
-        ],
-    )
-
+    # Use coordinator agent directly
     logger.info(
-        "✓ Cyoda Assistant created with QA, Setup, Environment, "
+        "✓ Cyoda Assistant created with QA, Environment, "
         "GitHub, and Cyoda Data sub-agents"
     )
     logger.info("✓ Using Google ADK with sub_agents pattern")
 
     # Wrap in Cyoda-specific wrapper
     wrapper = CyodaAssistantWrapper(
-        adk_agent=coordinator, entity_service=entity_service
+        adk_agent=coordinator_agent, entity_service=entity_service
     )
     return wrapper
 
@@ -78,8 +52,8 @@ def _create_openai_assistant(entity_service: Any) -> Any:
     Returns:
         OpenAIAssistantWrapper with OpenAI agent
     """
-    from application.services.openai.assistant_wrapper import OpenAIAssistantWrapper
     from application.agents.openai_agents import create_openai_coordinator_agent
+    from application.services.openai.assistant_wrapper import OpenAIAssistantWrapper
 
     logger.info("Initializing OpenAI Agents Assistant")
 
@@ -90,15 +64,11 @@ def _create_openai_assistant(entity_service: Any) -> Any:
     logger.info("✓ Using OpenAI Agents with coordinator pattern and handoffs")
 
     # Wrap in Cyoda-specific wrapper
-    wrapper = OpenAIAssistantWrapper(
-        agent=coordinator, entity_service=entity_service
-    )
+    wrapper = OpenAIAssistantWrapper(agent=coordinator, entity_service=entity_service)
     return wrapper
 
 
-def create_cyoda_assistant(
-    google_adk_service: Any, entity_service: Any
-) -> Any:
+def create_cyoda_assistant(google_adk_service: Any, entity_service: Any) -> Any:
     """Create the Cyoda AI Assistant using configured SDK (Google ADK or OpenAI).
 
     Selects SDK based on AI_SDK environment variable:

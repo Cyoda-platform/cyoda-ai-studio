@@ -16,19 +16,19 @@ import logging
 
 from google.adk.tools.tool_context import ToolContext
 
-from .validation import (
-    _validate_context_and_path,
-    _initialize_results,
-    _generate_analysis_summary,
-)
 from .analysis import (
-    _analyze_entity_files,
-    _analyze_workflow_files,
-    _analyze_requirement_files,
     _analyze_directory_structure,
+    _analyze_entity_files,
+    _analyze_requirement_files,
+    _analyze_workflow_files,
 )
 from .command_execution import (
     _execute_and_track_command,
+)
+from .validation import (
+    _generate_analysis_summary,
+    _initialize_results,
+    _validate_context_and_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,34 +56,40 @@ async def analyze_repository_structure_agentic(tool_context: ToolContext) -> str
 
         # Analyze JSON files (entities and workflows)
         json_data, json_cmd = await _execute_and_track_command(
-            "find . -name '*.json' -type f | sort",
-            "Find all JSON files",
-            tool_context
+            "find . -name '*.json' -type f | sort", "Find all JSON files", tool_context
         )
         commands_executed.append(json_cmd)
 
         if json_data.get("success"):
-            json_files = [f.strip() for f in json_data["stdout"].split('\n') if f.strip()]
+            json_files = [
+                f.strip() for f in json_data["stdout"].split("\n") if f.strip()
+            ]
 
             # Analyze entities
-            entity_files = [f for f in json_files if '/entity/' in f]
-            analysis_results["entities"] = await _analyze_entity_files(entity_files, tool_context)
+            entity_files = [f for f in json_files if "/entity/" in f]
+            analysis_results["entities"] = await _analyze_entity_files(
+                entity_files, tool_context
+            )
 
             # Analyze workflows
-            workflow_files = [f for f in json_files if '/workflow' in f]
-            analysis_results["workflows"] = await _analyze_workflow_files(workflow_files, tool_context)
+            workflow_files = [f for f in json_files if "/workflow" in f]
+            analysis_results["workflows"] = await _analyze_workflow_files(
+                workflow_files, tool_context
+            )
 
         # Analyze requirements files
         req_data, req_cmd = await _execute_and_track_command(
             "find . -path '*/functional_requirements/*' -type f | sort",
             "Find requirements files (all textual formats)",
-            tool_context
+            tool_context,
         )
         commands_executed.append(req_cmd)
 
         if req_data.get("success"):
-            req_files = [f.strip() for f in req_data["stdout"].split('\n') if f.strip()]
-            analysis_results["requirements"] = await _analyze_requirement_files(req_files, tool_context)
+            req_files = [f.strip() for f in req_data["stdout"].split("\n") if f.strip()]
+            analysis_results["requirements"] = await _analyze_requirement_files(
+                req_files, tool_context
+            )
 
         # Analyze directory structure
         directories = await _analyze_directory_structure(tool_context)
@@ -95,7 +101,7 @@ async def analyze_repository_structure_agentic(tool_context: ToolContext) -> str
             analysis_results["entities"],
             analysis_results["workflows"],
             analysis_results["requirements"],
-            commands_executed
+            commands_executed,
         )
 
         # Log results

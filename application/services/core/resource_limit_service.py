@@ -70,11 +70,7 @@ class ResourceLimitService:
         )
 
     def check_replica_limit(
-        self,
-        user_id: str,
-        env_name: str,
-        app_name: str,
-        requested_replicas: int
+        self, user_id: str, env_name: str, app_name: str, requested_replicas: int
     ) -> QuotaCheckResult:
         """Check if requested replica count is within limits.
 
@@ -119,10 +115,7 @@ class ResourceLimitService:
         )
 
     def check_app_count_limit(
-        self,
-        user_id: str,
-        env_name: str,
-        current_app_count: int
+        self, user_id: str, env_name: str, current_app_count: int
     ) -> QuotaCheckResult:
         """Check if user can create another app in the environment.
 
@@ -153,9 +146,7 @@ class ResourceLimitService:
         )
 
     def check_environment_count_limit(
-        self,
-        user_id: str,
-        current_env_count: int
+        self, user_id: str, current_env_count: int
     ) -> QuotaCheckResult:
         """Check if user can create another environment.
 

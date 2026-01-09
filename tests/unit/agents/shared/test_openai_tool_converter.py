@@ -3,6 +3,7 @@ Unit tests for OpenAI Tool Converter
 """
 
 import json
+
 import pytest
 
 from application.agents.shared.openai_tool_converter import ToolConverter
@@ -73,8 +74,7 @@ class TestConvertFunctionToToolDefinition:
     def test_convert_function_custom_description(self):
         """Test custom description override."""
         tool_def = ToolConverter.convert_function_to_tool_definition(
-            simple_function,
-            description="Custom description"
+            simple_function, description="Custom description"
         )
         assert tool_def["function"]["description"] == "Custom description"
 
@@ -85,6 +85,7 @@ class TestGetParameterType:
     def test_get_parameter_type_string(self):
         """Test string type detection."""
         import inspect
+
         sig = inspect.signature(simple_function)
         param = sig.parameters["name"]
         param_type = ToolConverter._get_parameter_type(param)
@@ -93,6 +94,7 @@ class TestGetParameterType:
     def test_get_parameter_type_integer(self):
         """Test integer type detection."""
         import inspect
+
         sig = inspect.signature(simple_function)
         param = sig.parameters["age"]
         param_type = ToolConverter._get_parameter_type(param)
@@ -144,8 +146,8 @@ class TestExtractToolCalls:
                                 "id": "call_123",
                                 "function": {
                                     "name": "get_weather",
-                                    "arguments": '{"location": "NYC"}'
-                                }
+                                    "arguments": '{"location": "NYC"}',
+                                },
                             }
                         ]
                     }
@@ -167,18 +169,12 @@ class TestExtractToolCalls:
                         "tool_calls": [
                             {
                                 "id": "call_1",
-                                "function": {
-                                    "name": "tool1",
-                                    "arguments": '{}'
-                                }
+                                "function": {"name": "tool1", "arguments": "{}"},
                             },
                             {
                                 "id": "call_2",
-                                "function": {
-                                    "name": "tool2",
-                                    "arguments": '{}'
-                                }
-                            }
+                                "function": {"name": "tool2", "arguments": "{}"},
+                            },
                         ]
                     }
                 }
@@ -206,9 +202,7 @@ class TestBuildToolResultMessage:
     def test_build_tool_result_message_string(self):
         """Test building tool result with string."""
         message = ToolConverter.build_tool_result_message(
-            "call_123",
-            "get_weather",
-            "Sunny, 72°F"
+            "call_123", "get_weather", "Sunny, 72°F"
         )
         assert message["role"] == "tool"
         assert message["tool_call_id"] == "call_123"
@@ -218,9 +212,7 @@ class TestBuildToolResultMessage:
         """Test building tool result with dict."""
         result = {"temperature": 72, "condition": "sunny"}
         message = ToolConverter.build_tool_result_message(
-            "call_123",
-            "get_weather",
-            result
+            "call_123", "get_weather", result
         )
         assert message["role"] == "tool"
         content = json.loads(message["content"])
@@ -229,11 +221,6 @@ class TestBuildToolResultMessage:
 
     def test_build_tool_result_message_number(self):
         """Test building tool result with number."""
-        message = ToolConverter.build_tool_result_message(
-            "call_123",
-            "calculate",
-            42
-        )
+        message = ToolConverter.build_tool_result_message("call_123", "calculate", 42)
         assert message["role"] == "tool"
         assert message["content"] == "42"
-

@@ -135,7 +135,9 @@ async def setup_and_monitor_cli_process(
 
         # Step 2: Start background monitoring
         await start_monitoring_fn(process, repository_path, branch_name, tool_context)
-        logger.info(f"✅ Background monitoring started for {process_type} process {process.pid}")
+        logger.info(
+            f"✅ Background monitoring started for {process_type} process {process.pid}"
+        )
 
         return True, "", task_id, env_task_id
 

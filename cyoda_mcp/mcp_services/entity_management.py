@@ -9,12 +9,12 @@ import logging
 from typing import Any, Dict
 
 from common.config.config import ENTITY_VERSION
+from common.search import CyodaOperator
 from common.service.entity_service import (
     EntityService,
     LogicalOperator,
     SearchConditionRequest,
 )
-from common.search import CyodaOperator
 
 logger = logging.getLogger(__name__)
 

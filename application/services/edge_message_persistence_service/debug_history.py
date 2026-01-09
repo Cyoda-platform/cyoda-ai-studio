@@ -14,7 +14,9 @@ from .message_operations import save_to_repository
 logger = logging.getLogger(__name__)
 
 # Response persistence constants
-RESPONSE_LOG_SUCCESS = "✅ Saved response with debug history as edge message {edge_message_id}"
+RESPONSE_LOG_SUCCESS = (
+    "✅ Saved response with debug history as edge message {edge_message_id}"
+)
 RESPONSE_LOG_FAILURE = "Failed to save response with debug history"
 RESPONSE_LOG_ERROR = "❌ Error saving response with debug history: {error}"
 
@@ -109,7 +111,9 @@ async def save_response_with_history(
         meta = build_edge_message_meta()
 
         # Step 4: Save to repository
-        edge_message_id = await save_to_repository(repository, meta, edge_message.model_dump())
+        edge_message_id = await save_to_repository(
+            repository, meta, edge_message.model_dump()
+        )
 
         # Step 5: Log result and return
         if edge_message_id:

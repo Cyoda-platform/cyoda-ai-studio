@@ -79,18 +79,19 @@ async def generate_test_token():
         token = generate_user_token(
             user_id=data.user_id,
             is_superuser=data.is_superuser,
-            expiry_hours=data.expiry_hours
+            expiry_hours=data.expiry_hours,
         )
 
-        return APIResponse.success({
-            "access_token": token,
-            "token_type": "Bearer",
-            "expires_in": data.expiry_hours * 3600,
-            "user_id": data.user_id,
-            "is_superuser": data.is_superuser
-        })
+        return APIResponse.success(
+            {
+                "access_token": token,
+                "token_type": "Bearer",
+                "expires_in": data.expiry_hours * 3600,
+                "user_id": data.user_id,
+                "is_superuser": data.is_superuser,
+            }
+        )
 
     except Exception as e:
         logger.exception(f"Error generating test token: {e}")
         return APIResponse.internal_error(str(e))
-

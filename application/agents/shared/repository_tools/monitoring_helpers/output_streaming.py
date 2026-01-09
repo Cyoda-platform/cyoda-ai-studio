@@ -43,10 +43,10 @@ async def _read_process_output_chunk(process: Any) -> Optional[str]:
     try:
         chunk = await asyncio.wait_for(
             process.stdout.read(STREAM_READ_CHUNK_SIZE),
-            timeout=STREAM_READ_TIMEOUT_SECONDS
+            timeout=STREAM_READ_TIMEOUT_SECONDS,
         )
         if chunk:
-            output_str = chunk.decode('utf-8', errors='replace')
+            output_str = chunk.decode("utf-8", errors="replace")
             logger.debug(f"📤 Output chunk: {output_str[:100]}...")
             return output_str
         return None
@@ -86,18 +86,23 @@ async def _update_task_with_output(
         True if update succeeded
     """
     try:
-        full_output = ''.join(accumulated_output)
+        full_output = "".join(accumulated_output)
         current_task = await task_service.get_task(task_id)
         existing_metadata = current_task.metadata if current_task else {}
 
         # Merge existing metadata with new output (keep last 10KB)
-        updated_metadata = {**existing_metadata, "output": full_output[-KEEP_LAST_OUTPUT_BYTES:]}
+        updated_metadata = {
+            **existing_metadata,
+            "output": full_output[-KEEP_LAST_OUTPUT_BYTES:],
+        }
 
         await task_service.update_task_status(
             task_id=task_id,
             metadata=updated_metadata,
         )
-        logger.info(f"📤 Updated task {task_id} with {len(full_output)} bytes of output")
+        logger.info(
+            f"📤 Updated task {task_id} with {len(full_output)} bytes of output"
+        )
         return True
     except Exception as e:
         logger.debug(f"Could not update task output: {e}")

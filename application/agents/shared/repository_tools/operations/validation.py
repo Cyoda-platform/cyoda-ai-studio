@@ -192,7 +192,9 @@ def _validate_tool_context(tool_context: Optional[ToolContext]) -> None:
         ValueError: If tool context is None.
     """
     if not tool_context:
-        raise ValueError("Tool context not available. This function must be called within a conversation context.")
+        raise ValueError(
+            "Tool context not available. This function must be called within a conversation context."
+        )
 
 
 def _validate_question(question: str) -> None:
@@ -218,7 +220,9 @@ def _validate_options(options: list[Dict[str, str]]) -> None:
         ValueError: If options is invalid.
     """
     if not options or len(options) == 0:
-        raise ValueError("The 'options' parameter is required and must contain at least one option")
+        raise ValueError(
+            "The 'options' parameter is required. Please provide at least one option"
+        )
 
     for i, option in enumerate(options):
         if not isinstance(option, dict):

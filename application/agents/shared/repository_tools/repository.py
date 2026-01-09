@@ -30,44 +30,45 @@ from application.agents.shared.repository_tools.constants import (
     PYTHON_PUBLIC_REPO_URL,
 )
 from application.agents.shared.repository_tools.git_operations import (
-    _run_git_command,
     _get_authenticated_repo_url_sync,
+    _run_git_command,
 )
 from services.services import get_entity_service
+
 # Re-export from core modules for backward compatibility
 from .core import (
     BranchConfiguration,
-    _validate_tool_context,
-    _extract_config_from_tool_state,
-    _extract_config_from_conversation,
-    _detect_language,
-    _determine_repository_type,
-    _get_private_repo_config,
-    _get_public_repo_config,
+    _build_invalid_repo_type_error,
     _build_missing_context_error,
     _build_no_config_error,
-    _build_invalid_repo_type_error,
-    _get_repository_config_from_context,
-    _clone_repo_to_path,
-    _checkout_existing_branch,
-    _create_new_branch,
-    _push_branch_to_remote,
-    _store_in_tool_context,
-    _update_conversation_entity,
-    _update_conversation_build_context_wrapper,
-    _handle_already_cloned_repo,
-    _handle_new_branch,
-    _handle_existing_branch,
     _build_target_path,
+    _checkout_existing_branch,
+    _clone_repo_to_path,
+    _create_new_branch,
+    _detect_language,
     _determine_repo_url,
-    _validate_and_check_protected_branch,
+    _determine_repository_type,
+    _extract_config_from_conversation,
+    _extract_config_from_tool_state,
     _extract_repo_name_and_owner,
-    _setup_repository_clone,
-    _handle_branch_setup,
     _finalize_clone,
     _format_clone_success_message,
-    _perform_clone_and_branch,
+    _get_private_repo_config,
+    _get_public_repo_config,
+    _get_repository_config_from_context,
+    _handle_already_cloned_repo,
+    _handle_branch_setup,
+    _handle_existing_branch,
+    _handle_new_branch,
     _handle_push_and_finalize,
+    _perform_clone_and_branch,
+    _push_branch_to_remote,
+    _setup_repository_clone,
+    _store_in_tool_context,
+    _update_conversation_build_context_wrapper,
+    _update_conversation_entity,
+    _validate_and_check_protected_branch,
+    _validate_tool_context,
 )
 
 logger = logging.getLogger(__name__)
@@ -111,27 +112,46 @@ async def check_existing_branch_configuration(
         # Step 1: Validate tool context
         is_valid, error_msg, conversation_id = _validate_tool_context(tool_context)
         if not is_valid:
-            return BranchConfiguration(configured=False, error=error_msg).model_dump_json()
+            logger.warning(f"❌ Tool context validation failed: {error_msg}")
+            return BranchConfiguration(
+                configured=False, error=error_msg
+            ).model_dump_json()
 
         # Step 2: Extract configuration from tool context state (most up-to-date source)
         config = _extract_config_from_tool_state(tool_context)
+        logger.info(
+            f"🔍 Tool context state: repo={config.get('repository_name')}, "
+            f"branch={config.get('repository_branch')}, owner={config.get('repository_owner')}"
+        )
 
         # Step 3: Fall back to conversation entity if needed
         if not config["repository_name"] or not config["repository_branch"]:
+            logger.info(
+                f"⚠️ Tool context incomplete, falling back to Conversation entity for conversation_id={conversation_id}"
+            )
             success, error_msg, config = await _extract_config_from_conversation(
                 conversation_id, config
             )
             if not success:
-                return BranchConfiguration(configured=False, error=error_msg).model_dump_json()
+                logger.warning(
+                    f"❌ Failed to extract from Conversation entity: {error_msg}"
+                )
+                return BranchConfiguration(
+                    configured=False, error=error_msg
+                ).model_dump_json()
 
         # Step 4: Check if branch is configured
         repository_name = config.get("repository_name")
         repository_branch = config.get("repository_branch")
 
         if not repository_name or not repository_branch:
+            logger.warning(
+                f"❌ No branch configuration found after checking both tool context and Conversation entity. "
+                f"repo={repository_name}, branch={repository_branch}"
+            )
             return BranchConfiguration(
                 configured=False,
-                message="No branch configuration found in conversation"
+                message="No branch configuration found in conversation",
             ).model_dump_json()
 
         # Step 5: Determine language and repository type
@@ -162,7 +182,9 @@ async def check_existing_branch_configuration(
         return result.model_dump_json()
 
     except Exception as e:
-        logger.error(f"Error checking existing branch configuration: {e}", exc_info=True)
+        logger.error(
+            f"Error checking existing branch configuration: {e}", exc_info=True
+        )
         return BranchConfiguration(configured=False, error=str(e)).model_dump_json()
 
 
@@ -208,7 +230,9 @@ async def set_repository_config(
         )
 
     if not tool_context:
-        raise ValueError("Tool context not available. This function must be called within a conversation context.")
+        raise ValueError(
+            "Tool context not available. This function must be called within a conversation context."
+        )
 
     tool_context.state["repository_type"] = repository_type
 
@@ -225,7 +249,9 @@ async def set_repository_config(
         tool_context.state["installation_id"] = installation_id
         tool_context.state["user_repository_url"] = repository_url
 
-        logger.info(f"✅ Private repository configured: {repository_url}, installation_id={installation_id}")
+        logger.info(
+            f"✅ Private repository configured: {repository_url}, installation_id={installation_id}"
+        )
         return (
             f"✅ **Private Repository Configured**\n\n"
             f"Repository: {repository_url}\n"
@@ -289,8 +315,12 @@ async def clone_repository(
 
         repo_url, target_directory, repository_owner, repository_name, error_msg = (
             await _setup_repository_clone(
-                language, user_repo_url, installation_id, repo_type,
-                target_directory, branch_name
+                language,
+                user_repo_url,
+                installation_id,
+                repo_type,
+                target_directory,
+                branch_name,
             )
         )
         if error_msg:
@@ -300,9 +330,15 @@ async def clone_repository(
 
         if target_path.exists() and (target_path / ".git").exists():
             return await _handle_already_cloned_repo(
-                tool_context, target_directory, branch_name, language,
-                repository_name, repository_owner, user_repo_url,
-                installation_id, repo_type
+                tool_context,
+                target_directory,
+                branch_name,
+                language,
+                repository_name,
+                repository_owner,
+                user_repo_url,
+                installation_id,
+                repo_type,
             )
 
         error_msg = await _perform_clone_and_branch(
@@ -311,11 +347,21 @@ async def clone_repository(
         if error_msg:
             return error_msg
 
-        conversation_id = tool_context.state.get("conversation_id") if tool_context else None
+        conversation_id = (
+            tool_context.state.get("conversation_id") if tool_context else None
+        )
         return await _handle_push_and_finalize(
-            target_path, branch_name, use_existing_branch, user_repo_url,
-            installation_id, tool_context, conversation_id, language,
-            repository_name, repository_owner, repo_type
+            target_path,
+            branch_name,
+            use_existing_branch,
+            user_repo_url,
+            installation_id,
+            tool_context,
+            conversation_id,
+            language,
+            repository_name,
+            repository_owner,
+            repo_type,
         )
 
     except subprocess.TimeoutExpired:

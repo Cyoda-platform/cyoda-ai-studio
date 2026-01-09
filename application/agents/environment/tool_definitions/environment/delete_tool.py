@@ -6,9 +6,12 @@ import json
 import logging
 
 from google.adk.tools.tool_context import ToolContext
-from application.services.environment_management_service import get_environment_management_service
 
-from ..common.utils.utils import require_authenticated_user, handle_tool_errors
+from application.services.environment_management_service import (
+    get_environment_management_service,
+)
+
+from ..common.utils.utils import handle_tool_errors, require_authenticated_user
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,8 @@ async def delete_environment(tool_context: ToolContext, env_name: str) -> str:
     # Call environment management service
     user_id = tool_context.state.get("user_id", "guest")
     env_service = get_environment_management_service()
-    deletion_result = await env_service.delete_environment(user_id=user_id, env_name=env_name)
+    deletion_result = await env_service.delete_environment(
+        user_id=user_id, env_name=env_name
+    )
 
     return json.dumps(deletion_result)

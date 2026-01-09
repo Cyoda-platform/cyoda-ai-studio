@@ -12,90 +12,114 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
-
 # Security validation constants
 MAX_COMMAND_LENGTH = 1000
 
 # Allowed read-only commands
 ALLOWED_COMMANDS = {
     # File system exploration
-    'find', 'ls', 'tree', 'du', 'stat', 'file',
+    "find",
+    "ls",
+    "tree",
+    "du",
+    "stat",
+    "file",
     # Text processing and viewing
-    'cat', 'head', 'tail', 'less', 'more', 'grep', 'egrep', 'fgrep',
+    "cat",
+    "head",
+    "tail",
+    "less",
+    "more",
+    "grep",
+    "egrep",
+    "fgrep",
     # Text manipulation (read-only)
-    'sort', 'uniq', 'cut', 'awk', 'sed', 'tr', 'wc', 'nl',
+    "sort",
+    "uniq",
+    "cut",
+    "awk",
+    "sed",
+    "tr",
+    "wc",
+    "nl",
     # Path utilities
-    'basename', 'dirname', 'realpath', 'readlink',
+    "basename",
+    "dirname",
+    "realpath",
+    "readlink",
     # Archive viewing (read-only)
-    'tar', 'gzip', 'gunzip', 'zcat',
+    "tar",
+    "gzip",
+    "gunzip",
+    "zcat",
     # JSON/data processing
-    'jq'
+    "jq",
 }
 
 # Dangerous pattern list with explanations
 DANGEROUS_PATTERNS = [
     # File modification/deletion
-    (r'\brm\b', 'file removal'),
-    (r'\bmv\b', 'file move'),
-    (r'\bcp\b', 'file copy'),
-    (r'\btouch\b', 'file creation'),
-    (r'\bmkdir\b', 'directory creation'),
-    (r'\brmdir\b', 'directory removal'),
+    (r"\brm\b", "file removal"),
+    (r"\bmv\b", "file move"),
+    (r"\bcp\b", "file copy"),
+    (r"\btouch\b", "file creation"),
+    (r"\bmkdir\b", "directory creation"),
+    (r"\brmdir\b", "directory removal"),
     # Permission changes
-    (r'\bchmod\b', 'permission change'),
-    (r'\bchown\b', 'ownership change'),
-    (r'\bchgrp\b', 'group change'),
+    (r"\bchmod\b", "permission change"),
+    (r"\bchown\b", "ownership change"),
+    (r"\bchgrp\b", "group change"),
     # System/privilege escalation
-    (r'\bsudo\b', 'sudo execution'),
-    (r'\bsu\b', 'user switch'),
+    (r"\bsudo\b", "sudo execution"),
+    (r"\bsu\b", "user switch"),
     # Output redirection (can overwrite files)
-    (r'>', 'output redirection'),
-    (r'>>', 'output append'),
-    (r'\btee\b', 'tee command'),
+    (r">", "output redirection"),
+    (r">>", "output append"),
+    (r"\btee\b", "tee command"),
     # Process control
-    (r'\bkill\b', 'process termination'),
-    (r'\bkillall\b', 'process group termination'),
-    (r'\bpkill\b', 'process signal'),
+    (r"\bkill\b", "process termination"),
+    (r"\bkillall\b", "process group termination"),
+    (r"\bpkill\b", "process signal"),
     # Network operations
-    (r'\bcurl\b', 'network request'),
-    (r'\bwget\b', 'file download'),
-    (r'\bssh\b', 'ssh connection'),
-    (r'\bscp\b', 'secure copy'),
-    (r'\brsync\b', 'sync operation'),
+    (r"\bcurl\b", "network request"),
+    (r"\bwget\b", "file download"),
+    (r"\bssh\b", "ssh connection"),
+    (r"\bscp\b", "secure copy"),
+    (r"\brsync\b", "sync operation"),
     # System modification
-    (r'\bmount\b', 'mount operation'),
-    (r'\bumount\b', 'unmount operation'),
-    (r'\bfdisk\b', 'disk partitioning'),
-    (r'\bdd\b', 'disk writing'),
+    (r"\bmount\b", "mount operation"),
+    (r"\bumount\b", "unmount operation"),
+    (r"\bfdisk\b", "disk partitioning"),
+    (r"\bdd\b", "disk writing"),
     # Package management
-    (r'\bapt\b', 'package management'),
-    (r'\byum\b', 'package management'),
-    (r'\bpip\b', 'python package management'),
-    (r'\bnpm\b', 'node package management'),
+    (r"\bapt\b", "package management"),
+    (r"\byum\b", "package management"),
+    (r"\bpip\b", "python package management"),
+    (r"\bnpm\b", "node package management"),
     # Dangerous file operations
-    (r'\bshred\b', 'secure deletion'),
-    (r'\bwipe\b', 'data wiping'),
-    (r'\btruncate\b', 'file truncation')
+    (r"\bshred\b", "secure deletion"),
+    (r"\bwipe\b", "data wiping"),
+    (r"\btruncate\b", "file truncation"),
 ]
 
 # Path traversal patterns
 PATH_TRAVERSAL_PATTERNS = [
-    (r'\.\./\.\.', 'parent directory traversal'),
-    (r'/\.\./\.\.', 'absolute parent directory traversal'),
-    (r'~/', 'home directory access'),
-    (r'/tmp', 'temp directory access'),
-    (r'/var', 'system var directory access'),
-    (r'/etc', 'system config access'),
-    (r'/usr', 'system usr access'),
-    (r'/bin', 'system bin access'),
-    (r'/sbin', 'system sbin access'),
-    (r'/root', 'root directory access'),
+    (r"\.\./\.\.", "parent directory traversal"),
+    (r"/\.\./\.\.", "absolute parent directory traversal"),
+    (r"~/", "home directory access"),
+    (r"/tmp", "temp directory access"),
+    (r"/var", "system var directory access"),
+    (r"/etc", "system config access"),
+    (r"/usr", "system usr access"),
+    (r"/bin", "system bin access"),
+    (r"/sbin", "system sbin access"),
+    (r"/root", "root directory access"),
 ]
 
 # Environment variable patterns
 ENV_VAR_PATTERNS = [
-    (r'\$\{[^}]*\}', 'braced environment variable'),
-    (r'\$[A-Z_][A-Z0-9_]*', 'unbraced environment variable'),
+    (r"\$\{[^}]*\}", "braced environment variable"),
+    (r"\$[A-Z_][A-Z0-9_]*", "unbraced environment variable"),
 ]
 
 
@@ -136,7 +160,10 @@ def _validate_command_whitelist(base_command: str) -> tuple[bool, Optional[str]]
         Tuple of (is_valid, error_message)
     """
     if base_command not in ALLOWED_COMMANDS:
-        return False, f"Command '{base_command}' is not in the allowed list of read-only commands"
+        return (
+            False,
+            f"Command '{base_command}' is not in the allowed list of read-only commands",
+        )
 
     return True, None
 
@@ -199,7 +226,10 @@ def _validate_environment_variables(command: str) -> tuple[bool, Optional[str]]:
     """
     for pattern, description in ENV_VAR_PATTERNS:
         if re.search(pattern, command):
-            return False, f"Environment variable usage is not allowed for security: {description}"
+            return (
+                False,
+                f"Environment variable usage is not allowed for security: {description}",
+            )
 
     return True, None
 
@@ -262,7 +292,4 @@ async def validate_command_security(command: str, repo_path: str) -> Dict[str, A
         return {"safe": True, "reason": "Command passed all security checks"}
 
     except Exception as e:
-        return {
-            "safe": False,
-            "reason": f"Security validation error: {str(e)}"
-        }
+        return {"safe": False, "reason": f"Security validation error: {str(e)}"}

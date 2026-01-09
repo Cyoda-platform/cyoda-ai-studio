@@ -11,24 +11,21 @@ logger = logging.getLogger(__name__)
 
 
 async def _fetch_fresh_task_version(
-    entity_service: EntityService,
-    task_id: str,
-    max_retries: int,
-    attempt: int
+    entity_service: EntityService, task_id: str, max_retries: int, attempt: int
 ) -> BackgroundTask:
     """Fetch latest task version on retry."""
     from .task_operations import get_task
 
-    logger.debug(
-        f"Retry {attempt + 1}/{max_retries}: Fetching latest task version"
-    )
+    logger.debug(f"Retry {attempt + 1}/{max_retries}: Fetching latest task version")
     fresh_task = await get_task(entity_service, task_id)
     if not fresh_task:
         raise ValueError(f"Task {task_id} not found")
     return fresh_task
 
 
-def _reapply_task_updates(fresh_task: BackgroundTask, original_task: BackgroundTask) -> BackgroundTask:
+def _reapply_task_updates(
+    fresh_task: BackgroundTask, original_task: BackgroundTask
+) -> BackgroundTask:
     """Reapply updates from original task to fresh version."""
     import copy
 
@@ -46,7 +43,9 @@ def _reapply_task_updates(fresh_task: BackgroundTask, original_task: BackgroundT
     return fresh_task
 
 
-async def _persist_task(entity_service: EntityService, task: BackgroundTask) -> BackgroundTask:
+async def _persist_task(
+    entity_service: EntityService, task: BackgroundTask
+) -> BackgroundTask:
     """Persist task to Cyoda."""
     entity_data = task.model_dump(by_alias=False)
     response = await entity_service.update(
@@ -87,7 +86,9 @@ async def update_task_with_retry(
         try:
             # Fetch fresh version on retry
             if attempt > 0:
-                fresh_task = await _fetch_fresh_task_version(entity_service, task.technical_id, max_retries, attempt)
+                fresh_task = await _fetch_fresh_task_version(
+                    entity_service, task.technical_id, max_retries, attempt
+                )
                 task = _reapply_task_updates(fresh_task, task)
 
             # Persist task

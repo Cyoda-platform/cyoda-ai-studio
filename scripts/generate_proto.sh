@@ -47,4 +47,3 @@ echo "🎯 Temporal query schemas supported in entitySearchCollection:"
 echo "  - EntityStatsGetRequest → EntityStatsResponse"
 echo "  - EntityStatsByStateGetRequest → EntityStatsByStateResponse"
 echo "  - EntityChangesMetadataGetRequest → EntityChangesMetadataResponse"
-

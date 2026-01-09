@@ -5,40 +5,40 @@ import logging
 import os
 from typing import List, Optional
 
-from common.config.config import (
-    PROJECT_DIR,
-    CLIENT_GIT_BRANCH,
-    CLONE_REPO,
-)
-from application.services.github.models.types import GitOperationResult
 from application.services.github.auth.installation_token_manager import (
     InstallationTokenManager,
+)
+from application.services.github.models.types import GitOperationResult
+from common.config.config import (
+    CLIENT_GIT_BRANCH,
+    CLONE_REPO,
+    PROJECT_DIR,
 )
 
 from ..url_management import get_repository_url
 from .helpers import (
-    get_clone_dir,
+    DEFAULT_MERGE_STRATEGY,
+    NO_CHANGES_TO_PULL_MSG,
     build_branch_result,
     build_pull_result,
     build_push_result,
+    get_clone_dir,
     should_skip_commit,
-    DEFAULT_MERGE_STRATEGY,
-    NO_CHANGES_TO_PULL_MSG,
 )
 from .subprocess_execution import (
+    add_files,
     check_repo_exists,
+    checkout_and_create_branch,
+    clone_repository,
+    commit,
     configure_git,
-    set_branch_upstream_tracking,
+    configure_merge_strategy,
     ensure_branch,
     fetch_from_remote,
     get_git_diff,
-    configure_merge_strategy,
     pull_from_remote,
-    add_files,
-    commit,
     push,
-    clone_repository,
-    checkout_and_create_branch,
+    set_branch_upstream_tracking,
 )
 
 logger = logging.getLogger(__name__)
@@ -118,14 +118,16 @@ class GitOperations:
 
             # Return early if repository already exists
             if await check_repo_exists(clone_dir):
-                await self._pull_internal(git_branch_id, repository_name, repository_url)
+                await self._pull_internal(
+                    git_branch_id, repository_name, repository_url
+                )
                 return GitOperationResult(
                     success=True,
                     message=f"Repository already exists at {clone_dir}, pulled latest changes",
                 )
 
             # Handle CLONE_REPO=false case
-            if CLONE_REPO != "true":
+            if not CLONE_REPO:
                 await asyncio.to_thread(os.makedirs, clone_dir, exist_ok=True)
                 logger.info(f"Target directory '{clone_dir}' is created.")
                 return GitOperationResult(
@@ -156,7 +158,9 @@ class GitOperations:
                 os.chdir(clone_dir)
                 await set_branch_upstream_tracking(git_branch_id)
                 await configure_git()
-                await self._pull_internal(git_branch_id, repository_name, repository_url)
+                await self._pull_internal(
+                    git_branch_id, repository_name, repository_url
+                )
 
                 return GitOperationResult(
                     success=True,
@@ -229,7 +233,9 @@ class GitOperations:
                 )
 
             # Step 4: Get diff between local and remote
-            success, error_msg, diff_result = await get_git_diff(clone_dir, git_branch_id)
+            success, error_msg, diff_result = await get_git_diff(
+                clone_dir, git_branch_id
+            )
             if not success:
                 return GitOperationResult(
                     success=False, message="Diff failed", error=error_msg
@@ -344,7 +350,9 @@ class GitOperations:
         """Run git config (for test compatibility)."""
         await configure_git()
 
-    async def _ensure_branch_exists(self, clone_dir: str, git_branch_id: str) -> tuple[bool, Optional[str]]:
+    async def _ensure_branch_exists(
+        self, clone_dir: str, git_branch_id: str
+    ) -> tuple[bool, Optional[str]]:
         """Ensure branch exists (for test compatibility).
 
         Args:

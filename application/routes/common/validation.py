@@ -53,7 +53,7 @@ def validate_json(model: Type[T]):
                     return APIResponse.error(
                         "Request body required",
                         400,
-                        details={"expected": "application/json"}
+                        details={"expected": "application/json"},
                     )
 
                 # Validate against model
@@ -71,18 +71,14 @@ def validate_json(model: Type[T]):
                 for error in e.errors():
                     field = " -> ".join(str(loc) for loc in error["loc"])
                     message = error["msg"]
-                    errors.append({
-                        "field": field,
-                        "message": message,
-                        "type": error["type"]
-                    })
+                    errors.append(
+                        {"field": field, "message": message, "type": error["type"]}
+                    )
 
                 logger.warning(f"Validation error in {func.__name__}: {errors}")
 
                 return APIResponse.error(
-                    "Validation failed",
-                    400,
-                    details={"errors": errors}
+                    "Validation failed", 400, details={"errors": errors}
                 )
 
             except Exception as e:
@@ -139,22 +135,22 @@ def validate_query_params(model: Type[T]):
                 for error in e.errors():
                     field = " -> ".join(str(loc) for loc in error["loc"])
                     message = error["msg"]
-                    errors.append({
-                        "field": field,
-                        "message": message,
-                        "type": error["type"]
-                    })
+                    errors.append(
+                        {"field": field, "message": message, "type": error["type"]}
+                    )
 
-                logger.warning(f"Query parameter validation error in {func.__name__}: {errors}")
+                logger.warning(
+                    f"Query parameter validation error in {func.__name__}: {errors}"
+                )
 
                 return APIResponse.error(
-                    "Invalid query parameters",
-                    400,
-                    details={"errors": errors}
+                    "Invalid query parameters", 400, details={"errors": errors}
                 )
 
             except Exception as e:
-                logger.exception(f"Error parsing query parameters in {func.__name__}: {e}")
+                logger.exception(
+                    f"Error parsing query parameters in {func.__name__}: {e}"
+                )
                 return APIResponse.internal_error("Failed to parse query parameters")
 
         return wrapper

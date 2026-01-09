@@ -140,4 +140,3 @@ Sync the configuration from production to staging environment.
 ```
 Promote the application from staging to production after testing.
 ```
-

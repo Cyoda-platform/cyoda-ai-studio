@@ -13,9 +13,9 @@ from fastmcp import Context, FastMCP
 
 from common.config.config import ENTITY_VERSION
 from common.search import (
+    CyodaOperator,
     LogicalOperator,
     SearchConditionRequest,
-    CyodaOperator,
 )
 from services.services import get_entity_service
 

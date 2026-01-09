@@ -14,7 +14,7 @@ from typing import Any, Optional
 
 from common.config.config import CLI_PROVIDER
 
-from .context_extraction import CLIContext, BackgroundTaskData
+from .context_extraction import BackgroundTaskData, CLIContext
 
 logger = logging.getLogger(__name__)
 

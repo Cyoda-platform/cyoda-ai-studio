@@ -7,15 +7,9 @@ tool_definitions/ following the modular architecture pattern.
 
 from __future__ import annotations
 
-# Model management tools
-from .tool_definitions.model_management.tools.list_entity_models_tool import (
-    list_entity_models,
-)
-from .tool_definitions.model_management.tools.lock_entity_model_tool import (
-    lock_entity_model,
-)
-from .tool_definitions.model_management.tools.unlock_entity_model_tool import (
-    unlock_entity_model,
+# Configuration tools
+from .tool_definitions.config.tools.set_model_change_level_tool import (
+    set_model_change_level,
 )
 
 # Model I/O tools
@@ -29,17 +23,23 @@ from .tool_definitions.model_io.tools.import_entity_model_tool import (
     import_entity_model,
 )
 
+# Model management tools
+from .tool_definitions.model_management.tools.list_entity_models_tool import (
+    list_entity_models,
+)
+from .tool_definitions.model_management.tools.lock_entity_model_tool import (
+    lock_entity_model,
+)
+from .tool_definitions.model_management.tools.unlock_entity_model_tool import (
+    unlock_entity_model,
+)
+
 # Workflow tools
 from .tool_definitions.workflow.tools.export_entity_workflows_tool import (
     export_entity_workflows,
 )
 from .tool_definitions.workflow.tools.import_entity_workflows_tool import (
     import_entity_workflows,
-)
-
-# Configuration tools
-from .tool_definitions.config.tools.set_model_change_level_tool import (
-    set_model_change_level,
 )
 
 # Export all tools

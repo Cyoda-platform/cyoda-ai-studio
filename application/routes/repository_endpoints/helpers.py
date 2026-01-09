@@ -8,7 +8,9 @@ from typing import Optional, Tuple
 
 from pydantic import BaseModel
 
-from application.services.github.auth.installation_token_manager import InstallationTokenManager
+from application.services.github.auth.installation_token_manager import (
+    InstallationTokenManager,
+)
 from common.config.config import GITHUB_PUBLIC_REPO_INSTALLATION_ID
 
 logger = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ BUILDS_DIR = Path("/tmp/cyoda_builds")
 GIT_CLONE_TIMEOUT_SECONDS = 300
 GIT_CHECKOUT_TIMEOUT_SECONDS = 60
 GIT_FETCH_TIMEOUT_SECONDS = 300
-GITHUB_URL_PATTERN = r'/([^/]+?)(\.git)?$'
+GITHUB_URL_PATTERN = r"/([^/]+?)(\.git)?$"
 
 
 class CloneResult(BaseModel):
@@ -34,19 +36,71 @@ def is_textual_file(filename: str) -> bool:
     filename_lower = filename.lower()
 
     textual_extensions = {
-        ".pdf", ".docx", ".xlsx", ".pptx", ".xml", ".json", ".txt",
-        ".yml", ".yaml", ".toml", ".ini", ".cfg", ".conf", ".properties", ".env",
-        ".md", ".markdown", ".rst", ".tex", ".latex", ".sql",
-        ".dockerfile", ".gitignore", ".gitattributes",
-        ".editorconfig", ".htaccess", ".robots",
-        ".mk", ".cmake", ".gradle",
-        ".js", ".ts", ".jsx", ".tsx",
-        ".c", ".cpp", ".h", ".hpp", ".cs", ".rs", ".go",
-        ".swift", ".dart",
-        ".hs", ".ml", ".fs", ".clj", ".elm",
-        ".r", ".jl", ".f90", ".f95",
-        ".php", ".rb", ".scala", ".lua", ".nim", ".zig", ".v",
-        ".d", ".cr", ".ex", ".exs", ".erl", ".hrl"
+        ".pdf",
+        ".docx",
+        ".xlsx",
+        ".pptx",
+        ".xml",
+        ".json",
+        ".txt",
+        ".yml",
+        ".yaml",
+        ".toml",
+        ".ini",
+        ".cfg",
+        ".conf",
+        ".properties",
+        ".env",
+        ".md",
+        ".markdown",
+        ".rst",
+        ".tex",
+        ".latex",
+        ".sql",
+        ".dockerfile",
+        ".gitignore",
+        ".gitattributes",
+        ".editorconfig",
+        ".htaccess",
+        ".robots",
+        ".mk",
+        ".cmake",
+        ".gradle",
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".cs",
+        ".rs",
+        ".go",
+        ".swift",
+        ".dart",
+        ".hs",
+        ".ml",
+        ".fs",
+        ".clj",
+        ".elm",
+        ".r",
+        ".jl",
+        ".f90",
+        ".f95",
+        ".php",
+        ".rb",
+        ".scala",
+        ".lua",
+        ".nim",
+        ".zig",
+        ".v",
+        ".d",
+        ".cr",
+        ".ex",
+        ".exs",
+        ".erl",
+        ".hrl",
     }
 
     files_without_extension = {"dockerfile", "makefile"}
@@ -119,7 +173,9 @@ async def _get_clone_url(
     if effective_installation_id:
         try:
             token_manager = InstallationTokenManager()
-            token = await token_manager.get_installation_token(int(effective_installation_id))
+            token = await token_manager.get_installation_token(
+                int(effective_installation_id)
+            )
             authenticated_url = repository_url.replace(
                 "https://github.com/",
                 f"https://x-access-token:{token}@github.com/",
@@ -267,9 +323,15 @@ async def ensure_repository_cloned(
         # Step 3: Check if already cloned
         if _is_repository_already_cloned(repo_path_obj):
             logger.info(f"✅ Repository already cloned at {repository_path}")
-            return True, f"Repository already exists at {repository_path}", repository_path
+            return (
+                True,
+                f"Repository already exists at {repository_path}",
+                repository_path,
+            )
 
-        logger.info(f"📦 Repository not found at {repository_path}, cloning from {repository_url}")
+        logger.info(
+            f"📦 Repository not found at {repository_path}, cloning from {repository_url}"
+        )
 
         # Step 4: Determine clone URL (with auth if available)
         effective_installation_id = installation_id
@@ -285,16 +347,25 @@ async def ensure_repository_cloned(
             return False, f"Failed to clone repository: {error_msg}", None
 
         # Step 6: Checkout branch with retry logic
-        success, error_msg = await _checkout_branch_with_retry(repo_path_obj, repository_branch)
+        success, error_msg = await _checkout_branch_with_retry(
+            repo_path_obj, repository_branch
+        )
         if not success:
-            return False, f"Failed to checkout branch {repository_branch}: {error_msg}", None
+            return (
+                False,
+                f"Failed to checkout branch {repository_branch}: {error_msg}",
+                None,
+            )
 
         logger.info(f"✅ Repository cloned successfully at {repository_path}")
-        return True, f"Repository cloned successfully at {repository_path}", repository_path
+        return (
+            True,
+            f"Repository cloned successfully at {repository_path}",
+            repository_path,
+        )
 
     except subprocess.TimeoutExpired:
         return False, "Repository clone operation timed out", None
     except Exception as e:
         logger.error(f"❌ Error ensuring repository is cloned: {e}", exc_info=True)
         return False, f"Error cloning repository: {str(e)}", None
-

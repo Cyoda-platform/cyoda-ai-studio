@@ -1,8 +1,9 @@
 """Unit tests for OpenAI Tool Adapter."""
 
 import asyncio
-import pytest
 from typing import Optional
+
+import pytest
 from agents.tool_context import ToolContext
 
 from application.agents.shared.openai_tool_adapter import (
@@ -10,8 +11,8 @@ from application.agents.shared.openai_tool_adapter import (
     adapt_adk_tools_list,
 )
 
-
 # Test functions with different signatures
+
 
 async def async_no_params() -> str:
     """Async function with no parameters."""
@@ -46,10 +47,12 @@ class TestAdaptAsyncToolNoParams:
     async def test_invoke_async_no_params(self):
         """Test invoking adapted async function with no parameters."""
         adapted = adapt_adk_tool_to_openai(async_no_params)
-        
+
         # Create a mock ToolContext
-        ctx = ToolContext(context=None, tool_name="test", tool_call_id="1", tool_arguments="")
-        
+        ctx = ToolContext(
+            context=None, tool_name="test", tool_call_id="1", tool_arguments=""
+        )
+
         # Invoke the tool
         result = await adapted.on_invoke_tool(ctx, "")
         assert result == "no_params_result"
@@ -79,12 +82,12 @@ class TestAdaptSyncTools:
         """Test invoking adapted sync function with no parameters."""
         adapted = adapt_adk_tool_to_openai(sync_no_params)
 
-        ctx = ToolContext(context=None, tool_name="test", tool_call_id="1", tool_arguments="")
+        ctx = ToolContext(
+            context=None, tool_name="test", tool_call_id="1", tool_arguments=""
+        )
 
         result = await adapted.on_invoke_tool(ctx, "")
         assert result == "sync_no_params"
-
-
 
 
 class TestAdaptGenerateBranchUuid:
@@ -105,7 +108,9 @@ class TestAdaptGenerateBranchUuid:
 
         adapted = adapt_adk_tool_to_openai(generate_branch_uuid)
 
-        ctx = ToolContext(context=None, tool_name="test", tool_call_id="1", tool_arguments="")
+        ctx = ToolContext(
+            context=None, tool_name="test", tool_call_id="1", tool_arguments=""
+        )
 
         result = await adapted.on_invoke_tool(ctx, "")
         # Should return a UUID string
@@ -125,4 +130,3 @@ class TestAdaptToolsList:
         assert adapted[0].name == "async_no_params"
         assert adapted[1].name == "async_with_params"
         assert adapted[2].name == "sync_no_params"
-

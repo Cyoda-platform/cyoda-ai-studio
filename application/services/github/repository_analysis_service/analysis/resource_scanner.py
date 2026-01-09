@@ -19,25 +19,79 @@ class ResourceScanner:
         """Check if a file is a textual format based on extension."""
         filename_lower = filename.lower()
         textual_extensions = {
-            ".pdf", ".docx", ".xlsx", ".pptx", ".xml", ".json", ".txt",
-            ".yml", ".yaml", ".toml", ".ini", ".cfg", ".conf", ".properties", ".env",
-            ".md", ".markdown", ".rst", ".tex", ".latex", ".sql",
-            ".dockerfile", ".gitignore", ".gitattributes",
-            ".editorconfig", ".htaccess", ".robots",
-            ".mk", ".cmake", ".gradle",
-            ".js", ".ts", ".jsx", ".tsx",
-            ".c", ".cpp", ".h", ".hpp", ".cs", ".rs", ".go",
-            ".swift", ".dart",
-            ".hs", ".ml", ".fs", ".clj", ".elm",
-            ".r", ".jl", ".f90", ".f95",
-            ".php", ".rb", ".scala", ".lua", ".nim", ".zig", ".v",
-            ".d", ".cr", ".ex", ".exs", ".erl", ".hrl"
+            ".pdf",
+            ".docx",
+            ".xlsx",
+            ".pptx",
+            ".xml",
+            ".json",
+            ".txt",
+            ".yml",
+            ".yaml",
+            ".toml",
+            ".ini",
+            ".cfg",
+            ".conf",
+            ".properties",
+            ".env",
+            ".md",
+            ".markdown",
+            ".rst",
+            ".tex",
+            ".latex",
+            ".sql",
+            ".dockerfile",
+            ".gitignore",
+            ".gitattributes",
+            ".editorconfig",
+            ".htaccess",
+            ".robots",
+            ".mk",
+            ".cmake",
+            ".gradle",
+            ".js",
+            ".ts",
+            ".jsx",
+            ".tsx",
+            ".c",
+            ".cpp",
+            ".h",
+            ".hpp",
+            ".cs",
+            ".rs",
+            ".go",
+            ".swift",
+            ".dart",
+            ".hs",
+            ".ml",
+            ".fs",
+            ".clj",
+            ".elm",
+            ".r",
+            ".jl",
+            ".f90",
+            ".f95",
+            ".php",
+            ".rb",
+            ".scala",
+            ".lua",
+            ".nim",
+            ".zig",
+            ".v",
+            ".d",
+            ".cr",
+            ".ex",
+            ".exs",
+            ".erl",
+            ".hrl",
         }
         files_without_extension = {"dockerfile", "makefile"}
 
         for ext in textual_extensions:
-            if filename_lower.endswith(ext): return True
-        if filename_lower in files_without_extension: return True
+            if filename_lower.endswith(ext):
+                return True
+        if filename_lower in files_without_extension:
+            return True
         return False
 
     def _load_json_file(self, file_path: Path) -> Optional[Dict[str, Any]]:
@@ -93,7 +147,9 @@ class ResourceScanner:
 
         return res_dict
 
-    def _find_resource_file(self, directory: Path, resource_name: str) -> Optional[Path]:
+    def _find_resource_file(
+        self, directory: Path, resource_name: str
+    ) -> Optional[Path]:
         """Find resource JSON file in directory.
 
         Searches for exact match first, then case-insensitive match,
@@ -142,7 +198,11 @@ class ResourceScanner:
             List of resource dictionaries from all versions.
         """
         resources = []
-        version_dirs = [d for d in resource_dir.iterdir() if d.is_dir() and d.name.startswith("version_")]
+        version_dirs = [
+            d
+            for d in resource_dir.iterdir()
+            if d.is_dir() and d.name.startswith("version_")
+        ]
 
         if not version_dirs:
             return resources
@@ -228,7 +288,9 @@ class ResourceScanner:
         """
         resources = []
         if not resources_dir.exists():
-            logger.info(f"📁 {resource_type.title()} directory not found: {resources_dir}")
+            logger.info(
+                f"📁 {resource_type.title()} directory not found: {resources_dir}"
+            )
             return resources
 
         for item in sorted(resources_dir.iterdir()):

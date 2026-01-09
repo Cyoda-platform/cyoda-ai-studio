@@ -48,10 +48,10 @@ async def get_github_service_from_context(tool_context: ToolContext) -> GitHubSe
     conversation_data = conversation_response.data
     if isinstance(conversation_data, dict):
         # It's a dictionary - access directly
-        installation_id_str = conversation_data.get('installation_id')
+        installation_id_str = conversation_data.get("installation_id")
     else:
         # It's an object - use attribute access
-        installation_id_str = getattr(conversation_data, 'installation_id', None)
+        installation_id_str = getattr(conversation_data, "installation_id", None)
 
     # Fallback to environment variable if not in conversation
     if not installation_id_str:

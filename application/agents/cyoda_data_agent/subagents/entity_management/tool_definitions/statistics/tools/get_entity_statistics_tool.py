@@ -38,4 +38,6 @@ async def get_entity_statistics(
     container = get_user_service_container(client_id, client_secret, cyoda_host)
     # This would need to be implemented in the entity service
     # For now, returning a placeholder
-    return format_entity_success({"message": "Statistics endpoint not yet implemented in service layer"})
+    return format_entity_success(
+        {"message": "Statistics endpoint not yet implemented in service layer"}
+    )

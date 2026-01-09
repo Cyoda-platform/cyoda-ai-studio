@@ -59,20 +59,30 @@ async def save_multiple_entities(
     # Create new entities
     if entities_to_create:
         logger.info(f"Creating {len(entities_to_create)} new entities")
-        created = await entity_service.save_all(entities_to_create, entity_model, entity_version="1")
-        results.extend([{"id": r.get_id(), "entity": r.data, "action": "created"} for r in created])
+        created = await entity_service.save_all(
+            entities_to_create, entity_model, entity_version="1"
+        )
+        results.extend(
+            [{"id": r.get_id(), "entity": r.data, "action": "created"} for r in created]
+        )
 
     # Update existing entities
     if entities_to_update:
         logger.info(f"Updating {len(entities_to_update)} existing entities")
         for entity in entities_to_update:
             entity_id = entity.get("id")
-            result = await entity_service.update(entity_id, entity, entity_model, entity_version="1")
-            results.append({"id": result.get_id(), "entity": result.data, "action": "updated"})
+            result = await entity_service.update(
+                entity_id, entity, entity_model, entity_version="1"
+            )
+            results.append(
+                {"id": result.get_id(), "entity": result.data, "action": "updated"}
+            )
 
-    return format_entity_success({
-        "total": len(entities),
-        "created": len(entities_to_create),
-        "updated": len(entities_to_update),
-        "results": results
-    })
+    return format_entity_success(
+        {
+            "total": len(entities),
+            "created": len(entities_to_create),
+            "updated": len(entities_to_update),
+            "results": results,
+        }
+    )

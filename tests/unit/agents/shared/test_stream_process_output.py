@@ -1,8 +1,9 @@
 """Tests for _stream_process_output function."""
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from application.agents.shared.repository_tools.monitoring import _stream_process_output
 
@@ -17,10 +18,14 @@ class TestStreamProcessOutput:
         # Return empty immediately to exit loop
         mock_process.stdout.read = AsyncMock(return_value=b"")
 
-        with patch("application.agents.shared.repository_tools.monitoring.get_task_service"):
+        with patch(
+            "application.agents.shared.repository_tools.monitoring.get_task_service"
+        ):
             # Use timeout to prevent hanging
             try:
-                await asyncio.wait_for(_stream_process_output(mock_process, task_id=None), timeout=2)
+                await asyncio.wait_for(
+                    _stream_process_output(mock_process, task_id=None), timeout=2
+                )
             except asyncio.TimeoutError:
                 pass  # Expected if function hangs
 
@@ -31,9 +36,13 @@ class TestStreamProcessOutput:
         # First call returns data, second returns empty to exit
         mock_process.stdout.read = AsyncMock(side_effect=[b"test output", b""])
 
-        with patch("application.agents.shared.repository_tools.monitoring.get_task_service"):
+        with patch(
+            "application.agents.shared.repository_tools.monitoring.get_task_service"
+        ):
             try:
-                await asyncio.wait_for(_stream_process_output(mock_process, task_id=None), timeout=2)
+                await asyncio.wait_for(
+                    _stream_process_output(mock_process, task_id=None), timeout=2
+                )
             except asyncio.TimeoutError:
                 pass
 
@@ -41,16 +50,17 @@ class TestStreamProcessOutput:
     async def test_stream_multiple_chunks(self):
         """Test function streams multiple output chunks."""
         mock_process = AsyncMock()
-        mock_process.stdout.read = AsyncMock(side_effect=[
-            b"chunk1",
-            b"chunk2",
-            b"chunk3",
-            b""
-        ])
+        mock_process.stdout.read = AsyncMock(
+            side_effect=[b"chunk1", b"chunk2", b"chunk3", b""]
+        )
 
-        with patch("application.agents.shared.repository_tools.monitoring.get_task_service"):
+        with patch(
+            "application.agents.shared.repository_tools.monitoring.get_task_service"
+        ):
             try:
-                await asyncio.wait_for(_stream_process_output(mock_process, task_id=None), timeout=2)
+                await asyncio.wait_for(
+                    _stream_process_output(mock_process, task_id=None), timeout=2
+                )
             except asyncio.TimeoutError:
                 pass
 
@@ -65,9 +75,14 @@ class TestStreamProcessOutput:
         mock_task_service.get_task = AsyncMock(return_value=MagicMock(metadata={}))
         mock_task_service.update_task_status = AsyncMock()
 
-        with patch("application.agents.shared.repository_tools.monitoring.get_task_service", return_value=mock_task_service):
+        with patch(
+            "application.agents.shared.repository_tools.monitoring.get_task_service",
+            return_value=mock_task_service,
+        ):
             try:
-                await asyncio.wait_for(_stream_process_output(mock_process, task_id="task-123"), timeout=2)
+                await asyncio.wait_for(
+                    _stream_process_output(mock_process, task_id="task-123"), timeout=2
+                )
             except asyncio.TimeoutError:
                 pass
 
@@ -78,9 +93,13 @@ class TestStreamProcessOutput:
         # Timeout then empty to exit
         mock_process.stdout.read = AsyncMock(side_effect=[asyncio.TimeoutError(), b""])
 
-        with patch("application.agents.shared.repository_tools.monitoring.get_task_service"):
+        with patch(
+            "application.agents.shared.repository_tools.monitoring.get_task_service"
+        ):
             try:
-                await asyncio.wait_for(_stream_process_output(mock_process, task_id=None), timeout=2)
+                await asyncio.wait_for(
+                    _stream_process_output(mock_process, task_id=None), timeout=2
+                )
             except asyncio.TimeoutError:
                 pass
 
@@ -90,9 +109,13 @@ class TestStreamProcessOutput:
         mock_process = AsyncMock()
         mock_process.stdout.read = AsyncMock(side_effect=[b"\xff\xfe", b""])
 
-        with patch("application.agents.shared.repository_tools.monitoring.get_task_service"):
+        with patch(
+            "application.agents.shared.repository_tools.monitoring.get_task_service"
+        ):
             try:
-                await asyncio.wait_for(_stream_process_output(mock_process, task_id=None), timeout=2)
+                await asyncio.wait_for(
+                    _stream_process_output(mock_process, task_id=None), timeout=2
+                )
             except asyncio.TimeoutError:
                 pass
 
@@ -106,9 +129,14 @@ class TestStreamProcessOutput:
         mock_task_service = AsyncMock()
         mock_task_service.get_task = AsyncMock(side_effect=Exception("Service error"))
 
-        with patch("application.agents.shared.repository_tools.monitoring.get_task_service", return_value=mock_task_service):
+        with patch(
+            "application.agents.shared.repository_tools.monitoring.get_task_service",
+            return_value=mock_task_service,
+        ):
             try:
-                await asyncio.wait_for(_stream_process_output(mock_process, task_id="task-123"), timeout=2)
+                await asyncio.wait_for(
+                    _stream_process_output(mock_process, task_id="task-123"), timeout=2
+                )
             except asyncio.TimeoutError:
                 pass
 
@@ -116,19 +144,21 @@ class TestStreamProcessOutput:
     async def test_stream_periodic_update(self):
         """Test function performs periodic updates based on time interval."""
         mock_process = AsyncMock()
-        mock_process.stdout.read = AsyncMock(side_effect=[
-            b"chunk1",
-            asyncio.TimeoutError(),
-            b""
-        ])
+        mock_process.stdout.read = AsyncMock(
+            side_effect=[b"chunk1", asyncio.TimeoutError(), b""]
+        )
 
         mock_task_service = AsyncMock()
         mock_task_service.get_task = AsyncMock(return_value=MagicMock(metadata={}))
         mock_task_service.update_task_status = AsyncMock()
 
-        with patch("application.agents.shared.repository_tools.monitoring.get_task_service", return_value=mock_task_service):
+        with patch(
+            "application.agents.shared.repository_tools.monitoring.get_task_service",
+            return_value=mock_task_service,
+        ):
             try:
-                await asyncio.wait_for(_stream_process_output(mock_process, task_id="task-123"), timeout=2)
+                await asyncio.wait_for(
+                    _stream_process_output(mock_process, task_id="task-123"), timeout=2
+                )
             except asyncio.TimeoutError:
                 pass
-

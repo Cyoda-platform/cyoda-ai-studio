@@ -1,0 +1,58 @@
+{
+  "eval_set_id": "environment_scenario_list_all_the_cyoda_environments_i_have_access_to",
+  "name": "environment_scenario_list_all_the_cyoda_environments_i_have_access_to",
+  "description": "Test case for: As a user, I want to list all the Cyoda environments I have access to.",
+  "eval_cases": [
+    {
+      "eval_id": "env_list_all",
+      "conversation": [
+        {
+          "invocation_id": "e-97fdab93-187a-4896-ac6f-fc09ade631b9",
+          "user_content": {
+            "parts": [
+              {
+                "text": "list all the Cyoda environments I have access to."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "- **Environments found:** **0**\n- **Status:** No Cyoda environments available for your account.\n\nNext actions you can take:\n- Deploy a new environment if you need one.\n- If you expected existing environments, I can re-check or escalate.\n\n[options-single-choice: Deploy New Environment, List Environments, Check App Status]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "list_environments",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8040783
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8040788
+    }
+  ],
+  "creation_timestamp": 1767903917.804079
+}

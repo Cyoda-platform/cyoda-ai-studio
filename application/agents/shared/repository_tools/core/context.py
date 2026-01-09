@@ -20,7 +20,7 @@ def _store_in_tool_context(
     repository_owner: str,
     user_repo_url: Optional[str],
     installation_id: Optional[str],
-    repo_type: Optional[str]
+    repo_type: Optional[str],
 ) -> None:
     """Store repository information in tool context.
 
@@ -52,7 +52,7 @@ async def _update_conversation_entity(
     repository_owner: str,
     branch_name: str,
     user_repo_url: Optional[str],
-    installation_id: Optional[str]
+    installation_id: Optional[str],
 ) -> None:
     """Update Conversation entity with repository information.
 
@@ -65,6 +65,11 @@ async def _update_conversation_entity(
         installation_id: GitHub installation ID
     """
     try:
+        logger.info(
+            f"🔄 Updating Conversation entity {conversation_id} with: "
+            f"repo={repository_name}, branch={branch_name}, owner={repository_owner}"
+        )
+
         entity_service = get_entity_service()
         response = await entity_service.get_by_id(
             entity_id=conversation_id,
@@ -73,6 +78,9 @@ async def _update_conversation_entity(
         )
 
         if not response or not response.data:
+            logger.error(
+                f"❌ Cannot update Conversation entity: conversation {conversation_id} not found or has no data"
+            )
             return
 
         conversation_data = response.data
@@ -88,6 +96,13 @@ async def _update_conversation_entity(
         conversation.repository_url = user_repo_url
         conversation.installation_id = installation_id
 
+        logger.info(
+            f"📝 Persisting Conversation entity update: "
+            f"repo={conversation.repository_name}, "
+            f"branch={conversation.repository_branch}, "
+            f"owner={conversation.repository_owner}"
+        )
+
         # Persist updated conversation
         entity_dict = conversation.model_dump(by_alias=False)
         await entity_service.update(
@@ -96,9 +111,14 @@ async def _update_conversation_entity(
             entity_class=Conversation.ENTITY_NAME,
             entity_version=str(Conversation.ENTITY_VERSION),
         )
-        logger.info(f"✅ Updated Conversation entity with repository_branch={branch_name}")
+        logger.info(
+            f"✅ Successfully updated Conversation entity with repository_branch={branch_name}"
+        )
     except Exception as e:
-        logger.warning(f"⚠️ Failed to update Conversation entity: {e}", exc_info=True)
+        logger.error(
+            f"❌ Failed to update Conversation entity {conversation_id}: {e}",
+            exc_info=True,
+        )
 
 
 async def _update_conversation_build_context_wrapper(
@@ -106,7 +126,7 @@ async def _update_conversation_build_context_wrapper(
     language: str,
     branch_name: str,
     repository_name: str,
-    repository_owner: Optional[str] = None
+    repository_owner: Optional[str] = None,
 ) -> None:
     """Update conversation build context for setup agent.
 
@@ -118,14 +138,19 @@ async def _update_conversation_build_context_wrapper(
         repository_owner: Repository owner (optional)
     """
     try:
-        from application.agents.shared.repository_tools.conversation import _update_conversation_build_context
+        from application.agents.shared.repository_tools.conversation import (
+            _update_conversation_build_context,
+        )
+
         await _update_conversation_build_context(
             conversation_id=conversation_id,
             language=language,
             branch_name=branch_name,
             repository_name=repository_name,
-            repository_owner=repository_owner
+            repository_owner=repository_owner,
         )
         logger.info(f"✅ Updated conversation workflow_cache with build context")
     except Exception as e:
-        logger.warning(f"⚠️ Failed to update conversation build context: {e}", exc_info=True)
+        logger.warning(
+            f"⚠️ Failed to update conversation build context: {e}", exc_info=True
+        )

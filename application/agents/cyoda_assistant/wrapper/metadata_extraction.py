@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def _extract_metadata_from_session(
-    final_session_state: dict[str, Any]
+    final_session_state: dict[str, Any],
 ) -> dict[str, Any]:
     """Extract metadata from final session state.
 

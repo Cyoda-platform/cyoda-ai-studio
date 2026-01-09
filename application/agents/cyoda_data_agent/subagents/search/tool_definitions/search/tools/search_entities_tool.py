@@ -10,6 +10,7 @@ from google.adk.tools.tool_context import ToolContext
 from application.agents.cyoda_data_agent.user_service_container import (
     UserServiceContainer,
 )
+
 from ...common.formatters.search_formatters import format_search_success
 from ...common.utils.decorators import handle_search_errors
 

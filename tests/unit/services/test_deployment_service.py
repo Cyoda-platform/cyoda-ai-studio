@@ -41,15 +41,27 @@ class TestDeploymentService:
 
     def test_normalize_for_keyspace(self):
         """Test keyspace normalization (alphanumeric + underscores)."""
-        assert DeploymentService._normalize_for_keyspace("Test-User.123") == "test_user_123"
-        assert DeploymentService._normalize_for_keyspace("user@example.com") == "user_example_com"
+        assert (
+            DeploymentService._normalize_for_keyspace("Test-User.123")
+            == "test_user_123"
+        )
+        assert (
+            DeploymentService._normalize_for_keyspace("user@example.com")
+            == "user_example_com"
+        )
         assert DeploymentService._normalize_for_keyspace("My-App") == "my_app"
         assert DeploymentService._normalize_for_keyspace("valid_name") == "valid_name"
 
     def test_normalize_for_namespace(self):
         """Test namespace normalization (alphanumeric + hyphens)."""
-        assert DeploymentService._normalize_for_namespace("Test_User.123") == "test-user-123"
-        assert DeploymentService._normalize_for_namespace("user@example.com") == "user-example-com"
+        assert (
+            DeploymentService._normalize_for_namespace("Test_User.123")
+            == "test-user-123"
+        )
+        assert (
+            DeploymentService._normalize_for_namespace("user@example.com")
+            == "user-example-com"
+        )
         assert DeploymentService._normalize_for_namespace("My_App") == "my-app"
         assert DeploymentService._normalize_for_namespace("valid-name") == "valid-name"
 
@@ -127,7 +139,9 @@ class TestDeploymentService:
             assert result.build_id == "build-generated"
 
     @pytest.mark.asyncio
-    async def test_deploy_cyoda_environment_truncates_env_name(self, deployment_service):
+    async def test_deploy_cyoda_environment_truncates_env_name(
+        self, deployment_service
+    ):
         """Test that env_name is truncated to 10 characters."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -277,7 +291,9 @@ class TestDeploymentService:
             assert payload["installation_id"] == "789"
 
     @pytest.mark.asyncio
-    async def test_deploy_user_application_without_optional_params(self, deployment_service):
+    async def test_deploy_user_application_without_optional_params(
+        self, deployment_service
+    ):
         """Test user app deployment without optional installation_id."""
         import os
 

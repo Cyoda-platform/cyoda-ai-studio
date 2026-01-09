@@ -25,9 +25,7 @@ class Conversation(CyodaEntity):
     ENTITY_NAME: ClassVar[str] = "Conversation"
     ENTITY_VERSION: ClassVar[int] = 1
 
-    user_id: str = Field(
-        ..., description="User ID who owns this conversation"
-    )
+    user_id: str = Field(..., description="User ID who owns this conversation")
 
     name: Optional[str] = Field(
         default="", description="Display name for the conversation"
@@ -200,6 +198,7 @@ class Conversation(CyodaEntity):
             edge_message_repository: Repository for fetching edge messages
         """
         import logging
+
         from common.config.config import CYODA_ENTITY_TYPE_EDGE_MESSAGE
 
         logger = logging.getLogger(__name__)

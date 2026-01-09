@@ -3,7 +3,11 @@
 from .cli_config import AUGGIE_CLI_SCRIPT, get_cli_config
 from .file_utils import is_textual_file
 from .path_utils import get_entity_path, get_requirements_path, get_workflow_path
-from .project_utils import JAVA_RESOURCES_PATH, PYTHON_RESOURCES_PATH, detect_project_type
+from .project_utils import (
+    JAVA_RESOURCES_PATH,
+    PYTHON_RESOURCES_PATH,
+    detect_project_type,
+)
 from .repo_utils import ensure_repository_available
 
 __all__ = [

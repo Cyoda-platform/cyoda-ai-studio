@@ -50,7 +50,7 @@ class ToolConverter:
                     "name": func.__name__,
                     "description": description or docstring.split("\n")[0],
                     "parameters": parameters,
-                }
+                },
             }
 
             logger.debug(f"Tool definition created: {func.__name__}")
@@ -87,7 +87,11 @@ class ToolConverter:
             # Build property schema
             properties[param_name] = {
                 "type": param_type,
-                "description": param.annotation.__doc__ if hasattr(param.annotation, "__doc__") else ""
+                "description": (
+                    param.annotation.__doc__
+                    if hasattr(param.annotation, "__doc__")
+                    else ""
+                ),
             }
 
             # Check if required
@@ -167,7 +171,9 @@ class ToolConverter:
 
         for func in functions:
             description = descriptions.get(func.__name__)
-            tool_def = ToolConverter.convert_function_to_tool_definition(func, description)
+            tool_def = ToolConverter.convert_function_to_tool_definition(
+                func, description
+            )
             tools.append(tool_def)
 
         logger.debug(f"Converted {len(tools)} functions to tools")
@@ -202,13 +208,15 @@ class ToolConverter:
                     continue
 
                 for tool_call in message["tool_calls"]:
-                    tool_calls.append({
-                        "id": tool_call.get("id"),
-                        "name": tool_call.get("function", {}).get("name"),
-                        "arguments": json.loads(
-                            tool_call.get("function", {}).get("arguments", "{}")
-                        ),
-                    })
+                    tool_calls.append(
+                        {
+                            "id": tool_call.get("id"),
+                            "name": tool_call.get("function", {}).get("name"),
+                            "arguments": json.loads(
+                                tool_call.get("function", {}).get("arguments", "{}")
+                            ),
+                        }
+                    )
 
             logger.debug(f"Extracted {len(tool_calls)} tool calls from response")
             return tool_calls
@@ -257,4 +265,3 @@ class ToolConverter:
         except Exception as e:
             logger.error(f"Failed to build tool result message: {e}")
             raise
-

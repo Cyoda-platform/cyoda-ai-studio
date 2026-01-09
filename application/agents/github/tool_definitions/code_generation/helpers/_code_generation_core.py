@@ -14,30 +14,6 @@ from typing import Literal, Optional
 
 from google.adk.tools.tool_context import ToolContext
 
-from application.agents.github.tool_definitions.code_generation.helpers import (
-    _build_full_prompt,
-    _check_build_already_started,
-    _check_functional_requirements_exist,
-    _create_background_task,
-    _create_build_hooks,
-    _create_codegen_hook,
-    _create_deployment_hook,
-    _create_missing_requirements_message,
-    _create_output_log_file,
-    _extract_cli_context,
-    _format_build_response,
-    _format_codegen_response,
-    _format_codegen_response_without_task,
-    _load_build_prompt_template,
-    _load_pattern_catalog,
-    _rename_output_file_with_pid,
-    _start_cli_process,
-    _start_monitoring_task,
-    _validate_branch_not_protected,
-    _validate_cli_invocation_limit,
-    _write_prompt_to_tempfile,
-    load_informational_prompt_template,
-)
 from application.agents.github.tool_definitions.common.constants import (
     BUILD_PROCESS_TIMEOUT,
     CLI_PROCESS_TIMEOUT,
@@ -50,6 +26,27 @@ from application.agents.github.tool_definitions.common.utils import (
     get_cli_config,
 )
 from common.config.config import CLI_PROVIDER
+
+from ._application_build_helpers import (
+    _build_full_prompt,
+    _check_functional_requirements_exist,
+    _create_missing_requirements_message,
+    _load_build_prompt_template,
+    _load_pattern_catalog,
+)
+from ._cli_common import (
+    _check_build_already_started,
+    _create_background_task,
+    _create_output_log_file,
+    _extract_cli_context,
+    _rename_output_file_with_pid,
+    _start_cli_process,
+    _start_monitoring_task,
+    _validate_branch_not_protected,
+    _validate_cli_invocation_limit,
+    _write_prompt_to_tempfile,
+)
+from ._prompt_loader import load_informational_prompt_template
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +222,7 @@ async def _validate_preconditions(
             from application.agents.github.tool_definitions.code_generation.helpers._application_build_helpers import (
                 _get_requirements_path,
             )
+
             requirements_path = _get_requirements_path(
                 context.language, context.repository_path
             )
@@ -303,7 +301,9 @@ async def _validate_cli_config(
         )
         logger.info(f"Using model: {cli_model}")
     else:
-        logger.info(f"🤖 Generating code with {provider_name} CLI in {context.repository_path}")
+        logger.info(
+            f"🤖 Generating code with {provider_name} CLI in {context.repository_path}"
+        )
         logger.info(f"📝 User request: {user_input[:100]}...")
         logger.info(f"🎯 Model: {cli_model}")
 
@@ -405,7 +405,9 @@ async def _setup_monitoring_and_hooks(
     # Create background task
     if config.mode == "application_build":
         task_name = f"Build {context.language} application: {context.branch_name}"
-        task_description = f"Building complete {context.language} application: {user_input[:200]}..."
+        task_description = (
+            f"Building complete {context.language} application: {user_input[:200]}..."
+        )
         logger.info(f"🔍 Build requirements: {user_input[:100]}...")
     else:
         task_name = f"Generate code: {user_input[:50]}..."
@@ -433,34 +435,8 @@ async def _setup_monitoring_and_hooks(
 
     logger.info(f"🎯 Monitoring started in background for task {task_id}")
 
-    # Create hooks based on mode
-    if config.mode == "application_build":
-        hook = _create_build_hooks(
-            task_id=task_id,
-            language=context.language,
-            branch_name=context.branch_name,
-            repository_path=context.repository_path,
-            requirements=user_input,
-            conversation_id=context.conversation_id,
-        )
-        context.tool_context.state["last_tool_hook"] = hook
-
-        if config.create_deployment_hook:
-            context.tool_context.state["deployment_hook"] = _create_deployment_hook(
-                context.conversation_id
-            )
-    else:
-        hook = _create_codegen_hook(
-            task_id=task_id,
-            user_request=user_input,
-            language=context.language,
-            branch_name=context.branch_name,
-            process_pid=process.pid,
-            conversation_id=context.conversation_id,
-        )
-        context.tool_context.state["last_tool_hook"] = hook
-
-    return True, "", task_id, hook
+    # Hooks removed - UI auto-detects build/deployment operations
+    return True, "", task_id, None
 
 
 def _format_response(
@@ -477,7 +453,7 @@ def _format_response(
         config: Generation configuration
         context: CLI context
         task_id: Background task ID
-        hook: Hook data
+        hook: Hook data (always None now)
         user_input: User requirements or request
         process_pid: CLI process PID
 
@@ -485,24 +461,22 @@ def _format_response(
         Formatted response string
     """
     if config.mode == "application_build":
-        return _format_build_response(
-            task_id=task_id,
-            branch_name=context.branch_name,
-            language=context.language,
-            requirements=user_input,
-            combined_hooks=hook,
+        return (
+            f"✅ Application build started on branch `{context.branch_name}` using {context.language}.\n\n"
+            f"The build is running in the background (Task ID: {task_id}). "
+            f"You can monitor progress in the Tasks panel."
         )
     else:
         if task_id:
-            return _format_codegen_response(
-                task_id=task_id,
-                branch_name=context.branch_name,
-                user_request=user_input,
-                hook=hook,
+            return (
+                f"✅ Code generation started on branch `{context.branch_name}`.\n\n"
+                f"Processing your request: {user_input}\n\n"
+                f"The generation is running in the background (Task ID: {task_id}). "
+                f"You can monitor progress in the Tasks panel."
             )
-        return _format_codegen_response_without_task(
-            branch_name=context.branch_name,
-            user_request=user_input,
+        return (
+            f"✅ Code generation started on branch `{context.branch_name}`.\n\n"
+            f"Processing your request: {user_input}"
         )
 
 
@@ -576,9 +550,7 @@ async def _generate_code_core(
             return error_msg
 
         # Step 8: Format and return response
-        return _format_response(
-            config, context, task_id, hook, user_input, process.pid
-        )
+        return _format_response(config, context, task_id, hook, user_input, process.pid)
 
     except Exception as e:
         logger.error(f"Error in _generate_code_core: {e}", exc_info=True)

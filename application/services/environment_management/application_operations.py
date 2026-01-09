@@ -8,12 +8,14 @@ This module contains functions for:
 - User app status checking
 """
 
-import httpx
 import logging
 import os
 from typing import Any, Dict, List, Optional
 
+import httpx
+
 from application.services.cloud_manager_service import get_cloud_manager_service
+
 from .namespace_operations import construct_user_app_namespace, normalize_for_namespace
 
 logger = logging.getLogger(__name__)
@@ -42,13 +44,14 @@ async def scale_user_app(
         httpx.HTTPStatusError: If the API call fails
     """
     namespace = construct_user_app_namespace(user_id, env_name, app_name)
-    logger.info(f"Scaling user app: namespace={namespace}, deployment={deployment_name}, replicas={replicas}")
+    logger.info(
+        f"Scaling user app: namespace={namespace}, deployment={deployment_name}, replicas={replicas}"
+    )
 
     client = await get_cloud_manager_service()
     payload = {"replicas": replicas}
     response = await client.patch(
-        f"/k8s/namespaces/{namespace}/deployments/{deployment_name}/scale",
-        json=payload
+        f"/k8s/namespaces/{namespace}/deployments/{deployment_name}/scale", json=payload
     )
 
     logger.info(f"Scaled {deployment_name} in {namespace} to {replicas} replicas")
@@ -76,7 +79,9 @@ async def restart_user_app(
         httpx.HTTPStatusError: If the API call fails
     """
     namespace = construct_user_app_namespace(user_id, env_name, app_name)
-    logger.info(f"Restarting user app: namespace={namespace}, deployment={deployment_name}")
+    logger.info(
+        f"Restarting user app: namespace={namespace}, deployment={deployment_name}"
+    )
 
     client = await get_cloud_manager_service()
     response = await client.post(
@@ -112,7 +117,9 @@ async def update_user_app_image(
         httpx.HTTPStatusError: If the API call fails
     """
     namespace = construct_user_app_namespace(user_id, env_name, app_name)
-    logger.info(f"Updating user app image: namespace={namespace}, deployment={deployment_name}, image={image}")
+    logger.info(
+        f"Updating user app image: namespace={namespace}, deployment={deployment_name}, image={image}"
+    )
 
     client = await get_cloud_manager_service()
     payload = {"image": image}
@@ -121,7 +128,7 @@ async def update_user_app_image(
 
     response = await client.patch(
         f"/k8s/namespaces/{namespace}/deployments/{deployment_name}/rollout/update",
-        json=payload
+        json=payload,
     )
 
     logger.info(f"Updated {deployment_name} image to {image}")
@@ -198,12 +205,14 @@ async def list_user_apps(
                     auth_token=auth_token,
                 )
 
-            user_apps.append({
-                "name": app_name,
-                "namespace": ns_name,
-                "status": app_status,
-                "created": ns.get("creationTimestamp", ""),
-            })
+            user_apps.append(
+                {
+                    "name": app_name,
+                    "namespace": ns_name,
+                    "status": app_status,
+                    "created": ns.get("creationTimestamp", ""),
+                }
+            )
 
     logger.info(f"Found {len(user_apps)} user apps in {env_name}")
     return user_apps
@@ -251,7 +260,9 @@ async def get_user_app_status(
     """
     namespace = construct_user_app_namespace(user_id, env_name, app_name)
     client = await get_cloud_manager_service()
-    response = await client.get(f"/k8s/namespaces/{namespace}/deployments/{deployment_name}/status")
+    response = await client.get(
+        f"/k8s/namespaces/{namespace}/deployments/{deployment_name}/status"
+    )
 
     return response.json()
 
@@ -331,7 +342,9 @@ async def check_user_app_status(
             headers["Authorization"] = f"Bearer {auth_token}"
 
         async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(app_url, headers=headers, follow_redirects=False)
+            response = await client.get(
+                app_url, headers=headers, follow_redirects=False
+            )
 
             if response.status_code == 200:
                 return "Active"

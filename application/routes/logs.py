@@ -13,9 +13,9 @@ import logging
 from datetime import timedelta
 from typing import Any, Dict, Optional
 
+from pydantic import BaseModel, Field
 from quart import Blueprint, request
 from quart_rate_limiter import rate_limit
-from pydantic import BaseModel, Field
 
 from application.routes.common.rate_limiting import user_rate_limit_key
 from application.routes.common.response import APIResponse
@@ -33,9 +33,7 @@ MISSING_API_KEY_HEADER_CODE = 400
 MISSING_BODY_CODE = 400
 MISSING_ENV_CODE = 400
 EXPIRED_API_KEY_ERROR = "ELK_API_KEY_EXPIRED"
-EXPIRED_API_KEY_MESSAGE = (
-    "ELK API key has expired. Please regenerate the API key using /api/v1/logs/elk-token endpoint."
-)
+EXPIRED_API_KEY_MESSAGE = "ELK API key has expired. Please regenerate the API key using /api/v1/logs/elk-token endpoint."
 EXPIRED_API_KEY_CODE = 500
 SEARCH_FAILED_MESSAGE = "Search failed"
 SEARCH_FAILED_CODE = 500
@@ -57,8 +55,10 @@ class LogSearchRequest(BaseModel):
 
     class Config:
         """Pydantic config."""
+
         extra = "allow"
         populate_by_name = True
+
 
 logs_bp = Blueprint("logs", __name__, url_prefix="/api/v1/logs")
 
@@ -93,7 +93,7 @@ async def generate_api_key():
     """
     try:
         # Get user info from auth middleware
-        org_id = getattr(request, 'org_id', request.user_id.lower())
+        org_id = getattr(request, "org_id", request.user_id.lower())
 
         # Use service to generate API key
         result = await logs_service.generate_api_key(org_id)
@@ -114,7 +114,7 @@ def _validate_api_key_header() -> Optional[tuple]:
     Returns:
         None if valid, tuple of (response, status_code) if invalid
     """
-    api_key = request.headers.get('X-API-Key')
+    api_key = request.headers.get("X-API-Key")
     if not api_key:
         return APIResponse.error(MISSING_API_KEY_HEADER, MISSING_API_KEY_HEADER_CODE)
 
@@ -134,8 +134,8 @@ async def _extract_search_params() -> Optional[tuple]:
         return APIResponse.error(MISSING_REQUEST_BODY, MISSING_BODY_CODE)
 
     # Step 2: Extract required fields
-    env_name = data.get('env_name')
-    app_name = data.get('app_name')
+    env_name = data.get("env_name")
+    app_name = data.get("app_name")
 
     if not env_name or not app_name:
         return APIResponse.error(MISSING_ENV_APP_NAME, MISSING_ENV_CODE)
@@ -161,8 +161,8 @@ def _handle_expired_api_key_error() -> tuple:
         details={
             "error_code": EXPIRED_API_KEY_ERROR,
             "regenerate_endpoint": "/api/v1/logs/elk-token",
-            "regenerate_method": "POST"
-        }
+            "regenerate_method": "POST",
+        },
     )
 
 
@@ -203,7 +203,7 @@ async def search_logs():
         api_key = api_key_result
 
         # Step 2: Get user organization ID
-        org_id = getattr(request, 'org_id', request.user_id.lower())
+        org_id = getattr(request, "org_id", request.user_id.lower())
 
         # Step 3: Extract and validate search parameters
         params_result = await _extract_search_params()
@@ -219,7 +219,7 @@ async def search_logs():
             app_name=app_name,
             query=query,
             size=size,
-            sort=sort
+            sort=sort,
         )
 
         # Step 5: Return success response

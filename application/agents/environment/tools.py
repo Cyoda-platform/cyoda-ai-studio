@@ -19,22 +19,11 @@ __all__ = ["ToolContext"]
 
 # Import tool implementations from tool_definitions package (organized by category)
 
-# Deployment tools
-from .tool_definitions.deployment import (
-    deploy_cyoda_environment,
-    deploy_user_application,
-    get_build_logs,
-    get_deployment_status,
-)
-
-# Environment management tools
-from .tool_definitions.environment import (
-    check_environment_exists,
-    delete_environment,
-    describe_environment,
-    list_environments,
-    get_environment_metrics,
-    get_environment_pods,
+# Re-export service getters for backward compatibility with tests
+from application.services.cloud_manager_service import get_cloud_manager_service
+from application.services.deployment.service import get_deployment_service
+from application.services.environment_management_service import (
+    get_environment_management_service,
 )
 
 # Cyoda application tools
@@ -46,24 +35,12 @@ from .tool_definitions.application import (
     update_application_image,
 )
 
-# User application tools
-from .tool_definitions.user_apps import (
-    delete_user_app,
-    list_user_apps,
-    get_user_app_details,
-    get_user_app_metrics,
-    get_user_app_pods,
-    get_user_app_status,
-    restart_user_app,
-    scale_user_app,
-    update_user_app_image,
-)
-
-# Other tools
-from .tool_definitions.other import (
-    search_logs,
-    issue_technical_user,
-    show_deployment_options,
+# Deployment tools
+from .tool_definitions.deployment import (
+    deploy_cyoda_environment,
+    deploy_user_application,
+    get_build_logs,
+    get_deployment_status,
 )
 
 # Re-export deployment helpers for backward compatibility with tests
@@ -74,10 +51,34 @@ from .tool_definitions.deployment.helpers._deployment_monitor import (
     monitor_deployment_progress as _monitor_deployment_progress,
 )
 
-# Re-export service getters for backward compatibility with tests
-from application.services.cloud_manager_service import get_cloud_manager_service
-from application.services.deployment.service import get_deployment_service
-from application.services.environment_management_service import get_environment_management_service
+# Environment management tools
+from .tool_definitions.environment import (
+    check_environment_exists,
+    delete_environment,
+    describe_environment,
+    get_environment_metrics,
+    get_environment_pods,
+    list_environments,
+)
+
+# Other tools
+from .tool_definitions.other import (
+    issue_technical_user,
+    search_logs,
+)
+
+# User application tools
+from .tool_definitions.user_apps import (
+    delete_user_app,
+    get_user_app_details,
+    get_user_app_metrics,
+    get_user_app_pods,
+    get_user_app_status,
+    list_user_apps,
+    restart_user_app,
+    scale_user_app,
+    update_user_app_image,
+)
 
 logger = logging.getLogger(__name__)
 

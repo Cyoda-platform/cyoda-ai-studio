@@ -1,11 +1,12 @@
 """Tests for get_session method in CyodaSessionService."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from google.adk.sessions.session import Session
 
-from application.services.cyoda_session_service import CyodaSessionService
 from application.entity.adk_session import AdkSession
+from application.services.cyoda_session_service import CyodaSessionService
 
 
 class TestGetSession:
@@ -22,13 +23,15 @@ class TestGetSession:
         mock_adk_session.technical_id = "550e8400-e29b-41d4-a716-446655440000"
         mock_adk_session.events = []
 
-        with patch('application.services.cyoda_session_service.try_fast_lookup') as mock_fast:
+        with patch(
+            "application.services.cyoda_session_service.try_fast_lookup"
+        ) as mock_fast:
             mock_fast.return_value = MagicMock(spec=Session)
 
             result = await session_service.get_session(
                 app_name="test-app",
                 user_id="user-123",
-                session_id="550e8400-e29b-41d4-a716-446655440000"
+                session_id="550e8400-e29b-41d4-a716-446655440000",
             )
 
             assert result is not None
@@ -44,13 +47,15 @@ class TestGetSession:
         mock_adk_session.technical_id = "550e8400-e29b-41d4-a716-446655440000"
         mock_adk_session.events = []
 
-        with patch('application.services.cyoda_session_service.fallback_search_with_retry') as mock_search:
+        with patch(
+            "application.services.cyoda_session_service.fallback_search_with_retry"
+        ) as mock_search:
             mock_search.return_value = MagicMock(spec=Session)
 
             result = await session_service.get_session(
                 app_name="test-app",
                 user_id="user-123",
-                session_id="550e8400-e29b-41d4-a716-446655440000"
+                session_id="550e8400-e29b-41d4-a716-446655440000",
             )
 
             assert result is not None
@@ -66,13 +71,13 @@ class TestGetSession:
         mock_adk_session.technical_id = "550e8400-e29b-41d4-a716-446655440000"
         mock_adk_session.events = []
 
-        with patch('application.services.cyoda_session_service.fallback_search_with_retry') as mock_search:
+        with patch(
+            "application.services.cyoda_session_service.fallback_search_with_retry"
+        ) as mock_search:
             mock_search.return_value = MagicMock(spec=Session)
 
             result = await session_service.get_session(
-                app_name="test-app",
-                user_id="user-123",
-                session_id="conv-123"
+                app_name="test-app", user_id="user-123", session_id="conv-123"
             )
 
             assert result is not None
@@ -83,13 +88,13 @@ class TestGetSession:
         entity_service = AsyncMock()
         session_service = CyodaSessionService(entity_service)
 
-        with patch('application.services.cyoda_session_service.fallback_search') as mock_search:
+        with patch(
+            "application.services.cyoda_session_service.fallback_search"
+        ) as mock_search:
             mock_search.return_value = None
 
             result = await session_service.get_session(
-                app_name="test-app",
-                user_id="user-123",
-                session_id="conv-123"
+                app_name="test-app", user_id="user-123", session_id="conv-123"
             )
 
             assert result is None
@@ -104,17 +109,20 @@ class TestGetSession:
         mock_session = MagicMock(spec=Session)
         mock_session.events = [MagicMock() for _ in range(10)]
 
-        with patch('application.services.cyoda_session_service.try_fast_lookup') as mock_fast:
+        with patch(
+            "application.services.cyoda_session_service.try_fast_lookup"
+        ) as mock_fast:
             mock_fast.return_value = mock_session
 
             from google.adk.sessions.base_session_service import GetSessionConfig
+
             config = GetSessionConfig(num_recent_events=5)
 
             result = await session_service.get_session(
                 app_name="test-app",
                 user_id="user-123",
                 session_id="550e8400-e29b-41d4-a716-446655440000",
-                config=config
+                config=config,
             )
 
             assert result is not None
@@ -136,17 +144,20 @@ class TestGetSession:
         mock_session = MagicMock(spec=Session)
         mock_session.events = [mock_event1, mock_event2]
 
-        with patch('application.services.cyoda_session_service.try_fast_lookup') as mock_fast:
+        with patch(
+            "application.services.cyoda_session_service.try_fast_lookup"
+        ) as mock_fast:
             mock_fast.return_value = mock_session
 
             from google.adk.sessions.base_session_service import GetSessionConfig
+
             config = GetSessionConfig(after_timestamp=1500)
 
             result = await session_service.get_session(
                 app_name="test-app",
                 user_id="user-123",
                 session_id="550e8400-e29b-41d4-a716-446655440000",
-                config=config
+                config=config,
             )
 
             assert result is not None
@@ -164,19 +175,21 @@ class TestGetSession:
         mock_session = MagicMock(spec=Session)
         mock_session.events = [MagicMock() for _ in range(10)]
 
-        with patch('application.services.cyoda_session_service.fallback_search_with_retry') as mock_search:
+        with patch(
+            "application.services.cyoda_session_service.fallback_search_with_retry"
+        ) as mock_search:
             mock_search.return_value = mock_session
 
             from google.adk.sessions.base_session_service import GetSessionConfig
+
             config = GetSessionConfig(num_recent_events=3)
 
             result = await session_service.get_session(
                 app_name="test-app",
                 user_id="user-123",
                 session_id="conv-123",
-                config=config
+                config=config,
             )
 
             assert result is not None
             assert len(result.events) == 3
-

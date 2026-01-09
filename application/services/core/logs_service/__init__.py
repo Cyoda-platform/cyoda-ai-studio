@@ -1,13 +1,13 @@
 """Logs Service - Re-exports for backward compatibility."""
 
+from .api_key_operations import check_health, generate_api_key
 from .helpers import (
-    get_namespace,
     build_log_index_pattern,
     build_role_descriptors,
-    encode_api_key,
     create_basic_auth_header,
+    encode_api_key,
+    get_namespace,
 )
-from .api_key_operations import generate_api_key, check_health
 from .search_operations import (
     build_search_query,
     execute_search_request,

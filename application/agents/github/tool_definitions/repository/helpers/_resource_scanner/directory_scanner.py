@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ....common.constants import VERSION_DIR_PREFIX
-
 from .file_operations import find_json_file_in_directory, parse_json_file
 from .resource_builders import create_resource_dict
 

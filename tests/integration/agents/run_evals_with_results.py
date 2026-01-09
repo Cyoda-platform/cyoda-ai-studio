@@ -6,7 +6,7 @@ to a JSON file with timestamps and detailed metrics.
 
 Usage:
     python -m pytest tests/integration/agents/run_evals_with_results.py -v -s
-    
+
 Or run directly:
     python tests/integration/agents/run_evals_with_results.py
 """
@@ -36,12 +36,14 @@ class EvalResultsCollector:
 
     def add_result(self, test_name: str, status: str, details: Dict[str, Any]):
         """Add a test result."""
-        self.results["test_cases"].append({
-            "name": test_name,
-            "status": status,
-            "details": details,
-            "timestamp": datetime.now().isoformat(),
-        })
+        self.results["test_cases"].append(
+            {
+                "name": test_name,
+                "status": status,
+                "details": details,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
     def save_results(self, filename: str = None) -> Path:
         """Save results to JSON file."""
@@ -153,4 +155,3 @@ async def run_evals_standalone():
 if __name__ == "__main__":
     # Always run via pytest to ensure proper module imports
     pytest.main([__file__, "-v", "-s"])
-

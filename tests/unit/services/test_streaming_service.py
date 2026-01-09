@@ -2,17 +2,19 @@
 
 import asyncio
 import json
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
 from application.services.streaming_service import (
+    CLIInvocationTracker,
     StreamEvent,
     StreamingService,
-    CLIInvocationTracker,
     check_cli_invocation_limit,
-    reset_cli_invocation_count,
+    format_response_section,
     get_cli_invocation_count,
     normalize_hook,
-    format_response_section,
+    reset_cli_invocation_count,
 )
 
 
@@ -22,9 +24,7 @@ class TestStreamEvent:
     def test_stream_event_initialization(self):
         """Test StreamEvent initialization."""
         event = StreamEvent(
-            event_type="test",
-            data={"message": "test message"},
-            event_id="123"
+            event_type="test", data={"message": "test message"}, event_id="123"
         )
         assert event.event_type == "test"
         assert event.data == {"message": "test message"}
@@ -33,20 +33,13 @@ class TestStreamEvent:
 
     def test_stream_event_auto_generates_id(self):
         """Test StreamEvent auto-generates ID if not provided."""
-        event = StreamEvent(
-            event_type="test",
-            data={"message": "test"}
-        )
+        event = StreamEvent(event_type="test", data={"message": "test"})
         assert event.event_id is not None
         assert len(event.event_id) > 0
 
     def test_stream_event_to_sse(self):
         """Test StreamEvent converts to SSE format."""
-        event = StreamEvent(
-            event_type="test",
-            data={"message": "test"},
-            event_id="123"
-        )
+        event = StreamEvent(event_type="test", data={"message": "test"}, event_id="123")
         sse = event.to_sse()
         assert "data:" in sse
         assert "test" in sse
@@ -54,16 +47,8 @@ class TestStreamEvent:
 
     def test_stream_event_to_sse_with_complex_data(self):
         """Test StreamEvent converts complex data to SSE format."""
-        data = {
-            "message": "test",
-            "nested": {"key": "value"},
-            "list": [1, 2, 3]
-        }
-        event = StreamEvent(
-            event_type="complex",
-            data=data,
-            event_id="456"
-        )
+        data = {"message": "test", "nested": {"key": "value"}, "list": [1, 2, 3]}
+        event = StreamEvent(event_type="complex", data=data, event_id="456")
         sse = event.to_sse()
         assert "data:" in sse
         assert "nested" in sse
@@ -177,7 +162,9 @@ class TestFormatResponseSection:
 
     def test_format_response_section_with_section_type(self):
         """Test format_response_section with different section types."""
-        result = format_response_section("Title", "content", section_type="tool_response")
+        result = format_response_section(
+            "Title", "content", section_type="tool_response"
+        )
         assert "content" in result
         assert "Title" in result
 
@@ -195,13 +182,17 @@ class TestStreamingServiceAsync:
 
         created_session = MagicMock()
         created_session.state = {"__cyoda_technical_id__": "tech-123"}
-        mock_agent.runner.session_service.create_session = AsyncMock(return_value=created_session)
+        mock_agent.runner.session_service.create_session = AsyncMock(
+            return_value=created_session
+        )
 
         async def mock_generator():
             return
             yield
 
-        mock_agent.runner.run_async = MagicMock(side_effect=lambda **kwargs: mock_generator())
+        mock_agent.runner.run_async = MagicMock(
+            side_effect=lambda **kwargs: mock_generator()
+        )
 
         events = []
         async for event in StreamingService.stream_agent_response(
@@ -210,7 +201,7 @@ class TestStreamingServiceAsync:
             conversation_history=[],
             conversation_id="conv1",
             adk_session_id=None,
-            user_id="user1"
+            user_id="user1",
         ):
             events.append(event)
 
@@ -236,9 +227,7 @@ class TestStreamingServiceAsync:
 
         events = []
         async for event in StreamingService.stream_progress_updates(
-            task_id="task-123",
-            task_service=task_service,
-            poll_interval=0.1
+            task_id="task-123", task_service=task_service, poll_interval=0.1
         ):
             events.append(event)
 
@@ -253,9 +242,7 @@ class TestStreamingServiceAsync:
 
         events = []
         async for event in StreamingService.stream_progress_updates(
-            task_id="task-123",
-            task_service=task_service,
-            poll_interval=0.1
+            task_id="task-123", task_service=task_service, poll_interval=0.1
         ):
             events.append(event)
 
@@ -272,7 +259,7 @@ class TestStreamAgentResponseEdgeCases:
         event = StreamEvent(
             event_type="test",
             data={"key": "value", "nested": {"inner": "data"}},
-            event_id="123"
+            event_id="123",
         )
         sse = event.to_sse()
 
@@ -286,15 +273,8 @@ class TestStreamAgentResponseEdgeCases:
     @pytest.mark.asyncio
     async def test_stream_event_with_large_data(self):
         """Test StreamEvent with large data payload."""
-        large_data = {
-            "content": "x" * 10000,
-            "metadata": {"size": 10000}
-        }
-        event = StreamEvent(
-            event_type="large",
-            data=large_data,
-            event_id="456"
-        )
+        large_data = {"content": "x" * 10000, "metadata": {"size": 10000}}
+        event = StreamEvent(event_type="large", data=large_data, event_id="456")
         sse = event.to_sse()
 
         # Should still serialize properly
@@ -331,10 +311,13 @@ class TestStreamingServiceHelperMethods:
     async def test_check_heartbeat_and_yield(self):
         """Test _check_heartbeat_and_yield method."""
         import time
+
         last_beat = asyncio.get_event_loop().time() - 25  # 25 seconds ago
 
         # Should yield heartbeat after 20 second interval
-        event, new_time = await StreamingService._check_heartbeat_and_yield(last_beat, 20)
+        event, new_time = await StreamingService._check_heartbeat_and_yield(
+            last_beat, 20
+        )
 
         assert event is not None, "Should yield heartbeat after interval"
         assert "heartbeat" in event
@@ -389,13 +372,17 @@ class TestStreamingServiceIntegration:
 
         created_session = MagicMock()
         created_session.state = {"__cyoda_technical_id__": "tech-empty"}
-        mock_agent.runner.session_service.create_session = AsyncMock(return_value=created_session)
+        mock_agent.runner.session_service.create_session = AsyncMock(
+            return_value=created_session
+        )
 
         async def mock_generator():
             return
             yield
 
-        mock_agent.runner.run_async = MagicMock(side_effect=lambda **kwargs: mock_generator())
+        mock_agent.runner.run_async = MagicMock(
+            side_effect=lambda **kwargs: mock_generator()
+        )
 
         events = []
         async for event in StreamingService.stream_agent_response(
@@ -404,7 +391,7 @@ class TestStreamingServiceIntegration:
             conversation_history=[],
             conversation_id="conv1",
             adk_session_id=None,
-            user_id="user1"
+            user_id="user1",
         ):
             events.append(event)
 
@@ -420,11 +407,7 @@ class TestStreamingServiceIntegration:
         task = MagicMock()
         task.progress = 100
         task.status = "completed"
-        task.statistics = {
-            "files_processed": 20,
-            "files_total": 20,
-            "elapsed_time": 30
-        }
+        task.statistics = {"files_processed": 20, "files_total": 20, "elapsed_time": 30}
         task.result = "Success"
         task.error = None
 
@@ -432,9 +415,7 @@ class TestStreamingServiceIntegration:
 
         events = []
         async for event in StreamingService.stream_progress_updates(
-            task_id="task-789",
-            task_service=task_service,
-            poll_interval=0.01
+            task_id="task-789", task_service=task_service, poll_interval=0.01
         ):
             events.append(event)
 
@@ -466,11 +447,7 @@ class TestStreamingServiceIntegration:
 
     def test_stream_event_with_empty_data(self):
         """Test StreamEvent with empty data dictionary."""
-        event = StreamEvent(
-            event_type="empty",
-            data={},
-            event_id="empty-123"
-        )
+        event = StreamEvent(event_type="empty", data={}, event_id="empty-123")
         sse = event.to_sse()
 
         assert "event: empty" in sse
@@ -482,7 +459,7 @@ class TestStreamingServiceIntegration:
         event = StreamEvent(
             event_type="none_test",
             data={"key": None, "other": "value"},
-            event_id="none-456"
+            event_id="none-456",
         )
         sse = event.to_sse()
 
@@ -545,7 +522,10 @@ class TestToolCallLoopDetection:
             ("tool", "{'attempt': 1}"),  # Same
             ("tool", "{'attempt': 1}"),  # Same
             ("tool", "{'attempt': 1}"),  # Same
-            ("tool", "{'attempt': 2}"),  # Different - this should not trigger loop detection
+            (
+                "tool",
+                "{'attempt': 2}",
+            ),  # Different - this should not trigger loop detection
             ("tool", "{'attempt': 2}"),  # Same as previous
             ("tool", "{'attempt': 2}"),  # Same as previous
         ]
@@ -589,7 +569,9 @@ class TestResponseSizeLimit:
             response_text += chunk
 
         assert max_response_reached, "Should detect when size limit is exceeded"
-        assert len(response_text) <= MAX_RESPONSE_SIZE, "Response should not exceed size limit"
+        assert (
+            len(response_text) <= MAX_RESPONSE_SIZE
+        ), "Response should not exceed size limit"
 
 
 class TestToolResponseExtraction:
@@ -598,13 +580,15 @@ class TestToolResponseExtraction:
     def test_tool_response_hook_extraction_logic(self):
         """Test the logic for extracting hook from tool response JSON."""
         tool_response = {
-            "result": json.dumps({
-                "message": "Commit successful",
-                "hook": {
-                    "type": "deployment",
-                    "data": {"url": "https://example.com"}
+            "result": json.dumps(
+                {
+                    "message": "Commit successful",
+                    "hook": {
+                        "type": "deployment",
+                        "data": {"url": "https://example.com"},
+                    },
                 }
-            })
+            )
         }
 
         # Extract hook from tool response
@@ -626,7 +610,9 @@ class TestToolResponseExtraction:
                 except (json.JSONDecodeError, ValueError):
                     pass
 
-        assert tool_message == "Commit successful", "Should extract message from response"
+        assert (
+            tool_message == "Commit successful"
+        ), "Should extract message from response"
         assert tool_hook is not None, "Should extract hook from response"
         assert tool_hook["type"] == "deployment", "Hook type should match"
 
@@ -637,8 +623,12 @@ class TestToolResponseExtraction:
         mock_agent.runner = MagicMock()
         mock_agent.runner.session_service = AsyncMock()
         mock_agent.runner.session_service.get_session = AsyncMock(return_value=None)
-        mock_agent.runner.session_service.get_pending_state_delta = MagicMock(return_value=None)
-        mock_agent.runner.session_service.get_pending_event_count = MagicMock(return_value=0)
+        mock_agent.runner.session_service.get_pending_state_delta = MagicMock(
+            return_value=None
+        )
+        mock_agent.runner.session_service.get_pending_event_count = MagicMock(
+            return_value=0
+        )
         mock_agent._load_session_state = AsyncMock(return_value={})
         mock_agent._save_session_state = AsyncMock()
 
@@ -647,11 +637,13 @@ class TestToolResponseExtraction:
             "__cyoda_technical_id__": "tech-123",
             "ui_functions": [
                 {"function": "openTerminal", "context": "build"},
-                {"function": "showCanvas", "context": "code"}
-            ]
+                {"function": "showCanvas", "context": "code"},
+            ],
         }
         created_session.state = session_state
-        mock_agent.runner.session_service.create_session = AsyncMock(return_value=created_session)
+        mock_agent.runner.session_service.create_session = AsyncMock(
+            return_value=created_session
+        )
 
         async def mock_event_generator():
             event = MagicMock()
@@ -681,14 +673,16 @@ class TestToolResponseExtraction:
             conversation_history=[],
             conversation_id="conv1",
             adk_session_id=None,
-            user_id="user1"
+            user_id="user1",
         ):
             events.append(event)
 
         # Check that ui_functions are in done event
         done_event_str = next((e for e in events if "done" in e), None)
         assert done_event_str is not None, "Should have done event"
-        assert "ui_functions" in done_event_str, "Done event should contain ui_functions"
+        assert (
+            "ui_functions" in done_event_str
+        ), "Done event should contain ui_functions"
 
 
 class TestStreamTimeout:
@@ -706,7 +700,9 @@ class TestStreamTimeout:
 
         created_session = MagicMock()
         created_session.state = {"__cyoda_technical_id__": "tech-123"}
-        mock_agent.runner.session_service.create_session = AsyncMock(return_value=created_session)
+        mock_agent.runner.session_service.create_session = AsyncMock(
+            return_value=created_session
+        )
 
         # Create a mock event generator that sleeps to trigger timeout
         timeout_count = [0]
@@ -727,14 +723,16 @@ class TestStreamTimeout:
         mock_agent.runner.run_async = MagicMock(return_value=mock_event_generator())
 
         events = []
-        with patch('application.services.streaming_service.STREAM_TIMEOUT', 0.1):  # Very short timeout
+        with patch(
+            "application.services.streaming_service.STREAM_TIMEOUT", 0.1
+        ):  # Very short timeout
             async for event in StreamingService.stream_agent_response(
                 agent_wrapper=mock_agent,
                 user_message="test",
                 conversation_history=[],
                 conversation_id="conv1",
                 adk_session_id=None,
-                user_id="user1"
+                user_id="user1",
             ):
                 events.append(event)
                 if "timeout" in event.lower():
@@ -754,12 +752,8 @@ class TestNormalizeHookRepository:
             "type": "repository_config_selection",
             "data": {
                 "question": "Select a repository",
-                "options": [
-                    {
-                        "repo1": {"url": "...", "branch": "main"}
-                    }
-                ]
-            }
+                "options": [{"repo1": {"url": "...", "branch": "main"}}],
+            },
         }
 
         result = normalize_hook(hook)
@@ -774,10 +768,8 @@ class TestNormalizeHookRepository:
             "type": "repository_config_selection",
             "data": {
                 "question": "Select a repository",
-                "options": {
-                    "repo1": {"url": "...", "branch": "main"}
-                }
-            }
+                "options": {"repo1": {"url": "...", "branch": "main"}},
+            },
         }
 
         result = normalize_hook(hook)
@@ -789,10 +781,7 @@ class TestNormalizeHookRepository:
         """Test that non-repository hooks are not modified."""
         hook = {
             "type": "deployment",
-            "data": {
-                "status": "pending",
-                "options": [{"env": "prod"}]
-            }
+            "data": {"status": "pending", "options": [{"env": "prod"}]},
         }
 
         result = normalize_hook(hook)

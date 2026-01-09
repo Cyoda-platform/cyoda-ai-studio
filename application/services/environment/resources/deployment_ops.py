@@ -24,7 +24,9 @@ class DeploymentOperations:
             raise Exception("CLOUD_MANAGER_HOST not configured")
         return f"{self.protocol}://{self.cloud_manager_host}"
 
-    async def get_application_details(self, user_id: str, env_name: str, app_name: str) -> Dict[str, Any]:
+    async def get_application_details(
+        self, user_id: str, env_name: str, app_name: str
+    ) -> Dict[str, Any]:
         """Get details for a specific application deployment."""
         base_url = self._get_base_url()
         sanitized_user = sanitize_namespace(user_id)
@@ -41,7 +43,9 @@ class DeploymentOperations:
             response.raise_for_status()
             return response.json()
 
-    async def scale_application(self, user_id: str, env_name: str, app_name: str, replicas: int) -> Dict[str, Any]:
+    async def scale_application(
+        self, user_id: str, env_name: str, app_name: str, replicas: int
+    ) -> Dict[str, Any]:
         """Scale an application deployment."""
         base_url = self._get_base_url()
         sanitized_user = sanitize_namespace(user_id)
@@ -59,14 +63,18 @@ class DeploymentOperations:
             response.raise_for_status()
             return response.json()
 
-    async def restart_application(self, user_id: str, env_name: str, app_name: str) -> Dict[str, Any]:
+    async def restart_application(
+        self, user_id: str, env_name: str, app_name: str
+    ) -> Dict[str, Any]:
         """Restart an application deployment."""
         base_url = self._get_base_url()
         sanitized_user = sanitize_namespace(user_id)
         sanitized_env = sanitize_namespace(env_name)
         namespace = f"client-{sanitized_user}-{sanitized_env}"
 
-        api_url = f"{base_url}/k8s/namespaces/{namespace}/deployments/{app_name}/restart"
+        api_url = (
+            f"{base_url}/k8s/namespaces/{namespace}/deployments/{app_name}/restart"
+        )
 
         token = await self.auth_service.get_token()
         headers = {"Authorization": f"Bearer {token}"}
@@ -77,7 +85,12 @@ class DeploymentOperations:
             return response.json()
 
     async def update_application_image(
-        self, user_id: str, env_name: str, app_name: str, image: str, container: Optional[str] = None
+        self,
+        user_id: str,
+        env_name: str,
+        app_name: str,
+        image: str,
+        container: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Update container image for an application."""
         base_url = self._get_base_url()
@@ -98,7 +111,9 @@ class DeploymentOperations:
             response.raise_for_status()
             return response.json()
 
-    async def get_application_status_rollout(self, user_id: str, env_name: str, app_name: str) -> Dict[str, Any]:
+    async def get_application_status_rollout(
+        self, user_id: str, env_name: str, app_name: str
+    ) -> Dict[str, Any]:
         """Get rollout status of an application."""
         base_url = self._get_base_url()
         sanitized_user = sanitize_namespace(user_id)

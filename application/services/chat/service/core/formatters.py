@@ -3,19 +3,19 @@
 import logging
 from typing import Dict, List
 
-from .models import PaginationResult
 from .constants import (
-    FIELD_DATE,
-    FIELD_TECHNICAL_ID,
-    FIELD_NAME,
-    FIELD_DESCRIPTION,
     FIELD_CREATED_AT,
+    FIELD_DATE,
+    FIELD_DESCRIPTION,
+    FIELD_NAME,
+    FIELD_TECHNICAL_ID,
+    RESPONSE_KEY_CACHED,
     RESPONSE_KEY_CHATS,
+    RESPONSE_KEY_HAS_MORE,
     RESPONSE_KEY_LIMIT,
     RESPONSE_KEY_NEXT_CURSOR,
-    RESPONSE_KEY_HAS_MORE,
-    RESPONSE_KEY_CACHED,
 )
+from .models import PaginationResult
 
 logger = logging.getLogger(__name__)
 

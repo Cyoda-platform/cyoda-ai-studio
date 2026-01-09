@@ -6,9 +6,9 @@ All functionality has been split into focused modules within resources/.
 
 # Re-export all public APIs from the package
 from .resources import (
+    DeploymentOperations,
     EnvironmentResourceService,
     NamespaceOperations,
-    DeploymentOperations,
     UserAppOperations,
 )
 

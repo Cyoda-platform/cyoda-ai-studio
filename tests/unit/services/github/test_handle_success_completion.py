@@ -1,8 +1,9 @@
 """Tests for _handle_success_completion method."""
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from application.services.github.cli_service import GitHubCLIService
 from application.services.github.operations_service import GitHubOperationsService
@@ -17,14 +18,16 @@ class TestHandleSuccessCompletion:
         git_service = AsyncMock(spec=GitHubOperationsService)
         cli_service = GitHubCLIService(git_service)
         task_service = AsyncMock()
-        
+
         # Mock commit and push result
-        git_service.commit_and_push = AsyncMock(return_value={
-            "success": True,
-            "changed_files": ["file1.py", "file2.py"],
-            "canvas_resources": {"entities": ["User"]}
-        })
-        
+        git_service.commit_and_push = AsyncMock(
+            return_value={
+                "success": True,
+                "changed_files": ["file1.py", "file2.py"],
+                "canvas_resources": {"entities": ["User"]},
+            }
+        )
+
         await cli_service._handle_success_completion(
             task_id="task-123",
             repository_path="/repo",
@@ -33,9 +36,9 @@ class TestHandleSuccessCompletion:
             task_service=task_service,
             conversation_id="conv-123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
-        
+
         # Verify task was updated with success status
         task_service.update_task_status.assert_called_once()
         call_args = task_service.update_task_status.call_args
@@ -48,14 +51,12 @@ class TestHandleSuccessCompletion:
         git_service = AsyncMock(spec=GitHubOperationsService)
         cli_service = GitHubCLIService(git_service)
         task_service = AsyncMock()
-        
+
         # Mock commit and push result with no changes
-        git_service.commit_and_push = AsyncMock(return_value={
-            "success": True,
-            "changed_files": [],
-            "canvas_resources": {}
-        })
-        
+        git_service.commit_and_push = AsyncMock(
+            return_value={"success": True, "changed_files": [], "canvas_resources": {}}
+        )
+
         await cli_service._handle_success_completion(
             task_id="task-123",
             repository_path="/repo",
@@ -64,9 +65,9 @@ class TestHandleSuccessCompletion:
             task_service=task_service,
             conversation_id="conv-123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
-        
+
         # Verify task was updated
         task_service.update_task_status.assert_called_once()
         call_args = task_service.update_task_status.call_args
@@ -78,10 +79,10 @@ class TestHandleSuccessCompletion:
         git_service = AsyncMock(spec=GitHubOperationsService)
         cli_service = GitHubCLIService(git_service)
         task_service = AsyncMock()
-        
+
         # Mock timeout error
         git_service.commit_and_push = AsyncMock(side_effect=asyncio.TimeoutError())
-        
+
         await cli_service._handle_success_completion(
             task_id="task-123",
             repository_path="/repo",
@@ -90,9 +91,9 @@ class TestHandleSuccessCompletion:
             task_service=task_service,
             conversation_id="conv-123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
-        
+
         # Verify task was marked as completed despite timeout
         task_service.update_task_status.assert_called_once()
         call_args = task_service.update_task_status.call_args
@@ -105,10 +106,10 @@ class TestHandleSuccessCompletion:
         git_service = AsyncMock(spec=GitHubOperationsService)
         cli_service = GitHubCLIService(git_service)
         task_service = AsyncMock()
-        
+
         # Mock commit failure
         git_service.commit_and_push = AsyncMock(side_effect=Exception("Commit failed"))
-        
+
         await cli_service._handle_success_completion(
             task_id="task-123",
             repository_path="/repo",
@@ -117,9 +118,9 @@ class TestHandleSuccessCompletion:
             task_service=task_service,
             conversation_id="conv-123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
-        
+
         # Verify task was marked as completed despite commit failure
         task_service.update_task_status.assert_called_once()
         call_args = task_service.update_task_status.call_args
@@ -132,17 +133,19 @@ class TestHandleSuccessCompletion:
         git_service = AsyncMock(spec=GitHubOperationsService)
         cli_service = GitHubCLIService(git_service)
         task_service = AsyncMock()
-        
+
         # Mock commit and push with canvas resources
-        git_service.commit_and_push = AsyncMock(return_value={
-            "success": True,
-            "changed_files": ["file1.py"],
-            "canvas_resources": {
-                "entities": ["User", "Product"],
-                "workflows": ["user_workflow"]
+        git_service.commit_and_push = AsyncMock(
+            return_value={
+                "success": True,
+                "changed_files": ["file1.py"],
+                "canvas_resources": {
+                    "entities": ["User", "Product"],
+                    "workflows": ["user_workflow"],
+                },
             }
-        })
-        
+        )
+
         await cli_service._handle_success_completion(
             task_id="task-123",
             repository_path="/repo",
@@ -151,9 +154,9 @@ class TestHandleSuccessCompletion:
             task_service=task_service,
             conversation_id="conv-123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
-        
+
         # Verify metadata includes hook data
         task_service.update_task_status.assert_called_once()
         call_args = task_service.update_task_status.call_args
@@ -161,7 +164,7 @@ class TestHandleSuccessCompletion:
         assert "hook_data" in metadata
         assert metadata["hook_data"]["resources"] == {
             "entities": ["User", "Product"],
-            "workflows": ["user_workflow"]
+            "workflows": ["user_workflow"],
         }
 
     @pytest.mark.asyncio
@@ -170,14 +173,16 @@ class TestHandleSuccessCompletion:
         git_service = AsyncMock(spec=GitHubOperationsService)
         cli_service = GitHubCLIService(git_service)
         task_service = AsyncMock()
-        
+
         # Mock commit and push
-        git_service.commit_and_push = AsyncMock(return_value={
-            "success": True,
-            "changed_files": ["file1.py"],
-            "canvas_resources": {"entities": ["User"]}
-        })
-        
+        git_service.commit_and_push = AsyncMock(
+            return_value={
+                "success": True,
+                "changed_files": ["file1.py"],
+                "canvas_resources": {"entities": ["User"]},
+            }
+        )
+
         await cli_service._handle_success_completion(
             task_id="task-123",
             repository_path="/repo",
@@ -186,12 +191,11 @@ class TestHandleSuccessCompletion:
             task_service=task_service,
             conversation_id=None,
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
-        
+
         # Verify metadata doesn't include hook data
         task_service.update_task_status.assert_called_once()
         call_args = task_service.update_task_status.call_args
         metadata = call_args[1]["metadata"]
         assert "hook_data" not in metadata
-

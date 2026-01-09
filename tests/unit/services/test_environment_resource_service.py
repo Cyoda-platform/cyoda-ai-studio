@@ -1,11 +1,12 @@
 """Tests for EnvironmentResourceService."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-import httpx
 
-from application.services.environment.resources import EnvironmentResourceService
+import httpx
+import pytest
+
 from application.services.environment.auth import CloudManagerAuthService
+from application.services.environment.resources import EnvironmentResourceService
 
 
 @pytest.fixture
@@ -36,13 +37,15 @@ class TestUserAppOperations:
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.scale_user_app(
                 user_id="test-user",
                 env_name="test-env",
                 app_name="test-app",
-                replicas=3
+                replicas=3,
             )
 
             assert result == {"replicas": 3, "status": "scaled"}
@@ -57,14 +60,16 @@ class TestUserAppOperations:
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.scale_user_app(
                 user_id="test-user",
                 env_name="test-env",
                 app_name="test-app",
                 replicas=5,
-                deployment_name="custom-deployment"
+                deployment_name="custom-deployment",
             )
 
             assert result["replicas"] == 5
@@ -96,7 +101,9 @@ class TestUserAppOperations:
         mock_success_response.raise_for_status = MagicMock()
 
         # Setup async client mock
-        mock_client_instance.patch = AsyncMock(side_effect=[mock_404_response, mock_success_response])
+        mock_client_instance.patch = AsyncMock(
+            side_effect=[mock_404_response, mock_success_response]
+        )
         mock_client_instance.get = AsyncMock(return_value=mock_list_response)
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -107,7 +114,7 @@ class TestUserAppOperations:
                 user_id="test-user",
                 env_name="test-env",
                 app_name="test-app",
-                replicas=3
+                replicas=3,
             )
 
             assert result == {"replicas": 3, "status": "scaled"}
@@ -123,12 +130,12 @@ class TestUserAppOperations:
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.restart_user_app(
-                user_id="test-user",
-                env_name="test-env",
-                app_name="test-app"
+                user_id="test-user", env_name="test-env", app_name="test-app"
             )
 
             assert result == {"status": "restarted"}
@@ -142,13 +149,15 @@ class TestUserAppOperations:
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.update_user_app_image(
                 user_id="test-user",
                 env_name="test-env",
                 app_name="test-app",
-                image="myapp:v2"
+                image="myapp:v2",
             )
 
             assert result["image"] == "myapp:v2"
@@ -162,14 +171,16 @@ class TestUserAppOperations:
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.update_user_app_image(
                 user_id="test-user",
                 env_name="test-env",
                 app_name="test-app",
                 image="myapp:v2",
-                container="api"
+                container="api",
             )
 
             assert result["container"] == "api"
@@ -186,12 +197,12 @@ class TestUserAppOperations:
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.get_user_app_status(
-                user_id="test-user",
-                env_name="test-env",
-                app_name="test-app"
+                user_id="test-user", env_name="test-env", app_name="test-app"
             )
 
             assert result["status"] == "healthy"
@@ -205,12 +216,12 @@ class TestUserAppOperations:
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.get_user_app_metrics(
-                user_id="test-user",
-                env_name="test-env",
-                app_name="test-app"
+                user_id="test-user", env_name="test-env", app_name="test-app"
             )
 
             assert "cpu" in result
@@ -221,16 +232,18 @@ class TestUserAppOperations:
         """Test getting user app pods."""
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {"pods": [{"name": "pod-1"}, {"name": "pod-2"}]}
+        mock_response.json.return_value = {
+            "pods": [{"name": "pod-1"}, {"name": "pod-2"}]
+        }
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.get_user_app_pods(
-                user_id="test-user",
-                env_name="test-env",
-                app_name="test-app"
+                user_id="test-user", env_name="test-env", app_name="test-app"
             )
 
             assert len(result["pods"]) == 2
@@ -244,12 +257,12 @@ class TestUserAppOperations:
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.delete = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.delete = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.delete_user_app(
-                user_id="test-user",
-                env_name="test-env",
-                app_name="test-app"
+                user_id="test-user", env_name="test-env", app_name="test-app"
             )
 
             assert result["status"] == "deleted"
@@ -263,13 +276,15 @@ class TestUserAppOperations:
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.patch = AsyncMock(
+                return_value=mock_response
+            )
 
             await resource_service.scale_user_app(
                 user_id="Test_User@123",  # Should be sanitized
                 env_name="Test-Env",
                 app_name="Test.App",
-                replicas=3
+                replicas=3,
             )
 
             # Verify the URL contains sanitized namespace
@@ -285,7 +300,9 @@ class TestUserAppOperations:
         """Test HTTP error handling."""
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.patch = AsyncMock(
-                side_effect=httpx.HTTPStatusError("Error", request=MagicMock(), response=MagicMock())
+                side_effect=httpx.HTTPStatusError(
+                    "Error", request=MagicMock(), response=MagicMock()
+                )
             )
 
             with pytest.raises(httpx.HTTPStatusError):
@@ -293,7 +310,7 @@ class TestUserAppOperations:
                     user_id="test-user",
                     env_name="test-env",
                     app_name="test-app",
-                    replicas=3
+                    replicas=3,
                 )
 
 
@@ -309,13 +326,18 @@ class TestPlatformAppOperations:
             "namespaces": [
                 {"name": "client-testuser-dev", "status": "Active"},
                 {"name": "client-testuser-prod", "status": "Active"},
-                {"name": "client-1-testuser-dev-app1", "status": "Active"},  # Should be filtered
+                {
+                    "name": "client-1-testuser-dev-app1",
+                    "status": "Active",
+                },  # Should be filtered
             ]
         }
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.list_environments(user_id="testuser")
 
@@ -332,17 +354,18 @@ class TestPlatformAppOperations:
         mock_response.json.return_value = {
             "deployments": [
                 {"name": "api", "replicas": 3},
-                {"name": "worker", "replicas": 2}
+                {"name": "worker", "replicas": 2},
             ]
         }
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
+                return_value=mock_response
+            )
 
             result = await resource_service.describe_environment(
-                user_id="testuser",
-                env_name="dev"
+                user_id="testuser", env_name="dev"
             )
 
             assert result["environment"] == "dev"

@@ -27,12 +27,16 @@ from application.agents.github.tool_definitions.common.constants import (
     GIT_STATUS_MODIFIED,
     GIT_STATUS_UNTRACKED,
 )
-from application.agents.github.tool_definitions.common.utils import ensure_repository_available
+from application.agents.github.tool_definitions.common.utils import (
+    ensure_repository_available,
+)
 
 logger = logging.getLogger(__name__)
 
 # Diff constants
-REPO_PATH_NOT_FOUND = "ERROR: repository_path not found in context. Repository must be cloned first."
+REPO_PATH_NOT_FOUND = (
+    "ERROR: repository_path not found in context. Repository must be cloned first."
+)
 REPO_UNAVAILABLE = "ERROR: {message}"
 DIFF_ERROR = "ERROR: {error}"
 REPO_CHANGES_LOG = "Repository has {total} uncommitted changes"
@@ -66,7 +70,12 @@ class RepositoryChanges(BaseModel):
         Returns:
             Total count of all changes
         """
-        return len(self.modified) + len(self.added) + len(self.deleted) + len(self.untracked)
+        return (
+            len(self.modified)
+            + len(self.added)
+            + len(self.deleted)
+            + len(self.untracked)
+        )
 
 
 async def _extract_repository_path(
@@ -159,7 +168,9 @@ async def get_repository_diff(tool_context: ToolContext) -> str:
     """
     try:
         # Step 1: Extract and validate repository path
-        is_valid, error_msg, repository_path = await _extract_repository_path(tool_context)
+        is_valid, error_msg, repository_path = await _extract_repository_path(
+            tool_context
+        )
         if not is_valid:
             return error_msg
 

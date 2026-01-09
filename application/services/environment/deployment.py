@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 import httpx
 
 from application.services.environment.auth import CloudManagerAuthService
-from application.services.environment.utils import sanitize_namespace, sanitize_keyspace
+from application.services.environment.utils import sanitize_keyspace, sanitize_namespace
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +26,7 @@ class EnvironmentDeploymentService:
         return f"{self.protocol}://{self.cloud_manager_host}"
 
     async def deploy_environment(
-        self, 
-        user_id: str, 
-        chat_id: str, 
-        env_name: str, 
-        build_id: Optional[str] = None
+        self, user_id: str, chat_id: str, env_name: str, build_id: Optional[str] = None
     ) -> Dict[str, str]:
         """Deploy a Cyoda environment."""
         base_url = self._get_base_url()
@@ -38,23 +34,23 @@ class EnvironmentDeploymentService:
 
         # Truncate env_name to 10 chars as per convention
         env_name_truncated = env_name[:10]
-        
+
         sanitized_user = sanitize_namespace(user_id)
         sanitized_env = sanitize_namespace(env_name_truncated)
-        
+
         user_defined_namespace = f"client-{sanitized_user}-{sanitized_env}"
-        
+
         keyspace_user = sanitize_keyspace(user_id)
         keyspace_env = sanitize_keyspace(env_name_truncated)
         user_defined_keyspace = f"c_{keyspace_user}_{keyspace_env}"
 
         payload = {
-            "user_name": user_id, 
+            "user_name": user_id,
             "chat_id": chat_id,
             "user_defined_namespace": user_defined_namespace,
-            "user_defined_keyspace": user_defined_keyspace
+            "user_defined_keyspace": user_defined_keyspace,
         }
-        
+
         if build_id:
             payload["build_id"] = build_id
 
@@ -65,10 +61,10 @@ class EnvironmentDeploymentService:
             response = await client.post(deploy_url, json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
-            
+
             return {
                 "build_id": data.get("build_id"),
-                "namespace": data.get("build_namespace")
+                "namespace": data.get("build_namespace"),
             }
 
     def _build_namespaces(
@@ -158,7 +154,7 @@ class EnvironmentDeploymentService:
         cyoda_client_id: str,
         cyoda_client_secret: str,
         is_public: bool = True,
-        installation_id: Optional[str] = None
+        installation_id: Optional[str] = None,
     ) -> Dict[str, str]:
         """Deploy a user application."""
         base_url = self._get_base_url()
@@ -191,19 +187,23 @@ class EnvironmentDeploymentService:
 
             return {
                 "build_id": data.get("build_id"),
-                "namespace": data.get("build_namespace") or data.get("namespace")
+                "namespace": data.get("build_namespace") or data.get("namespace"),
             }
 
     async def get_deployment_status(self, build_id: str) -> Dict[str, Any]:
         """Get status of a deployment build."""
         base_url = self._get_base_url()
-        status_url = os.getenv("DEPLOY_CYODA_ENV_STATUS", f"{base_url}/deploy/cyoda-env/status")
+        status_url = os.getenv(
+            "DEPLOY_CYODA_ENV_STATUS", f"{base_url}/deploy/cyoda-env/status"
+        )
 
         token = await self.auth_service.get_token()
         headers = {"Authorization": f"Bearer {token}"}
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(f"{status_url}?build_id={build_id}", headers=headers)
+            response = await client.get(
+                f"{status_url}?build_id={build_id}", headers=headers
+            )
             response.raise_for_status()
             return response.json()
 
@@ -214,7 +214,9 @@ class EnvironmentDeploymentService:
 
         # Note: Original code didn't use auth for logs, keeping consistent
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(f"{logs_url}?build_id={build_id}&max_lines={max_lines}")
+            response = await client.get(
+                f"{logs_url}?build_id={build_id}&max_lines={max_lines}"
+            )
             response.raise_for_status()
             data = response.json()
             return data.get("logs", "")

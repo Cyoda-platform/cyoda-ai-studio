@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from common.config.config import CLI_PROVIDER, AUGMENT_MODEL, CLAUDE_MODEL, GEMINI_MODEL
+from common.config.config import AUGMENT_MODEL, CLAUDE_MODEL, CLI_PROVIDER, GEMINI_MODEL
 
 # Get module directory (github agent directory)
 _MODULE_DIR = Path(__file__).parent.parent.parent.parent
@@ -18,8 +18,12 @@ _BUILD_MODE = os.getenv("BUILD_MODE", "production").lower()
 # Determine CLI script paths based on provider and build mode
 if _BUILD_MODE == "test":
     _DEFAULT_AUGGIE_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build_mock.sh"
-    _DEFAULT_CLAUDE_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build_mock.sh"  # Use mock for testing
-    _DEFAULT_GEMINI_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build_mock.sh"  # Use mock for testing
+    _DEFAULT_CLAUDE_SCRIPT = (
+        _MODULE_DIR.parent / "shared" / "augment_build_mock.sh"
+    )  # Use mock for testing
+    _DEFAULT_GEMINI_SCRIPT = (
+        _MODULE_DIR.parent / "shared" / "augment_build_mock.sh"
+    )  # Use mock for testing
 else:
     _DEFAULT_AUGGIE_SCRIPT = _MODULE_DIR.parent / "shared" / "augment_build.sh"
     _DEFAULT_CLAUDE_SCRIPT = _MODULE_DIR.parent / "shared" / "claude_build.sh"

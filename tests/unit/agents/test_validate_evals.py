@@ -3,7 +3,7 @@
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
 
 import pytest
 
@@ -27,14 +27,14 @@ class TestValidateTestFile:
                             "final_response": "Test response",
                             "intermediate_data": {
                                 "tool_uses": [{"name": "test_tool", "args": {}}]
-                            }
+                            },
                         }
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(valid_data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(valid_data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is True
             assert "Valid" in message
@@ -42,53 +42,39 @@ class TestValidateTestFile:
 
     def test_invalid_json(self):
         """Test validation with invalid JSON."""
-        with patch('builtins.open', mock_open(read_data="invalid json")):
+        with patch("builtins.open", mock_open(read_data="invalid json")):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "Invalid JSON" in message
 
     def test_missing_eval_set_id(self):
         """Test validation with missing eval_set_id."""
-        data = {
-            "name": "Test",
-            "eval_cases": []
-        }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        data = {"name": "Test", "eval_cases": []}
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "eval_set_id" in message
 
     def test_missing_name(self):
         """Test validation with missing name."""
-        data = {
-            "eval_set_id": "test-1",
-            "eval_cases": []
-        }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        data = {"eval_set_id": "test-1", "eval_cases": []}
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "name" in message
 
     def test_eval_cases_not_list(self):
         """Test validation when eval_cases is not a list."""
-        data = {
-            "eval_set_id": "test-1",
-            "name": "Test",
-            "eval_cases": "not a list"
-        }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        data = {"eval_set_id": "test-1", "name": "Test", "eval_cases": "not a list"}
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "must be a list" in message
 
     def test_empty_eval_cases(self):
         """Test validation with empty eval_cases."""
-        data = {
-            "eval_set_id": "test-1",
-            "name": "Test",
-            "eval_cases": []
-        }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        data = {"eval_set_id": "test-1", "name": "Test", "eval_cases": []}
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "empty" in message
@@ -98,9 +84,9 @@ class TestValidateTestFile:
         data = {
             "eval_set_id": "test-1",
             "name": "Test",
-            "eval_cases": [{"conversation": []}]
+            "eval_cases": [{"conversation": []}],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "eval_id" in message
@@ -110,9 +96,9 @@ class TestValidateTestFile:
         data = {
             "eval_set_id": "test-1",
             "name": "Test",
-            "eval_cases": [{"eval_id": "case-1"}]
+            "eval_cases": [{"eval_id": "case-1"}],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "conversation" in message
@@ -122,14 +108,9 @@ class TestValidateTestFile:
         data = {
             "eval_set_id": "test-1",
             "name": "Test",
-            "eval_cases": [
-                {
-                    "eval_id": "case-1",
-                    "conversation": "not a list"
-                }
-            ]
+            "eval_cases": [{"eval_id": "case-1", "conversation": "not a list"}],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "must be a list" in message
@@ -140,13 +121,10 @@ class TestValidateTestFile:
             "eval_set_id": "test-1",
             "name": "Test",
             "eval_cases": [
-                {
-                    "eval_id": "case-1",
-                    "conversation": [{"final_response": "resp"}]
-                }
-            ]
+                {"eval_id": "case-1", "conversation": [{"final_response": "resp"}]}
+            ],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "user_content" in message
@@ -157,13 +135,10 @@ class TestValidateTestFile:
             "eval_set_id": "test-1",
             "name": "Test",
             "eval_cases": [
-                {
-                    "eval_id": "case-1",
-                    "conversation": [{"user_content": "question"}]
-                }
-            ]
+                {"eval_id": "case-1", "conversation": [{"user_content": "question"}]}
+            ],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "final_response" in message
@@ -176,16 +151,11 @@ class TestValidateTestFile:
             "eval_cases": [
                 {
                     "eval_id": "case-1",
-                    "conversation": [
-                        {
-                            "user_content": "q",
-                            "final_response": "r"
-                        }
-                    ]
+                    "conversation": [{"user_content": "q", "final_response": "r"}],
                 }
-            ]
+            ],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "intermediate_data" in message
@@ -202,13 +172,13 @@ class TestValidateTestFile:
                         {
                             "user_content": "q",
                             "final_response": "r",
-                            "intermediate_data": {}
+                            "intermediate_data": {},
                         }
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "tool_uses" in message
@@ -225,13 +195,13 @@ class TestValidateTestFile:
                         {
                             "user_content": "q",
                             "final_response": "r",
-                            "intermediate_data": {"tool_uses": "not a list"}
+                            "intermediate_data": {"tool_uses": "not a list"},
                         }
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "must be a list" in message
@@ -248,13 +218,13 @@ class TestValidateTestFile:
                         {
                             "user_content": "q",
                             "final_response": "r",
-                            "intermediate_data": {"tool_uses": [{"args": {}}]}
+                            "intermediate_data": {"tool_uses": [{"args": {}}]},
                         }
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "tool name" in message
@@ -271,13 +241,13 @@ class TestValidateTestFile:
                         {
                             "user_content": "q",
                             "final_response": "r",
-                            "intermediate_data": {"tool_uses": [{"name": "tool1"}]}
+                            "intermediate_data": {"tool_uses": [{"name": "tool1"}]},
                         }
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "tool args" in message
@@ -294,22 +264,21 @@ class TestValidateTestFile:
                         {
                             "user_content": f"q{i}",
                             "final_response": f"r{i}",
-                            "intermediate_data": {"tool_uses": []}
+                            "intermediate_data": {"tool_uses": []},
                         }
-                    ]
+                    ],
                 }
                 for i in range(3)
-            ]
+            ],
         }
-        with patch('builtins.open', mock_open(read_data=json.dumps(data))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(data))):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is True
             assert "3 cases" in message
 
     def test_file_read_exception(self):
         """Test validation with file read exception."""
-        with patch('builtins.open', side_effect=IOError("File error")):
+        with patch("builtins.open", side_effect=IOError("File error")):
             valid, message = validate_test_file(Path("test.json"))
             assert valid is False
             assert "Error" in message
-

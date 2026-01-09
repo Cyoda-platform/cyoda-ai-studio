@@ -8,6 +8,7 @@ from google.adk.events.event import Event
 from google.adk.sessions.session import Session
 
 from application.entity.adk_session import AdkSession
+
 from .message_sanitizer import sanitize_adk_session_events
 
 logger = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ def serialize_event(event: Event) -> dict[str, Any]:
     # Use by_alias=True to serialize with camelCase field names (Event uses alias_generator=to_camel)
     # The Event model has extra='forbid' and doesn't accept None for optional fields
     # Use mode='json' to properly serialize bytes to base64 strings (Event has ser_json_bytes='base64')
-    return event.model_dump(exclude_none=True, by_alias=True, mode='json')
+    return event.model_dump(exclude_none=True, by_alias=True, mode="json")
 
 
 def filter_none_values(data: Any) -> Any:
@@ -69,11 +70,7 @@ def filter_none_values(data: Any) -> Any:
         Filtered data with None values removed
     """
     if isinstance(data, dict):
-        return {
-            k: filter_none_values(v)
-            for k, v in data.items()
-            if v is not None
-        }
+        return {k: filter_none_values(v) for k, v in data.items() if v is not None}
     elif isinstance(data, list):
         return [filter_none_values(item) for item in data]
     else:
@@ -99,10 +96,10 @@ def deserialize_event(event_data: dict[str, Any]) -> Event:
     # Also include camelCase aliases for fields (Event uses alias_generator=to_camel)
     # Convert field names to camelCase
     def to_camel_case(snake_str: str) -> str:
-        components = snake_str.split('_')
-        return components[0] + ''.join(x.title() for x in components[1:])
+        components = snake_str.split("_")
+        return components[0] + "".join(x.title() for x in components[1:])
 
-    camel_aliases = {to_camel_case(f) for f in valid_fields if '_' in f}
+    camel_aliases = {to_camel_case(f) for f in valid_fields if "_" in f}
     all_valid_fields = valid_fields | camel_aliases
 
     # Filter the data to only include valid fields

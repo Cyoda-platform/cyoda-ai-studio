@@ -40,4 +40,6 @@ async def create_multiple_entities(
     container = get_user_service_container(client_id, client_secret, cyoda_host)
     entity_service = container.get_entity_service()
     results = await entity_service.save_all(entities, entity_model, entity_version="1")
-    return format_entity_success([{"id": r.get_id(), "entity": r.data} for r in results])
+    return format_entity_success(
+        [{"id": r.get_id(), "entity": r.data} for r in results]
+    )

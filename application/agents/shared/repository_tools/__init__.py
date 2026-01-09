@@ -4,6 +4,12 @@ Repository tools module - refactored into focused sub-modules.
 This module provides a clean public API while organizing code into logical components.
 """
 
+# Import from cli_process
+from .cli_process import (
+    setup_and_monitor_cli_process,
+    start_cli_process,
+)
+
 # Import constants
 from .constants import (
     AUGMENT_CLI_SCRIPT,
@@ -24,19 +30,6 @@ from .constants import (
     UNKNOWN_ERROR_MESSAGE,
 )
 
-# Import from git_operations
-from .git_operations import (
-    _get_authenticated_repo_url_sync,
-    _get_git_diff,
-    _run_git_command,
-)
-
-# Import from validation
-from .validation import (
-    _is_protected_branch,
-    _validate_clone_parameters,
-)
-
 # Import from conversation
 from .conversation import (
     _add_task_to_conversation,
@@ -50,18 +43,27 @@ from .files import (
     save_files_to_branch,
 )
 
+# Import from generation
+from .generation import (
+    _load_prompt_template,
+    check_build_status,
+    generate_application,
+    wait_before_next_check,
+)
+
+# Import from git_operations
+from .git_operations import (
+    _get_authenticated_repo_url_sync,
+    _get_git_diff,
+    _run_git_command,
+)
+
 # Import from monitoring
 from .monitoring import (
     _monitor_build_process,
     _stream_process_output,
     _terminate_process,
     check_user_environment_status,
-)
-
-# Import from cli_process
-from .cli_process import (
-    start_cli_process,
-    setup_and_monitor_cli_process,
 )
 
 # Import from repository
@@ -74,13 +76,10 @@ from .repository import (
     set_repository_config,
 )
 
-# Import from generation
-from .generation import (
-    _load_prompt_template,
-    ask_user_to_select_option,
-    check_build_status,
-    generate_application,
-    wait_before_next_check,
+# Import from validation
+from .validation import (
+    _is_protected_branch,
+    _validate_clone_parameters,
 )
 
 # Legacy imports kept for backward compatibility during migration
@@ -137,6 +136,5 @@ __all__ = [
     "_update_conversation_build_context",
     "_update_conversation_with_lock",
     # Prompts/UI
-    "ask_user_to_select_option",
     "check_user_environment_status",
 ]

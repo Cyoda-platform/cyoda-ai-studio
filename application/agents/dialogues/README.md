@@ -93,4 +93,3 @@ This directory contains test dialogues and prompts for testing UI hooks function
 - `PROMPT_HOOKS_GUIDE.md` - How to use prompt-level hooks
 - `HOOK_FRAMEWORK_README.md` - Hook framework overview
 - Agent prompt templates - Examples in each agent's prompts directory
-

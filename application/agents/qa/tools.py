@@ -20,7 +20,9 @@ from .tool_definitions.knowledge.tools.explain_pattern_tool import explain_cyoda
 from .tool_definitions.knowledge.tools.search_concepts_tool import search_cyoda_concepts
 
 # Export all tools
-__all__.extend([
-    "search_cyoda_concepts",
-    "explain_cyoda_pattern",
-])
+__all__.extend(
+    [
+        "search_cyoda_concepts",
+        "explain_cyoda_pattern",
+    ]
+)

@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from google.adk.runners import Runner, RunConfig
+from google.adk.runners import RunConfig, Runner
 from google.genai import types
 
 from application.agents.shared.cyoda_response_plugin import CyodaResponsePlugin
@@ -20,7 +20,7 @@ class CyodaAssistantWrapper:
     def __init__(self, adk_agent: Any, entity_service: Any):
         self.agent = adk_agent
         self.session_manager = SessionManager(entity_service)
-        
+
         # Initialize Runner
         session_service = CyodaSessionService(entity_service)
         plugins = [
@@ -30,7 +30,7 @@ class CyodaAssistantWrapper:
                 default_message="Task completed successfully.",
             )
         ]
-        
+
         self.runner = Runner(
             app_name="cyoda-assistant",
             agent=adk_agent,
@@ -48,17 +48,21 @@ class CyodaAssistantWrapper:
     ) -> Dict[str, Any]:
         """Process user message."""
         session_id = conversation_id or "default"
-        
+
         # Load and prepare session state
         session_state = {}
         if conversation_id:
-            session_state = await self.session_manager.load_session_state(conversation_id)
-            
-        session_state.update({
-            "conversation_history": conversation_history,
-            "user_id": user_id,
-            "conversation_id": conversation_id
-        })
+            session_state = await self.session_manager.load_session_state(
+                conversation_id
+            )
+
+        session_state.update(
+            {
+                "conversation_history": conversation_history,
+                "user_id": user_id,
+                "conversation_id": conversation_id,
+            }
+        )
 
         # Ensure session exists
         session, session_technical_id = await self._get_or_create_session(
@@ -71,35 +75,39 @@ class CyodaAssistantWrapper:
         # Save state
         if conversation_id:
             final_session = await self.runner.session_service.get_session(
-                app_name="cyoda-assistant",
-                user_id=user_id,
-                session_id=session_id
+                app_name="cyoda-assistant", user_id=user_id, session_id=session_id
             )
             if final_session:
-                await self.session_manager.save_session_state(conversation_id, dict(final_session.state))
+                await self.session_manager.save_session_state(
+                    conversation_id, dict(final_session.state)
+                )
 
         # Extract results
         final_state = dict(session.state) if session else {}
         return self._build_response(
-            response_text, 
-            final_state, 
-            session_technical_id, 
-            conversation_id is not None
+            response_text,
+            final_state,
+            session_technical_id,
+            conversation_id is not None,
         )
 
     async def _get_or_create_session(
-        self, 
-        user_id: str, 
-        session_id: str, 
+        self,
+        user_id: str,
+        session_id: str,
         state: Dict[str, Any],
-        technical_id: Optional[str]
+        technical_id: Optional[str],
     ) -> tuple[Any, Optional[str]]:
         """Get existing session or create new one."""
         session = None
-        
+
         # Try fast path
-        if technical_id and isinstance(self.runner.session_service, CyodaSessionService):
-            entity = await self.runner.session_service.get_session_by_technical_id(technical_id)
+        if technical_id and isinstance(
+            self.runner.session_service, CyodaSessionService
+        ):
+            entity = await self.runner.session_service.get_session_by_technical_id(
+                technical_id
+            )
             if entity:
                 session = self.runner.session_service._to_adk_session(entity)
 
@@ -107,15 +115,16 @@ class CyodaAssistantWrapper:
         if not session:
             # Check existence first (implicitly done by create_session if logic supported,
             # but ADK separates get/create often)
-            # Here assuming get_session returns existing or None? 
+            # Here assuming get_session returns existing or None?
             # ADK get_session usually returns existing.
             session = await self.runner.session_service.get_session(
                 app_name="cyoda-assistant", user_id=user_id, session_id=session_id
             )
-            
+
             if session:
                 # Update state
-                for k, v in state.items(): session.state[k] = v
+                for k, v in state.items():
+                    session.state[k] = v
                 if not technical_id:
                     technical_id = session.state.get("__cyoda_technical_id__")
             else:
@@ -124,7 +133,7 @@ class CyodaAssistantWrapper:
                     app_name="cyoda-assistant",
                     user_id=user_id,
                     session_id=session_id,
-                    state=state
+                    state=state,
                 )
                 technical_id = session.state.get("__cyoda_technical_id__")
 
@@ -134,7 +143,7 @@ class CyodaAssistantWrapper:
         """Execute the agent run."""
         response_text = ""
         run_config = RunConfig(max_llm_calls=streaming_config.MAX_AGENT_TURNS)
-        
+
         async for event in self.runner.run_async(
             user_id=user_id,
             session_id=session_id,
@@ -148,19 +157,21 @@ class CyodaAssistantWrapper:
         return response_text
 
     def _build_response(
-        self, 
-        text: str, 
-        state: Dict[str, Any], 
+        self,
+        text: str,
+        state: Dict[str, Any],
         technical_id: Optional[str],
-        persisted: bool
+        persisted: bool,
     ) -> Dict[str, Any]:
         """Build the final response dictionary."""
         repo_info = None
-        if all(k in state for k in ["repository_name", "repository_owner", "branch_name"]):
+        if all(
+            k in state for k in ["repository_name", "repository_owner", "branch_name"]
+        ):
             repo_info = {
                 "repository_name": state.get("repository_name"),
                 "repository_owner": state.get("repository_owner"),
-                "repository_branch": state.get("branch_name")
+                "repository_branch": state.get("branch_name"),
             }
 
         return {
@@ -171,5 +182,5 @@ class CyodaAssistantWrapper:
             "adk_session_id": technical_id,
             "ui_functions": state.get("ui_functions", []),
             "repository_info": repo_info,
-            "build_task_id": state.get("build_task_id")
+            "build_task_id": state.get("build_task_id"),
         }

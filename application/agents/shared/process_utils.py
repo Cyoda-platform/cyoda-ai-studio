@@ -27,4 +27,3 @@ async def _is_process_running(pid: int) -> bool:
     except OSError:
         # Process does not exist or we don't have permission
         return False
-

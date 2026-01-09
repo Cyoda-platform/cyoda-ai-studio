@@ -9,4 +9,3 @@
 - As a user I want to view/edit the Customer entity in the canvas.
 - As a user I want to view/edit the Order workflow in the canvas.
 - As a user I want to view/edit the requirement document in the canvas.
-

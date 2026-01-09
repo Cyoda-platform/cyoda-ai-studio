@@ -11,17 +11,17 @@ import logging
 from typing import Any, Optional
 
 from google.adk.tools.tool_context import ToolContext
+
 from services.services import get_task_service
 
-from ...common.utils.utils import DeploymentResult, construct_environment_url
 from ...common.models.dtos import DeploymentConfig
+from ...common.utils.utils import DeploymentResult, construct_environment_url
+from ._deployment_monitor import monitor_deployment_progress
 from ._tasks import (
+    add_task_to_conversation,
     create_deployment_task,
     update_task_to_in_progress,
-    add_task_to_conversation,
 )
-from ._hooks import create_deployment_hooks, store_hook_in_context
-from ._deployment_monitor import monitor_deployment_progress
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,9 @@ def _prepare_deployment_metadata(config: DeploymentConfig) -> dict[str, Any]:
     return metadata
 
 
-def _update_context_state(tool_context: ToolContext, config: DeploymentConfig, task_id: Optional[str]) -> None:
+def _update_context_state(
+    tool_context: ToolContext, config: DeploymentConfig, task_id: Optional[str]
+) -> None:
     """Update tool context state with deployment information.
 
     Args:
@@ -53,22 +55,22 @@ def _update_context_state(tool_context: ToolContext, config: DeploymentConfig, t
         config: Deployment configuration
         task_id: Background task ID
     """
-    tool_context.state.update({
-        "build_id": config.build_id,
-        "build_namespace": config.namespace,
-        "deployment_type": config.deployment_type,
-        "deployment_started": True,
-        "deployment_build_id": config.build_id,
-        "deployment_namespace": config.namespace,
-    })
+    tool_context.state.update(
+        {
+            "build_id": config.build_id,
+            "build_namespace": config.namespace,
+            "deployment_type": config.deployment_type,
+            "deployment_started": True,
+            "deployment_build_id": config.build_id,
+            "deployment_namespace": config.namespace,
+        }
+    )
     if task_id:
         tool_context.state["deployment_task_id"] = task_id
 
 
 async def _create_and_initialize_task(
-    user_id: str,
-    conversation_id: str,
-    config: DeploymentConfig
+    user_id: str, conversation_id: str, config: DeploymentConfig
 ) -> Optional[str]:
     """Create background task and initialize it.
 
@@ -119,52 +121,23 @@ def _start_deployment_monitoring(config: DeploymentConfig, task_id: str) -> None
     logger.info(f"Started monitoring for deployment {config.build_id}")
 
 
-def _create_and_store_hooks(
-    tool_context: ToolContext,
-    conversation_id: str,
-    task_id: str,
-    config: DeploymentConfig,
-    metadata: dict
-) -> dict[str, Any]:
-    """Create deployment hooks and store in context.
-
-    Args:
-        tool_context: Tool context.
-        conversation_id: Conversation identifier.
-        task_id: Task identifier.
-        config: Deployment configuration.
-        metadata: Deployment metadata.
-
-    Returns:
-        Hook dictionary.
-    """
-    hook = create_deployment_hooks(
-        conversation_id=conversation_id,
-        task_id=task_id,
-        deployment_type=config.deployment_type,
-        task_name=config.task_name,
-        task_description=config.task_description,
-        metadata=metadata,
-        env_url=config.env_url,
-    )
-    store_hook_in_context(tool_context, hook)
-    return hook
+# Hooks removed - UI auto-detects deployment operations from tool calls
 
 
 async def handle_deployment_success(
-        tool_context: ToolContext,
-        build_id: str,
-        namespace: str,
-        deployment_type: str,
-        task_name: str,
-        task_description: str,
-        env_url: Optional[str] = None,
-        additional_metadata: Optional[dict[str, Any]] = None,
+    tool_context: ToolContext,
+    build_id: str,
+    namespace: str,
+    deployment_type: str,
+    task_name: str,
+    task_description: str,
+    env_url: Optional[str] = None,
+    additional_metadata: Optional[dict[str, Any]] = None,
 ) -> tuple[Optional[str], Optional[dict[str, Any]]]:
-    """Handle post-deployment logic: create task, hooks, start monitoring.
+    """Handle post-deployment logic: create task and start monitoring.
 
-    Creates background task, initializes deployment monitoring, and generates
-    UI hooks for user interaction. Returns early if conversation unavailable.
+    Creates background task and initializes deployment monitoring.
+    Returns early if conversation unavailable.
 
     Args:
         tool_context: The ADK tool context.
@@ -177,7 +150,7 @@ async def handle_deployment_success(
         additional_metadata: Optional additional metadata.
 
     Returns:
-        Tuple of (task_id, hook_dict). Both are None if conversation missing.
+        Tuple of (task_id, None). task_id is None if conversation missing.
     """
     # Build deployment config
     config = DeploymentConfig(
@@ -212,8 +185,5 @@ async def handle_deployment_success(
     # Start monitoring
     _start_deployment_monitoring(config, task_id)
 
-    # Create and store hooks
-    metadata = _prepare_deployment_metadata(config)
-    hook = _create_and_store_hooks(tool_context, conversation_id, task_id, config, metadata)
-
-    return task_id, hook
+    # Hooks removed - UI auto-detects deployment operations
+    return task_id, None

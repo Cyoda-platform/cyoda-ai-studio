@@ -3,6 +3,7 @@ from pathlib import Path
 
 # Load environment variables FIRST, before any other imports
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Add project root to path (for IDE compatibility when running directly)
@@ -11,7 +12,7 @@ project_root = Path(__file__).parent.parent.resolve()
 project_root_str = str(project_root)
 
 # Remove application directory from path if it's there and add project root
-if sys.path and Path(sys.path[0]).name == 'application':
+if sys.path and Path(sys.path[0]).name == "application":
     sys.path[0] = project_root_str
 elif project_root_str not in sys.path:
     sys.path.insert(0, project_root_str)
@@ -19,28 +20,34 @@ elif project_root_str not in sys.path:
 import asyncio
 import logging
 import os
+
+# Configure root logging to both stdout and a file for debugging/triage.
+# Default file is app-log.log in the application directory; override with APP_LOG_FILE.
+from logging.handlers import RotatingFileHandler
 from typing import Callable, Dict, Optional
 
 from quart import Quart, Response, jsonify, request
 from quart_rate_limiter import RateLimiter
 from quart_schema import QuartSchema, ResponseSchemaValidationError, hide
 
-from common.exception.exception_handler import (
-    register_error_handlers as _register_error_handlers,
-)
-from services.services import get_grpc_client, initialize_services
-
 # Apply Google ADK monkey patches early
 import application.agents.shared  # noqa: F401
 
 # Import blueprints for different route groups
-from application.routes import chat_bp, labels_config_bp, logs_bp, metrics_bp, tasks_bp, token_bp
-from application.routes.repository_routes import repository_bp
+from application.routes import (
+    chat_bp,
+    labels_config_bp,
+    logs_bp,
+    metrics_bp,
+    tasks_bp,
+    token_bp,
+)
 from application.routes.agent_routes import agent_bp
-
-# Configure root logging to both stdout and a file for debugging/triage.
-# Default file is app-log.log in the application directory; override with APP_LOG_FILE.
-from logging.handlers import RotatingFileHandler
+from application.routes.repository_routes import repository_bp
+from common.exception.exception_handler import (
+    register_error_handlers as _register_error_handlers,
+)
+from services.services import get_grpc_client, initialize_services
 
 # Use absolute path to application directory for log file
 app_dir = Path(__file__).parent.resolve()
@@ -83,6 +90,7 @@ except Exception as e:
 # Enable LiteLLM debug mode if DEBUG_LITELLM is set
 if os.getenv("DEBUG_LITELLM", "false").lower() == "true":
     import litellm
+
     litellm._turn_on_debug()
     logger = logging.getLogger(__name__)
     logger.info("🔍 LiteLLM debug mode enabled")
@@ -96,6 +104,7 @@ adk_logger.setLevel(logging.DEBUG)
 if os.getenv("DEBUG_OPENAI", "false").lower() == "true":
     try:
         from agents import enable_verbose_stdout_logging
+
         enable_verbose_stdout_logging()
         logger = logging.getLogger(__name__)
         logger.info("🔍 OpenAI SDK debug mode enabled")
@@ -244,7 +253,9 @@ async def add_cors_headers() -> None:
     async def apply_cors(response: Response) -> Response:
         # Allow all origins (using JWT auth, not cookies, so credentials not needed)
         response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Methods"] = (
+            "GET, POST, PUT, DELETE, OPTIONS"
+        )
         response.headers["Access-Control-Allow-Headers"] = "*"
         return response
 
@@ -262,14 +273,17 @@ async def handle_options(path: str) -> tuple[Response, int]:
 
 if __name__ == "__main__":
     import os
-    from hypercorn.config import Config
-    from hypercorn.asyncio import serve
     import sys
+
+    from hypercorn.asyncio import serve
+    from hypercorn.config import Config
 
     host = os.getenv("APP_HOST", "127.0.0.1")  # Default to localhost for security
     port = int(os.getenv("APP_PORT", "8000"))
     debug = os.getenv("APP_DEBUG", "false").lower() == "true"
-    timeout = int(os.getenv("APP_TIMEOUT", "600"))  # 10 minutes default for long-running streams
+    timeout = int(
+        os.getenv("APP_TIMEOUT", "600")
+    )  # 10 minutes default for long-running streams
 
     # Configure Hypercorn with extended timeouts for SSE streaming
     config = Config()
@@ -280,13 +294,15 @@ if __name__ == "__main__":
 
     # Critical timeouts for long-running SSE streams
     config.keep_alive_timeout = timeout  # Keep-alive for SSE connections
-    config.shutdown_timeout = timeout    # Allow graceful shutdown of long streams
-    config.startup_timeout = timeout     # Allow slow startup
-    config.graceful_timeout = 30         # Graceful shutdown timeout
+    config.shutdown_timeout = timeout  # Allow graceful shutdown of long streams
+    config.startup_timeout = timeout  # Allow slow startup
+    config.graceful_timeout = 30  # Graceful shutdown timeout
 
     # CRITICAL: Set websocket_ping_interval to prevent connection drops
     # Even though we're using SSE, not WebSocket, this affects keep-alive behavior
-    config.websocket_ping_interval = None  # Disable WebSocket ping (we use SSE heartbeat)
+    config.websocket_ping_interval = (
+        None  # Disable WebSocket ping (we use SSE heartbeat)
+    )
 
     # Set h11 max incomplete event size (prevents early connection close)
     # This is an internal h11 setting that Hypercorn uses
@@ -308,7 +324,9 @@ if __name__ == "__main__":
     logger.info(f"  - graceful_timeout: {config.graceful_timeout}s")
     logger.info(f"  - read_timeout: {config.read_timeout}")
     logger.info(f"  - websocket_ping_interval: {config.websocket_ping_interval}")
-    logger.info(f"  - h11_max_incomplete_event_size: {config.h11_max_incomplete_event_size}")
+    logger.info(
+        f"  - h11_max_incomplete_event_size: {config.h11_max_incomplete_event_size}"
+    )
     logger.info(f"Debug mode: {debug}")
 
     # Verify config is actually applied

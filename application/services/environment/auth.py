@@ -18,9 +18,13 @@ class CloudManagerAuthService:
         self.cloud_manager_host = cloud_manager_host or os.getenv("CLOUD_MANAGER_HOST")
         self.api_key_encoded = os.getenv("CLOUD_MANAGER_API_KEY")
         self.api_secret_encoded = os.getenv("CLOUD_MANAGER_API_SECRET")
-        
+
         # Determine protocol
-        self.protocol = "http" if self.cloud_manager_host and "localhost" in self.cloud_manager_host else "https"
+        self.protocol = (
+            "http"
+            if self.cloud_manager_host and "localhost" in self.cloud_manager_host
+            else "https"
+        )
 
     async def get_token(self) -> str:
         """Get authentication token for cloud manager API."""
@@ -40,7 +44,7 @@ class CloudManagerAuthService:
         # Authenticate
         host = self.cloud_manager_host or "cloud-manager-cyoda.kube3.cyoda.org"
         auth_url = f"{self.protocol}://{host}/api/auth/login"
-        
+
         auth_payload = {
             "username": api_key,
             "password": api_secret,

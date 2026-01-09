@@ -223,7 +223,9 @@ class OpenAIAgentsService:
                 full_prompt = user_message
 
             # Run the agent with max_turns to prevent infinite loops
-            result = await Runner.run(agent, full_prompt, max_turns=streaming_config.MAX_AGENT_TURNS)
+            result = await Runner.run(
+                agent, full_prompt, max_turns=streaming_config.MAX_AGENT_TURNS
+            )
 
             logger.debug(f"Agent execution completed: {agent.name}")
             return result.final_output or ""
@@ -231,4 +233,3 @@ class OpenAIAgentsService:
         except Exception as e:
             logger.exception(f"Error running agent: {e}")
             raise Exception(f"Failed to run agent: {str(e)}") from e
-

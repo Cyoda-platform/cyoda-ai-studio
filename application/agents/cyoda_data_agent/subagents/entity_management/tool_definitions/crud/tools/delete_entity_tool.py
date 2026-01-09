@@ -40,4 +40,6 @@ async def delete_entity(
     container = get_user_service_container(client_id, client_secret, cyoda_host)
     entity_service = container.get_entity_service()
     await entity_service.delete_by_id(entity_id, entity_model, entity_version="1")
-    return format_entity_success({"message": f"Entity {entity_id} deleted successfully"})
+    return format_entity_success(
+        {"message": f"Entity {entity_id} deleted successfully"}
+    )

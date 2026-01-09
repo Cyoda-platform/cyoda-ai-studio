@@ -11,7 +11,7 @@
 Follow The Zen of Python, PEP 8, and Guido van Rossum's principles:
 
 **Simple and explicit** — avoid cleverness unless it aids clarity
-**Readable** — easy to understand even for other developers  
+**Readable** — easy to understand even for other developers
 **Structured** — use meaningful names, clear control flow, avoid nested logic
 **Conventional** — follow standard Python idioms (e.g., `if x in dict:` over `.get()` for known keys)
 **PEP 8 compliant** — consistent formatting, spacing, and docstring conventions
@@ -80,12 +80,12 @@ class TestClassName:
     @pytest.fixture
     def setup_method(self):
         """Setup for each test method."""
-        
+
     @pytest.mark.asyncio
     async def test_specific_behavior(self):
         """Test description explaining what is being tested."""
         # Arrange
-        # Act  
+        # Act
         # Assert
 ```
 

@@ -120,4 +120,3 @@ OpenAPI Spec: `https://docs.cyoda.net/openapi/openapi.json`
 - [DELETE /clients/{clientId}](https://docs.cyoda.net/api-reference/scalar/#tag/User-Machine/DELETE/clients/%7BclientId%7D) - Delete a M2M client
 - [PUT /clients/{clientId}/secret](https://docs.cyoda.net/api-reference/scalar/#tag/User-Machine/PUT/clients/%7BclientId%7D/secret) - Reset M2M client secret
 - [POST /oauth/token](https://docs.cyoda.net/api-reference/scalar/#tag/User-Machine/POST/oauth/token) - Obtain access token for M2M client
-

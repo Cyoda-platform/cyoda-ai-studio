@@ -13,15 +13,16 @@ Tests cover:
 """
 
 import json
-import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, call, patch
+
+import pytest
 from google.adk.tools.tool_context import ToolContext
 
 from application.agents.shared.repository_tools.repository import (
-    clone_repository,
-    _get_repository_config_from_context,
     _extract_repo_name_and_owner,
+    _get_repository_config_from_context,
+    clone_repository,
 )
 
 
@@ -43,9 +44,7 @@ class TestCloneRepositoryParameterValidation:
     async def test_clone_repository_empty_language(self, mock_tool_context):
         """Test that empty language is rejected."""
         result = await clone_repository(
-            language="",
-            branch_name="test-branch",
-            tool_context=mock_tool_context
+            language="", branch_name="test-branch", tool_context=mock_tool_context
         )
         assert "ERROR" in result
 
@@ -53,9 +52,7 @@ class TestCloneRepositoryParameterValidation:
     async def test_clone_repository_none_language(self, mock_tool_context):
         """Test that None language is rejected."""
         result = await clone_repository(
-            language=None,
-            branch_name="test-branch",
-            tool_context=mock_tool_context
+            language=None, branch_name="test-branch", tool_context=mock_tool_context
         )
         assert "ERROR" in result
 
@@ -63,9 +60,7 @@ class TestCloneRepositoryParameterValidation:
     async def test_clone_repository_empty_branch_name(self, mock_tool_context):
         """Test that empty branch name is rejected."""
         result = await clone_repository(
-            language="python",
-            branch_name="",
-            tool_context=mock_tool_context
+            language="python", branch_name="", tool_context=mock_tool_context
         )
         assert "ERROR" in result
 
@@ -73,9 +68,7 @@ class TestCloneRepositoryParameterValidation:
     async def test_clone_repository_none_branch_name(self, mock_tool_context):
         """Test that None branch name is rejected."""
         result = await clone_repository(
-            language="python",
-            branch_name=None,
-            tool_context=mock_tool_context
+            language="python", branch_name=None, tool_context=mock_tool_context
         )
         assert "ERROR" in result
 
@@ -87,9 +80,7 @@ class TestCloneRepositoryProtectedBranches:
     async def test_rejects_main_branch(self, mock_tool_context):
         """Test that 'main' branch is rejected."""
         result = await clone_repository(
-            language="python",
-            branch_name="main",
-            tool_context=mock_tool_context
+            language="python", branch_name="main", tool_context=mock_tool_context
         )
         assert "ERROR" in result
         assert "protected" in result.lower()
@@ -98,9 +89,7 @@ class TestCloneRepositoryProtectedBranches:
     async def test_rejects_master_branch(self, mock_tool_context):
         """Test that 'master' branch is rejected."""
         result = await clone_repository(
-            language="python",
-            branch_name="master",
-            tool_context=mock_tool_context
+            language="python", branch_name="master", tool_context=mock_tool_context
         )
         assert "ERROR" in result
         assert "protected" in result.lower()
@@ -109,9 +98,7 @@ class TestCloneRepositoryProtectedBranches:
     async def test_rejects_develop_branch(self, mock_tool_context):
         """Test that 'develop' branch is rejected."""
         result = await clone_repository(
-            language="python",
-            branch_name="develop",
-            tool_context=mock_tool_context
+            language="python", branch_name="develop", tool_context=mock_tool_context
         )
         assert "ERROR" in result
         assert "protected" in result.lower()
@@ -124,9 +111,7 @@ class TestCloneRepositoryConfigurationValidation:
     async def test_missing_tool_context(self):
         """Test that missing tool_context is handled."""
         result = await clone_repository(
-            language="python",
-            branch_name="test-branch",
-            tool_context=None
+            language="python", branch_name="test-branch", tool_context=None
         )
         assert "ERROR" in result
         assert "context" in result.lower()
@@ -138,9 +123,7 @@ class TestCloneRepositoryConfigurationValidation:
         context.state = {"conversation_id": "conv-123"}  # No repository_type
 
         result = await clone_repository(
-            language="python",
-            branch_name="test-branch",
-            tool_context=context
+            language="python", branch_name="test-branch", tool_context=context
         )
         assert "ERROR" in result
         assert "configuration required" in result.lower()
@@ -152,14 +135,16 @@ class TestCloneRepositoryGitOperations:
     @pytest.mark.asyncio
     async def test_git_clone_failure(self, mock_tool_context):
         """Test handling of git clone failure."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git:
+        with patch(
+            "application.agents.shared.repository_tools.repository._run_git_command"
+        ) as mock_git:
             # Mock clone failure
             mock_git.return_value = (1, "", "Clone failed")
 
             result = await clone_repository(
                 language="python",
                 branch_name="test-branch",
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             assert "ERROR" in result
@@ -168,8 +153,12 @@ class TestCloneRepositoryGitOperations:
     @pytest.mark.asyncio
     async def test_git_clone_success_python(self, mock_tool_context, tmp_path):
         """Test successful git clone for Python template."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+        ):
 
             # Mock successful git operations
             mock_git.return_value = (0, "success", "")
@@ -178,7 +167,7 @@ class TestCloneRepositoryGitOperations:
                 language="python",
                 branch_name="test-branch",
                 target_directory=str(tmp_path),
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             assert "SUCCESS" in result or "✅" in result
@@ -187,8 +176,12 @@ class TestCloneRepositoryGitOperations:
     @pytest.mark.asyncio
     async def test_git_clone_success_java(self, mock_tool_context, tmp_path):
         """Test successful git clone for Java template."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+        ):
 
             # Mock successful git operations
             mock_git.return_value = (0, "success", "")
@@ -197,7 +190,7 @@ class TestCloneRepositoryGitOperations:
                 language="java",
                 branch_name="test-branch",
                 target_directory=str(tmp_path),
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             assert "SUCCESS" in result or "✅" in result
@@ -209,9 +202,16 @@ class TestCloneRepositoryBranchOperations:
     @pytest.mark.asyncio
     async def test_create_new_branch(self, mock_tool_context, tmp_path):
         """Test creating a new branch."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"), \
-             patch("application.agents.shared.repository_tools.repository.Path.exists", return_value=False):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+            patch(
+                "application.agents.shared.repository_tools.repository.Path.exists",
+                return_value=False,
+            ),
+        ):
 
             # Mock all git operations
             mock_git.return_value = (0, "success", "")
@@ -221,7 +221,7 @@ class TestCloneRepositoryBranchOperations:
                 branch_name="feature-branch",
                 target_directory=str(tmp_path),
                 use_existing_branch=False,
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Should have called git clone, checkout base, checkout -b
@@ -230,9 +230,16 @@ class TestCloneRepositoryBranchOperations:
     @pytest.mark.asyncio
     async def test_checkout_existing_branch(self, mock_tool_context, tmp_path):
         """Test checking out an existing branch."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"), \
-             patch("application.agents.shared.repository_tools.repository.Path.exists", return_value=False):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+            patch(
+                "application.agents.shared.repository_tools.repository.Path.exists",
+                return_value=False,
+            ),
+        ):
 
             # Mock all git operations
             mock_git.return_value = (0, "success", "")
@@ -242,7 +249,7 @@ class TestCloneRepositoryBranchOperations:
                 branch_name="existing-branch",
                 target_directory=str(tmp_path),
                 use_existing_branch=True,
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Should have called git clone, fetch, checkout, config, pull
@@ -251,9 +258,16 @@ class TestCloneRepositoryBranchOperations:
     @pytest.mark.asyncio
     async def test_checkout_base_branch_failure(self, mock_tool_context, tmp_path):
         """Test handling of base branch checkout failure."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"), \
-             patch("application.agents.shared.repository_tools.repository.Path.exists", return_value=False):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+            patch(
+                "application.agents.shared.repository_tools.repository.Path.exists",
+                return_value=False,
+            ),
+        ):
 
             # Mock clone success, then checkout failure
             side_effects = [
@@ -267,18 +281,27 @@ class TestCloneRepositoryBranchOperations:
                 language="python",
                 branch_name="feature-branch",
                 target_directory=str(tmp_path),
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Should still succeed even if base checkout fails
             assert isinstance(result, str)
 
     @pytest.mark.asyncio
-    async def test_create_branch_already_exists_fallback(self, mock_tool_context, tmp_path):
+    async def test_create_branch_already_exists_fallback(
+        self, mock_tool_context, tmp_path
+    ):
         """Test fallback to checkout when branch creation fails."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"), \
-             patch("application.agents.shared.repository_tools.repository.Path.exists", return_value=False):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+            patch(
+                "application.agents.shared.repository_tools.repository.Path.exists",
+                return_value=False,
+            ),
+        ):
 
             # Mock: clone, checkout base succeed, checkout -b fails, checkout succeeds
             side_effects = [
@@ -293,7 +316,7 @@ class TestCloneRepositoryBranchOperations:
                 language="python",
                 branch_name="feature-branch",
                 target_directory=str(tmp_path),
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             assert isinstance(result, str)
@@ -310,12 +333,14 @@ class TestCloneRepositoryExistingRepository:
         repo_path.mkdir(parents=True)
         (repo_path / ".git").mkdir()
 
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git:
+        with patch(
+            "application.agents.shared.repository_tools.repository._run_git_command"
+        ) as mock_git:
             result = await clone_repository(
                 language="python",
                 branch_name="test-branch",
                 target_directory=str(repo_path),
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Should not call git commands since repo exists
@@ -332,10 +357,19 @@ class TestCloneRepositoryPushOperations:
         mock_tool_context.state["user_repository_url"] = "https://github.com/test/repo"
         mock_tool_context.state["installation_id"] = "123"
 
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository._get_authenticated_repo_url_sync") as mock_auth, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"), \
-             patch("application.agents.shared.repository_tools.repository.Path.exists", return_value=False):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch(
+                "application.agents.shared.repository_tools.repository._get_authenticated_repo_url_sync"
+            ) as mock_auth,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+            patch(
+                "application.agents.shared.repository_tools.repository.Path.exists",
+                return_value=False,
+            ),
+        ):
 
             mock_auth.return_value = "https://github.com/test/repo"
             mock_git.return_value = (0, "success", "")
@@ -345,11 +379,13 @@ class TestCloneRepositoryPushOperations:
                 branch_name="feature-branch",
                 target_directory=str(tmp_path),
                 use_existing_branch=False,
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Should have called push
-            push_calls = [call for call in mock_git.call_args_list if "push" in str(call)]
+            push_calls = [
+                call for call in mock_git.call_args_list if "push" in str(call)
+            ]
             assert len(push_calls) > 0
 
     @pytest.mark.asyncio
@@ -359,10 +395,19 @@ class TestCloneRepositoryPushOperations:
         mock_tool_context.state["user_repository_url"] = "https://github.com/test/repo"
         mock_tool_context.state["installation_id"] = "123"
 
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository._get_authenticated_repo_url_sync") as mock_auth, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"), \
-             patch("application.agents.shared.repository_tools.repository.Path.exists", return_value=False):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch(
+                "application.agents.shared.repository_tools.repository._get_authenticated_repo_url_sync"
+            ) as mock_auth,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+            patch(
+                "application.agents.shared.repository_tools.repository.Path.exists",
+                return_value=False,
+            ),
+        ):
 
             mock_auth.return_value = "https://github.com/test/repo"
 
@@ -379,7 +424,7 @@ class TestCloneRepositoryPushOperations:
                 language="python",
                 branch_name="feature-branch",
                 target_directory=str(tmp_path),
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Clone should still succeed
@@ -392,11 +437,22 @@ class TestCloneRepositoryPushOperations:
         mock_tool_context.state["user_repository_url"] = "https://github.com/test/repo"
         mock_tool_context.state["installation_id"] = "123"
 
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository._get_authenticated_repo_url_sync") as mock_auth, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"), \
-             patch("application.agents.shared.repository_tools.repository.Path.exists", return_value=False), \
-             patch("application.agents.shared.repository_tools.conversation._update_conversation_build_context"):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch(
+                "application.agents.shared.repository_tools.repository._get_authenticated_repo_url_sync"
+            ) as mock_auth,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+            patch(
+                "application.agents.shared.repository_tools.repository.Path.exists",
+                return_value=False,
+            ),
+            patch(
+                "application.agents.shared.repository_tools.conversation._update_conversation_build_context"
+            ),
+        ):
 
             mock_auth.return_value = "https://github.com/test/repo"
             mock_git.return_value = (0, "success", "")
@@ -406,12 +462,15 @@ class TestCloneRepositoryPushOperations:
                 branch_name="existing-branch",
                 target_directory=str(tmp_path),
                 use_existing_branch=True,
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Should not have push calls (specifically checking for git push command)
-            push_calls = [call for call in mock_git.call_args_list
-                         if isinstance(call.args[0], list) and "push" in call.args[0]]
+            push_calls = [
+                call
+                for call in mock_git.call_args_list
+                if isinstance(call.args[0], list) and "push" in call.args[0]
+            ]
             assert len(push_calls) == 0
 
 
@@ -421,9 +480,16 @@ class TestCloneRepositoryContextState:
     @pytest.mark.asyncio
     async def test_stores_repository_info_in_context(self, mock_tool_context, tmp_path):
         """Test that repository info is stored in context."""
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"), \
-             patch("application.agents.shared.repository_tools.repository.Path.exists", return_value=False):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+            patch(
+                "application.agents.shared.repository_tools.repository.Path.exists",
+                return_value=False,
+            ),
+        ):
 
             mock_git.return_value = (0, "success", "")
 
@@ -431,7 +497,7 @@ class TestCloneRepositoryContextState:
                 language="python",
                 branch_name="test-branch",
                 target_directory=str(tmp_path),
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Check that context state was updated
@@ -441,13 +507,22 @@ class TestCloneRepositoryContextState:
             assert mock_tool_context.state.get("repository_name") is not None
 
     @pytest.mark.asyncio
-    async def test_preserves_repository_type_in_context(self, mock_tool_context, tmp_path):
+    async def test_preserves_repository_type_in_context(
+        self, mock_tool_context, tmp_path
+    ):
         """Test that repository_type is preserved in context."""
         mock_tool_context.state["repository_type"] = "public"
 
-        with patch("application.agents.shared.repository_tools.repository._run_git_command") as mock_git, \
-             patch("application.agents.shared.repository_tools.repository.Path.mkdir"), \
-             patch("application.agents.shared.repository_tools.repository.Path.exists", return_value=False):
+        with (
+            patch(
+                "application.agents.shared.repository_tools.repository._run_git_command"
+            ) as mock_git,
+            patch("application.agents.shared.repository_tools.repository.Path.mkdir"),
+            patch(
+                "application.agents.shared.repository_tools.repository.Path.exists",
+                return_value=False,
+            ),
+        ):
 
             mock_git.return_value = (0, "success", "")
 
@@ -455,7 +530,7 @@ class TestCloneRepositoryContextState:
                 language="python",
                 branch_name="test-branch",
                 target_directory=str(tmp_path),
-                tool_context=mock_tool_context
+                tool_context=mock_tool_context,
             )
 
             # Repository type should be preserved
@@ -491,6 +566,20 @@ class TestExtractRepoNameAndOwner:
         owner, name = _extract_repo_name_and_owner(None)
         assert name == "mcp-cyoda-quart-app"  # Default
 
+    def test_extract_from_url_with_tree_path(self):
+        """Test extracting repo name and owner from URL with /tree/branch path."""
+        url = "https://github.com/test-ks-001/test-java-client-template/tree/b59e5366-9616-11b2-aa4c-aeca4bd17878"
+        owner, name = _extract_repo_name_and_owner(url)
+        assert owner == "test-ks-001"
+        assert name == "test-java-client-template"
+
+    def test_extract_from_url_with_blob_path(self):
+        """Test extracting repo name and owner from URL with /blob/branch/file path."""
+        url = "https://github.com/owner-name/repo-name/blob/main/README.md"
+        owner, name = _extract_repo_name_and_owner(url)
+        assert owner == "owner-name"
+        assert name == "repo-name"
+
 
 class TestGetRepositoryConfigFromContext:
     """Test repository configuration extraction from context."""
@@ -501,11 +590,11 @@ class TestGetRepositoryConfigFromContext:
         context.state = {
             "repository_type": "private",
             "user_repository_url": "https://github.com/test/repo",
-            "installation_id": "12345"
+            "installation_id": "12345",
         }
 
-        repo_url, installation_id, repo_type, error = _get_repository_config_from_context(
-            context, "python"
+        repo_url, installation_id, repo_type, error = (
+            _get_repository_config_from_context(context, "python")
         )
 
         assert repo_url == "https://github.com/test/repo"
@@ -518,8 +607,8 @@ class TestGetRepositoryConfigFromContext:
         context = MagicMock(spec=ToolContext)
         context.state = {"repository_type": "public"}
 
-        repo_url, installation_id, repo_type, error = _get_repository_config_from_context(
-            context, "python"
+        repo_url, installation_id, repo_type, error = (
+            _get_repository_config_from_context(context, "python")
         )
 
         assert "cyoda" in repo_url.lower() or "python" in repo_url.lower()
@@ -531,8 +620,8 @@ class TestGetRepositoryConfigFromContext:
         context = MagicMock(spec=ToolContext)
         context.state = {"repository_type": "public"}
 
-        repo_url, installation_id, repo_type, error = _get_repository_config_from_context(
-            context, "java"
+        repo_url, installation_id, repo_type, error = (
+            _get_repository_config_from_context(context, "java")
         )
 
         assert "java" in repo_url.lower()
@@ -544,8 +633,8 @@ class TestGetRepositoryConfigFromContext:
         context = MagicMock(spec=ToolContext)
         context.state = {"repository_type": "public"}
 
-        repo_url, installation_id, repo_type, error = _get_repository_config_from_context(
-            context, "rust"
+        repo_url, installation_id, repo_type, error = (
+            _get_repository_config_from_context(context, "rust")
         )
 
         assert error is not None
@@ -553,7 +642,9 @@ class TestGetRepositoryConfigFromContext:
 
     def test_missing_context(self):
         """Test with missing context."""
-        repo_url, installation_id, repo_type, error = _get_repository_config_from_context(None, "python")
+        repo_url, installation_id, repo_type, error = (
+            _get_repository_config_from_context(None, "python")
+        )
 
         assert error is not None
         assert "context" in error.lower()
@@ -563,8 +654,8 @@ class TestGetRepositoryConfigFromContext:
         context = MagicMock(spec=ToolContext)
         context.state = {}  # No repository_type
 
-        repo_url, installation_id, repo_type, error = _get_repository_config_from_context(
-            context, "python"
+        repo_url, installation_id, repo_type, error = (
+            _get_repository_config_from_context(context, "python")
         )
 
         assert error is not None

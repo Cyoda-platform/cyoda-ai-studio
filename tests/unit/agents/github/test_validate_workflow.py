@@ -1,6 +1,7 @@
 """Tests for workflow validation tool."""
 
 import json
+
 import pytest
 
 from application.agents.github.tools import validate_workflow_against_schema
@@ -26,10 +27,8 @@ class TestValidateWorkflow:
                         }
                     ]
                 },
-                "active": {
-                    "transitions": []
-                }
-            }
+                "active": {"transitions": []},
+            },
         }
 
         result = await validate_workflow_against_schema(json.dumps(valid_workflow))

@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 
 # Streaming callback constants
 STREAMING_MODE_DEBUG = "Skipping accumulate_streaming_response: streaming_mode=%s"
-ACCUMULATION_SUCCESS_LOG = "✅ Accumulated %s text chunks into %s characters (invocation: %s)"
+ACCUMULATION_SUCCESS_LOG = (
+    "✅ Accumulated %s text chunks into %s characters (invocation: %s)"
+)
 ACCUMULATION_EMPTY_LOG = "⚠️ No text chunks found to accumulate (invocation: %s)"
 MODEL_ROLE = "model"
 
@@ -78,9 +80,7 @@ def _should_skip_accumulation(streaming_mode: Optional[StreamingMode]) -> bool:
     return False
 
 
-def _extract_text_chunks(
-    events: List[Any], current_invocation_id: str
-) -> List[str]:
+def _extract_text_chunks(events: List[Any], current_invocation_id: str) -> List[str]:
     """Extract all text chunks from events for current invocation.
 
     Args:
@@ -96,7 +96,10 @@ def _extract_text_chunks(
     # Iterate in reverse to stop scanning early when many previous invocations exist
     for event in reversed(events):
         # Filter by invocation_id to avoid accumulating from previous invocations
-        if hasattr(event, "invocation_id") and event.invocation_id != current_invocation_id:
+        if (
+            hasattr(event, "invocation_id")
+            and event.invocation_id != current_invocation_id
+        ):
             if found_current_invocation:
                 break
             continue
@@ -183,4 +186,3 @@ def accumulate_streaming_response(
     # Step 6: Log empty result
     logger.info(ACCUMULATION_EMPTY_LOG, current_invocation_id)
     return None
-

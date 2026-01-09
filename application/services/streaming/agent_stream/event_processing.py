@@ -7,9 +7,9 @@ from typing import Any, AsyncGenerator
 from google.genai import types
 
 from application.services.streaming.constants import (
-    STREAM_TIMEOUT,
     HEARTBEAT_INTERVAL,
     MAX_EVENTS_PER_STREAM,
+    STREAM_TIMEOUT,
 )
 from application.services.streaming.events import StreamEvent
 
@@ -53,21 +53,20 @@ async def process_agent_stream_events(processor: Any) -> AsyncGenerator[str, Non
                 break
 
             event = await asyncio.wait_for(
-                event_iterator.__anext__(),
-                timeout=HEARTBEAT_INTERVAL
+                event_iterator.__anext__(), timeout=HEARTBEAT_INTERVAL
             )
             processor.events_processed = True
             last_heartbeat = current_time
 
             async for sse_event in processor.event_handlers.handle_event(event):
                 if "event: done" in sse_event:
-                    logger.warning(f"⚠️ [_process_agent_stream] WARNING: Received done event from agent runner!")
+                    logger.warning(
+                        f"⚠️ [_process_agent_stream] WARNING: Received done event from agent runner!"
+                    )
                 yield sse_event
 
                 if processor.event_counter >= MAX_EVENTS_PER_STREAM:
-                    logger.warning(
-                        f"Event limit reached ({MAX_EVENTS_PER_STREAM})"
-                    )
+                    logger.warning(f"Event limit reached ({MAX_EVENTS_PER_STREAM})")
                     stream_active = False
                     break
 
@@ -75,7 +74,9 @@ async def process_agent_stream_events(processor: Any) -> AsyncGenerator[str, Non
             yield _send_heartbeat()
             continue
         except StopAsyncIteration:
-            logger.info(f"✅ Event stream completed (events_processed={processor.events_processed})")
+            logger.info(
+                f"✅ Event stream completed (events_processed={processor.events_processed})"
+            )
             break
 
         await asyncio.sleep(0)

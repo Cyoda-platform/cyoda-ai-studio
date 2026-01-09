@@ -4,8 +4,8 @@ import base64
 import logging
 from typing import Optional
 
-from common.config.config import CYODA_ENTITY_TYPE_EDGE_MESSAGE
 from application.entity.conversation.version_1.conversation import Conversation
+from common.config.config import CYODA_ENTITY_TYPE_EDGE_MESSAGE
 from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
@@ -26,22 +26,25 @@ def _collect_file_ids_from_conversation(conversation: Conversation) -> list[str]
     file_ids: list[str] = []
 
     # Primary source: conversation-level file_blob_ids
-    if hasattr(conversation, 'file_blob_ids') and conversation.file_blob_ids:
+    if hasattr(conversation, "file_blob_ids") and conversation.file_blob_ids:
         file_ids.extend(conversation.file_blob_ids)
-        logger.info(f"📎 Found {len(conversation.file_blob_ids)} files in conversation.file_blob_ids")
+        logger.info(
+            f"📎 Found {len(conversation.file_blob_ids)} files in conversation.file_blob_ids"
+        )
     else:
         # Fallback: legacy chat_flow for backward compatibility
         logger.info("📎 No conversation-level file_blob_ids, scanning messages...")
         has_chat_flow = (
-            hasattr(conversation, 'chat_flow') and conversation.chat_flow and
-            conversation.chat_flow.get("finished_flow")
+            hasattr(conversation, "chat_flow")
+            and conversation.chat_flow
+            and conversation.chat_flow.get("finished_flow")
         )
         if has_chat_flow:
             for message in conversation.chat_flow["finished_flow"]:
                 if isinstance(message, dict) and message.get("file_blob_ids"):
                     file_ids.extend(message["file_blob_ids"])
-                    file_count = len(message['file_blob_ids'])
-                    msg_id = message.get('technical_id')
+                    file_count = len(message["file_blob_ids"])
+                    msg_id = message.get("technical_id")
                     logger.info(f"📎 Found {file_count} files in message {msg_id}")
 
     # Remove duplicates while preserving order
@@ -60,13 +63,11 @@ async def _retrieve_edge_message(file_id: str) -> Optional[dict]:
     try:
         logger.info(f"🔍 Retrieving edge message: {file_id}")
         from services.services import get_repository
+
         repository = get_repository()
         meta = {"type": CYODA_ENTITY_TYPE_EDGE_MESSAGE}
 
-        edge_data = await repository.find_by_id(
-            meta=meta,
-            entity_id=file_id
-        )
+        edge_data = await repository.find_by_id(meta=meta, entity_id=file_id)
 
         if not edge_data:
             logger.warning(f"⚠️ Edge message {file_id} not found")
@@ -76,7 +77,9 @@ async def _retrieve_edge_message(file_id: str) -> Optional[dict]:
         return edge_data
 
     except Exception as e:
-        logger.error(f"❌ Failed to retrieve edge message {file_id}: {e}", exc_info=True)
+        logger.error(
+            f"❌ Failed to retrieve edge message {file_id}: {e}", exc_info=True
+        )
         return None
 
 
@@ -90,8 +93,8 @@ def _extract_filename_from_metadata(metadata: dict, index: int) -> str:
     Returns:
         Filename string.
     """
-    if metadata and 'filename' in metadata:
-        return metadata['filename']
+    if metadata and "filename" in metadata:
+        return metadata["filename"]
     return f"file_{index + 1}.txt"
 
 
@@ -106,11 +109,11 @@ def _decode_file_content(base64_content: str, metadata: dict, filename: str) -> 
     Returns:
         Decoded file content.
     """
-    if not base64_content or metadata.get('encoding') != 'base64':
+    if not base64_content or metadata.get("encoding") != "base64":
         return str(base64_content)
 
     try:
-        decoded = base64.b64decode(base64_content).decode('utf-8')
+        decoded = base64.b64decode(base64_content).decode("utf-8")
         logger.info(f"✅ Decoded file: {filename} ({len(decoded)} chars)")
         return decoded
     except Exception as e:
@@ -129,9 +132,9 @@ def _extract_file_from_edge_data(edge_data: dict, index: int) -> Optional[dict]:
         Dictionary with 'filename' and 'content' keys, or None on error.
     """
     try:
-        metadata = edge_data.get('metadata', {})
+        metadata = edge_data.get("metadata", {})
         filename = _extract_filename_from_metadata(metadata, index)
-        base64_content = edge_data.get('message', '')
+        base64_content = edge_data.get("message", "")
         file_content = _decode_file_content(base64_content, metadata, filename)
 
         return {"filename": filename, "content": file_content}
@@ -152,12 +155,12 @@ def _extract_file_from_edge_object(edge_data: object, index: int) -> Optional[di
         Dictionary with 'filename' and 'content' keys, or None on error.
     """
     try:
-        if not hasattr(edge_data, 'message') or not hasattr(edge_data, 'metadata'):
+        if not hasattr(edge_data, "message") or not hasattr(edge_data, "metadata"):
             return None
 
         metadata = edge_data.metadata or {}
         filename = _extract_filename_from_metadata(metadata, index)
-        base64_content = edge_data.message or ''
+        base64_content = edge_data.message or ""
         file_content = _decode_file_content(base64_content, metadata, filename)
 
         return {"filename": filename, "content": file_content}

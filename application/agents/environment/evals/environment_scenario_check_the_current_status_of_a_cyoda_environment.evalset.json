@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_check_the_current_status_of_a_cyoda_environment",
+  "name": "environment_scenario_check_the_current_status_of_a_cyoda_environment",
+  "description": "Test case for: As a user, I want to check the current status of a Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_check_status",
+      "conversation": [
+        {
+          "invocation_id": "e-5f2d95f6-2f9c-4040-b606-033daa6252de",
+          "user_content": {
+            "parts": [
+              {
+                "text": "check the current status of a Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Which Cyoda environment would you like me to check? (e.g., dev, staging, prod)\n\n[options-single-choice: dev, staging, prod, Other]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.804346
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8043466
+    }
+  ],
+  "creation_timestamp": 1767903917.8043468
+}

@@ -1,11 +1,14 @@
 """Tests for check_existing_branch_configuration function."""
 
 import json
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from google.adk.tools.tool_context import ToolContext
 
-from application.agents.shared.repository_tools.repository import check_existing_branch_configuration
+from application.agents.shared.repository_tools.repository import (
+    check_existing_branch_configuration,
+)
 
 
 class TestCheckExistingBranchConfiguration:
@@ -24,7 +27,7 @@ class TestCheckExistingBranchConfiguration:
         """Test function returns error when conversation_id not in state."""
         mock_context = MagicMock(spec=ToolContext)
         mock_context.state = {}
-        
+
         result = await check_existing_branch_configuration(tool_context=mock_context)
         data = json.loads(result)
         assert data["configured"] is False
@@ -35,13 +38,17 @@ class TestCheckExistingBranchConfiguration:
         """Test function returns error when conversation not found."""
         mock_context = MagicMock(spec=ToolContext)
         mock_context.state = {"conversation_id": "conv-123"}
-        
-        with patch("application.agents.shared.repository_tools.repository.get_entity_service") as mock_entity_service:
+
+        with patch(
+            "application.agents.shared.repository_tools.repository.get_entity_service"
+        ) as mock_entity_service:
             mock_service = AsyncMock()
             mock_service.get_by_id = AsyncMock(return_value=None)
             mock_entity_service.return_value = mock_service
-            
-            result = await check_existing_branch_configuration(tool_context=mock_context)
+
+            result = await check_existing_branch_configuration(
+                tool_context=mock_context
+            )
             data = json.loads(result)
             assert data["configured"] is False
 
@@ -50,18 +57,22 @@ class TestCheckExistingBranchConfiguration:
         """Test function returns not configured when no branch config found."""
         mock_context = MagicMock(spec=ToolContext)
         mock_context.state = {"conversation_id": "conv-123"}
-        
-        with patch("application.agents.shared.repository_tools.repository.get_entity_service") as mock_entity_service:
+
+        with patch(
+            "application.agents.shared.repository_tools.repository.get_entity_service"
+        ) as mock_entity_service:
             mock_service = AsyncMock()
             mock_conversation = MagicMock()
             mock_conversation.workflow_cache = {}
-            
+
             mock_response = MagicMock()
             mock_response.data = mock_conversation
             mock_service.get_by_id = AsyncMock(return_value=mock_response)
             mock_entity_service.return_value = mock_service
-            
-            result = await check_existing_branch_configuration(tool_context=mock_context)
+
+            result = await check_existing_branch_configuration(
+                tool_context=mock_context
+            )
             data = json.loads(result)
             assert data["configured"] is False
 
@@ -75,7 +86,7 @@ class TestCheckExistingBranchConfiguration:
             "repository_owner": "test-owner",
             "repository_branch": "feature-branch",
             "repository_url": "https://github.com/test-owner/test-repo",
-            "repository_path": "/tmp/repo"
+            "repository_path": "/tmp/repo",
         }
 
         result = await check_existing_branch_configuration(tool_context=mock_context)
@@ -90,14 +101,17 @@ class TestCheckExistingBranchConfiguration:
         """Test function handles exceptions gracefully."""
         mock_context = MagicMock(spec=ToolContext)
         mock_context.state = {"conversation_id": "conv-123"}
-        
-        with patch("application.agents.shared.repository_tools.repository.get_entity_service") as mock_entity_service:
+
+        with patch(
+            "application.agents.shared.repository_tools.repository.get_entity_service"
+        ) as mock_entity_service:
             mock_service = AsyncMock()
             mock_service.get_by_id = AsyncMock(side_effect=Exception("Service error"))
             mock_entity_service.return_value = mock_service
-            
-            result = await check_existing_branch_configuration(tool_context=mock_context)
+
+            result = await check_existing_branch_configuration(
+                tool_context=mock_context
+            )
             data = json.loads(result)
             assert data["configured"] is False
             assert "error" in data
-

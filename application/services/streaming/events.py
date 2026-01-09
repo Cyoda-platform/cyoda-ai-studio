@@ -41,4 +41,3 @@ class StreamEvent:
         lines.append(f"data: {json.dumps(event_data)}")
 
         return "\n".join(lines) + "\n\n"
-

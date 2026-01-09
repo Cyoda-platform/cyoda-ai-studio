@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T', bound=BaseModel)
+T = TypeVar("T", bound=BaseModel)
 
 
 class GoogleADKService:
@@ -253,7 +253,7 @@ class GoogleADKService:
             # Remove additionalProperties from schema (not supported by Gemini)
             def remove_additional_properties(obj):
                 if isinstance(obj, dict):
-                    obj.pop('additionalProperties', None)
+                    obj.pop("additionalProperties", None)
                     for value in obj.values():
                         remove_additional_properties(value)
                 elif isinstance(obj, list):

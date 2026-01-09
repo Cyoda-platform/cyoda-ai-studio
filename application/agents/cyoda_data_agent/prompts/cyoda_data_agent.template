@@ -291,4 +291,3 @@ You: [transfer_to_agent("cyoda_assistant", "help_with_multiple_tasks", {...})]
 ```
 
 **Key Rule**: If it's not about entity/workflow operations, data management, or imports → escalate to coordinator
-

@@ -50,7 +50,9 @@ async def _stage_all_changes(repository_path: str) -> bool:
     logger.info(f"📝 git add returncode: {process.returncode}")
 
     if add_stderr:
-        logger.info(f"📝 git add stderr: {add_stderr.decode('utf-8', errors='replace')}")
+        logger.info(
+            f"📝 git add stderr: {add_stderr.decode('utf-8', errors='replace')}"
+        )
 
     return process.returncode == 0
 

@@ -28,5 +28,3 @@ A: **[Cyoda AI Assistant → deploy_cyoda_environment() tool]**
 
 Sure! I will deploy your Cyoda environment for you. Please wait a moment while I deploy it.
 Once ready, you can access your environment in the cloud. You can track the progress in the Tasks panel.
-
-

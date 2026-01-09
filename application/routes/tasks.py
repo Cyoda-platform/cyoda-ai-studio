@@ -15,14 +15,12 @@ from typing import Any, Dict, List, Optional
 from quart import Blueprint, Response, request
 from quart_rate_limiter import rate_limit
 
-from application.services.streaming_service import StreamingService
-from common.utils.jwt_utils import TokenExpiredError, TokenValidationError
-
 # NEW: Use common infrastructure
 from application.routes.common.auth import get_authenticated_user
 from application.routes.common.rate_limiting import default_rate_limit_key
 from application.routes.common.response import APIResponse
-
+from application.services.streaming_service import StreamingService
+from common.utils.jwt_utils import TokenExpiredError, TokenValidationError
 from services.services import get_entity_service, get_task_service
 
 logger = logging.getLogger(__name__)
@@ -187,11 +185,13 @@ async def _check_and_fix_stuck_task(task: Any, task_service: Any) -> None:
                 message=f"Build process (PID {pid}) exited unexpectedly",
                 progress=0,
                 error="Process terminated without updating task status. "
-                      "This likely indicates the build failed. Check build logs for details.",
+                "This likely indicates the build failed. Check build logs for details.",
             )
             logger.info(f"✅ Updated task {task.technical_id} to failed status")
     except Exception as e:
-        logger.exception(f"❌ Failed to check process status for task {task.technical_id}: {e}")
+        logger.exception(
+            f"❌ Failed to check process status for task {task.technical_id}: {e}"
+        )
 
 
 async def _fetch_tasks_by_ids(
@@ -207,7 +207,9 @@ async def _fetch_tasks_by_ids(
     Returns:
         List of task data dictionaries
     """
-    logger.info(f"🔍 _fetch_tasks_by_ids called with {len(task_ids)} task IDs: {task_ids}")
+    logger.info(
+        f"🔍 _fetch_tasks_by_ids called with {len(task_ids)} task IDs: {task_ids}"
+    )
     tasks_data = []
 
     for task_id in task_ids:
@@ -215,7 +217,9 @@ async def _fetch_tasks_by_ids(
         try:
             task = await task_service.get_task(task_id)
             if task:
-                logger.info(f"🔍 Task {task_id} retrieved, calling _check_and_fix_stuck_task")
+                logger.info(
+                    f"🔍 Task {task_id} retrieved, calling _check_and_fix_stuck_task"
+                )
                 # Auto-fix stuck tasks
                 await _check_and_fix_stuck_task(task, task_service)
                 logger.info(f"🔍 _check_and_fix_stuck_task completed for {task_id}")
@@ -255,7 +259,9 @@ async def list_tasks():
             return APIResponse.error("Conversation not found", 404)
 
         # Validate ownership
-        error_msg = _validate_conversation_ownership(conversation, user_id, is_superuser)
+        error_msg = _validate_conversation_ownership(
+            conversation, user_id, is_superuser
+        )
         if error_msg:
             return APIResponse.error(error_msg, 403)
 
@@ -327,17 +333,26 @@ async def update_task_status(task_id: str):
             task_id=task_id,
             status=new_status,
             message=data.get("message") or f"Task manually updated to {new_status}",
-            progress=data.get("progress", 0 if new_status == "failed" else 100 if new_status == "completed" else task.progress),
+            progress=data.get(
+                "progress",
+                (
+                    0
+                    if new_status == "failed"
+                    else 100 if new_status == "completed" else task.progress
+                ),
+            ),
             error=data.get("error"),
         )
 
         # Get updated task
         updated_task = await task_service.get_task(task_id)
 
-        return APIResponse.success({
-            "message": f"Task {task_id} updated to {new_status}",
-            "task": updated_task.to_api_response() if updated_task else None
-        })
+        return APIResponse.success(
+            {
+                "message": f"Task {task_id} updated to {new_status}",
+                "task": updated_task.to_api_response() if updated_task else None,
+            }
+        )
 
     except TokenExpiredError:
         return APIResponse.error("Token expired", 401)
@@ -375,6 +390,7 @@ async def stream_task_progress(task_id: str) -> Response:
         task = await task_service.get_task(task_id)
 
         if not task:
+
             async def error_stream():
                 yield f"event: error\ndata: {json.dumps({'error': 'Task not found'})}\n\n"
 
@@ -382,6 +398,7 @@ async def stream_task_progress(task_id: str) -> Response:
 
         # Validate ownership (unless superuser)
         if not is_superuser and task.user_id != user_id:
+
             async def error_stream():
                 yield f"event: error\ndata: {json.dumps({'error': 'Access denied'})}\n\n"
 
@@ -405,20 +422,22 @@ async def stream_task_progress(task_id: str) -> Response:
         )
 
     except TokenExpiredError:
+
         async def error_stream():
             yield f"event: error\ndata: {json.dumps({'error': 'Token expired'})}\n\n"
 
         return Response(error_stream(), mimetype="text/event-stream")
     except TokenValidationError:
+
         async def error_stream():
             yield f"event: error\ndata: {json.dumps({'error': 'Invalid token'})}\n\n"
 
         return Response(error_stream(), mimetype="text/event-stream")
-    except Exception as e:
-        logger.exception(f"Error setting up task stream: {e}")
+    except Exception as error:
+        logger.exception(f"Error setting up task stream: {error}")
+        error_msg = str(error)
 
         async def error_stream():
-            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+            yield f"event: error\ndata: {json.dumps({'error': error_msg})}\n\n"
 
         return Response(error_stream(), mimetype="text/event-stream")
-

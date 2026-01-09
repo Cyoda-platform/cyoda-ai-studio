@@ -15,7 +15,9 @@ from services.services import get_entity_service
 logger = logging.getLogger(__name__)
 
 
-async def _fetch_conversation(conversation_id: str) -> tuple[Optional[Conversation], bool]:
+async def _fetch_conversation(
+    conversation_id: str,
+) -> tuple[Optional[Conversation], bool]:
     """Fetch a conversation entity by ID.
 
     Args:
@@ -62,7 +64,9 @@ async def _acquire_lock(conversation_id: str) -> bool:
         if not success or conversation is None:
             return False
 
-        logger.info(f"🔒 Sending lock acquisition request for conversation {conversation_id}...")
+        logger.info(
+            f"🔒 Sending lock acquisition request for conversation {conversation_id}..."
+        )
         conversation.locked = True
         entity_dict = conversation.model_dump(by_alias=False)
 

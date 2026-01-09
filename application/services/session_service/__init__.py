@@ -1,5 +1,11 @@
 """Session service module - backward compatibility re-exports."""
 
+from .caching import (
+    CachedSession,
+    flush_session,
+    persist_session_with_retry,
+    queue_event,
+)
 from .initialization import (
     activate_session,
     normalize_session_id,
@@ -13,12 +19,6 @@ from .retrieval import (
     find_session_entity,
     is_uuid_format,
     try_fast_lookup,
-)
-from .caching import (
-    flush_session,
-    persist_session_with_retry,
-    queue_event,
-    CachedSession,
 )
 from .utilities import (
     deserialize_event,

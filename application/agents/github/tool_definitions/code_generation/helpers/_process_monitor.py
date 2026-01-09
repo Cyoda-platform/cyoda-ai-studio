@@ -41,7 +41,9 @@ async def monitor_code_generation_process(
         prompt_file: Path to temp prompt file to clean up after completion
         output_file: Path to output log file (preserved for user access)
     """
-    logger.info(f"🔍 [{branch_name}] Code generation request: {user_request[:TRUNCATE_LENGTH_MEDIUM]}...")
+    logger.info(
+        f"🔍 [{branch_name}] Code generation request: {user_request[:TRUNCATE_LENGTH_MEDIUM]}..."
+    )
 
     # Import from tools.py - this will be extracted later in Phase 6
     from application.agents.github.tools import _monitor_cli_process

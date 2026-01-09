@@ -15,9 +15,7 @@ from ....common.constants import EXT_JSON
 logger = logging.getLogger(__name__)
 
 
-def find_json_file_in_directory(
-    directory: Path, expected_name: str
-) -> Optional[Path]:
+def find_json_file_in_directory(directory: Path, expected_name: str) -> Optional[Path]:
     """Find JSON file in directory using flexible matching strategy.
 
     This function searches for JSON files using:
@@ -49,9 +47,7 @@ def find_json_file_in_directory(
 
     # Fallback: use single JSON file if only one exists
     if len(json_files) == 1:
-        logger.info(
-            f"Using JSON file {json_files[0].name} for {expected_name}"
-        )
+        logger.info(f"Using JSON file {json_files[0].name} for {expected_name}")
         return json_files[0]
 
     return None

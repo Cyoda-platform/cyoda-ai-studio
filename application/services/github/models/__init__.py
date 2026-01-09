@@ -5,13 +5,13 @@ Shared types, enums, and dataclasses for GitHub operations.
 """
 
 from application.services.github.models.types import (
+    BranchInfo,
     GitHubPermission,
-    WorkflowStatus,
-    WorkflowConclusion,
     GitOperationResult,
     RepositoryInfo,
+    WorkflowConclusion,
     WorkflowRunInfo,
-    BranchInfo,
+    WorkflowStatus,
 )
 
 __all__ = [
@@ -23,4 +23,3 @@ __all__ = [
     "WorkflowRunInfo",
     "BranchInfo",
 ]
-

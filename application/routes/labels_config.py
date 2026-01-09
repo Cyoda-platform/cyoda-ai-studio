@@ -7,21 +7,22 @@ REFACTORED: Uses APIResponse for consistent error handling.
 """
 
 import logging
+from typing import Any, Dict
+
 from quart import Blueprint
-from typing import Dict, Any
 
 from application.routes.common.response import APIResponse
 
 logger = logging.getLogger(__name__)
 
-labels_config_bp = Blueprint('labels_config', __name__)
+labels_config_bp = Blueprint("labels_config", __name__)
 
 # Mock labels configuration for UI
 # In Phase 2, this could be loaded from a config file or database
 MOCK_LABELS_CONFIG: Dict[str, Any] = {
     "app": {
         "title": "AI Assistant",
-        "description": "Cyoda AI Assistant powered by Google ADK"
+        "description": "Cyoda AI Assistant powered by Google ADK",
     },
     "chat": {
         "new_chat": "New Chat",
@@ -29,13 +30,13 @@ MOCK_LABELS_CONFIG: Dict[str, Any] = {
         "rename_chat": "Rename Chat",
         "placeholder": "Type your message...",
         "send": "Send",
-        "clear": "Clear"
+        "clear": "Clear",
     },
     "canvas": {
         "title": "Canvas Questions",
         "generate": "Generate",
         "preview": "Preview",
-        "apply": "Apply"
+        "apply": "Apply",
     },
     "messages": {
         "loading": "Loading...",
@@ -43,7 +44,7 @@ MOCK_LABELS_CONFIG: Dict[str, Any] = {
         "success": "Success",
         "no_chats": "No chats yet. Start a new conversation!",
         "chat_deleted": "Chat deleted successfully",
-        "chat_created": "Chat created successfully"
+        "chat_created": "Chat created successfully",
     },
     "buttons": {
         "cancel": "Cancel",
@@ -51,14 +52,14 @@ MOCK_LABELS_CONFIG: Dict[str, Any] = {
         "save": "Save",
         "delete": "Delete",
         "edit": "Edit",
-        "close": "Close"
+        "close": "Close",
     },
     "forms": {
         "chat_name": "Chat Name",
         "chat_description": "Description",
         "required": "Required",
-        "optional": "Optional"
-    }
+        "optional": "Optional",
+    },
 }
 
 
@@ -86,11 +87,11 @@ async def get_labels_config_item(key: str):
     """
     try:
         # Normalize URL segment into our key format
-        identifier = key.replace('-', '_')
+        identifier = key.replace("-", "_")
 
         # Navigate through nested dict
         current: Any = MOCK_LABELS_CONFIG
-        for part in identifier.split('.'):
+        for part in identifier.split("."):
             if isinstance(current, dict) and part in current:
                 current = current[part]
             else:
@@ -112,15 +113,16 @@ async def refresh_labels_config():
     """
     try:
         # Mock implementation - nothing to refresh
-        return APIResponse.success({
-            "success": True,
-            "message": "Labels configuration refreshed successfully (mock)."
-        })
+        return APIResponse.success(
+            {
+                "success": True,
+                "message": "Labels configuration refreshed successfully (mock).",
+            }
+        )
     except Exception as e:
         logger.exception(f"Error refreshing labels config: {e}")
         return APIResponse.error(
             "Unable to refresh labels configuration at this time.",
             502,
-            details={"success": False}
+            details={"success": False},
         )
-

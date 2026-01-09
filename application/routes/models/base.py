@@ -6,7 +6,7 @@ Provides common patterns and base classes for all endpoint models.
 
 from typing import Any, Generic, List, Optional, TypeVar
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar("T")
 

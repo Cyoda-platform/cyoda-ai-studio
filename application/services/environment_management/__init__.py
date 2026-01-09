@@ -9,34 +9,34 @@ The main EnvironmentManagementService class is re-exported from this package for
 """
 
 from ..cloud_manager_service import get_cloud_manager_service
-from .namespace_operations import (
-    normalize_for_namespace,
-    construct_namespace,
-    construct_user_app_namespace,
+from .application_operations import (
+    check_user_app_status,
+    delete_user_app,
+    get_user_app_details,
+    get_user_app_metrics,
+    get_user_app_pods,
+    get_user_app_status,
+    list_user_apps,
+    restart_user_app,
+    scale_user_app,
+    update_user_app_image,
 )
 from .environment_operations import (
-    scale_application,
-    restart_application,
-    update_application_image,
     delete_environment,
-    list_environments,
     describe_environment,
     get_application_details,
     get_application_status,
     get_environment_metrics,
     get_environment_pods,
+    list_environments,
+    restart_application,
+    scale_application,
+    update_application_image,
 )
-from .application_operations import (
-    scale_user_app,
-    restart_user_app,
-    update_user_app_image,
-    delete_user_app,
-    list_user_apps,
-    get_user_app_details,
-    get_user_app_status,
-    get_user_app_metrics,
-    get_user_app_pods,
-    check_user_app_status,
+from .namespace_operations import (
+    construct_namespace,
+    construct_user_app_namespace,
+    normalize_for_namespace,
 )
 
 
@@ -59,12 +59,16 @@ class EnvironmentManagementService:
         return construct_namespace(user_id, env_name)
 
     @staticmethod
-    def _construct_user_app_namespace(user_id: str, env_name: str, app_name: str) -> str:
+    def _construct_user_app_namespace(
+        user_id: str, env_name: str, app_name: str
+    ) -> str:
         """Construct namespace for user application."""
         return construct_user_app_namespace(user_id, env_name, app_name)
 
     # Environment operations
-    async def scale_application(self, user_id: str, env_name: str, app_name: str, replicas: int):
+    async def scale_application(
+        self, user_id: str, env_name: str, app_name: str, replicas: int
+    ):
         """Scale an application deployment to specified number of replicas."""
         return await scale_application(user_id, env_name, app_name, replicas)
 
@@ -72,9 +76,13 @@ class EnvironmentManagementService:
         """Restart an application deployment by triggering a rollout restart."""
         return await restart_application(user_id, env_name, app_name)
 
-    async def update_application_image(self, user_id: str, env_name: str, app_name: str, image: str, container=None):
+    async def update_application_image(
+        self, user_id: str, env_name: str, app_name: str, image: str, container=None
+    ):
         """Update an application's container image."""
-        return await update_application_image(user_id, env_name, app_name, image, container)
+        return await update_application_image(
+            user_id, env_name, app_name, image, container
+        )
 
     async def delete_environment(self, user_id: str, env_name: str):
         """Delete a Cyoda environment namespace."""
@@ -105,19 +113,38 @@ class EnvironmentManagementService:
         return await get_environment_pods(user_id, env_name)
 
     # User application operations
-    async def scale_user_app(self, user_id: str, env_name: str, app_name: str, deployment_name: str, replicas: int):
+    async def scale_user_app(
+        self,
+        user_id: str,
+        env_name: str,
+        app_name: str,
+        deployment_name: str,
+        replicas: int,
+    ):
         """Scale a user application deployment."""
-        return await scale_user_app(user_id, env_name, app_name, deployment_name, replicas)
+        return await scale_user_app(
+            user_id, env_name, app_name, deployment_name, replicas
+        )
 
-    async def restart_user_app(self, user_id: str, env_name: str, app_name: str, deployment_name: str):
+    async def restart_user_app(
+        self, user_id: str, env_name: str, app_name: str, deployment_name: str
+    ):
         """Restart a user application deployment."""
         return await restart_user_app(user_id, env_name, app_name, deployment_name)
 
     async def update_user_app_image(
-        self, user_id: str, env_name: str, app_name: str, deployment_name: str, image: str, container=None
+        self,
+        user_id: str,
+        env_name: str,
+        app_name: str,
+        deployment_name: str,
+        image: str,
+        container=None,
     ):
         """Update a user application's container image."""
-        return await update_user_app_image(user_id, env_name, app_name, deployment_name, image, container)
+        return await update_user_app_image(
+            user_id, env_name, app_name, deployment_name, image, container
+        )
 
     async def delete_user_app(self, user_id: str, env_name: str, app_name: str):
         """Delete a user application namespace."""
@@ -131,7 +158,9 @@ class EnvironmentManagementService:
         """Get detailed information about a user application."""
         return await get_user_app_details(user_id, env_name, app_name)
 
-    async def get_user_app_status(self, user_id: str, env_name: str, app_name: str, deployment_name: str):
+    async def get_user_app_status(
+        self, user_id: str, env_name: str, app_name: str, deployment_name: str
+    ):
         """Get status of a user application deployment."""
         return await get_user_app_status(user_id, env_name, app_name, deployment_name)
 
@@ -143,7 +172,9 @@ class EnvironmentManagementService:
         """Get pods for a user application."""
         return await get_user_app_pods(user_id, env_name, app_name)
 
-    async def check_user_app_status(self, user_id: str, env_name: str, app_name: str, auth_token: str):
+    async def check_user_app_status(
+        self, user_id: str, env_name: str, app_name: str, auth_token: str
+    ):
         """Check if a user application is accessible."""
         return await check_user_app_status(user_id, env_name, app_name, auth_token)
 

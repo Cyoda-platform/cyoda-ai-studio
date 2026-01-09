@@ -1,8 +1,9 @@
 """Unit tests for cyoda_assistant module."""
 
 import asyncio
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock, PropertyMock
 from google.genai import types
 
 from application.agents.cyoda_assistant import CyodaAssistantWrapper
@@ -30,6 +31,7 @@ class TestCyodaAssistant:
         """Test create_cyoda_assistant can be imported."""
         try:
             from application.agents.cyoda_assistant import create_cyoda_assistant
+
             assert callable(create_cyoda_assistant)
         except ImportError as e:
             pytest.fail(f"Failed to import create_cyoda_assistant: {e}")
@@ -38,6 +40,7 @@ class TestCyodaAssistant:
         """Test CyodaAssistantWrapper can be imported."""
         try:
             from application.agents.cyoda_assistant import CyodaAssistantWrapper
+
             assert CyodaAssistantWrapper is not None
         except ImportError as e:
             pytest.fail(f"Failed to import CyodaAssistantWrapper: {e}")
@@ -50,6 +53,7 @@ class TestCyodaAssistantWrapper:
         """Test that CyodaAssistantWrapper can be imported."""
         try:
             from application.agents.cyoda_assistant import CyodaAssistantWrapper
+
             assert CyodaAssistantWrapper is not None
         except ImportError as e:
             pytest.fail(f"Failed to import CyodaAssistantWrapper: {e}")
@@ -61,21 +65,23 @@ class TestCyodaAssistantLazyImports:
     def test_agents_module_lazy_import_create_cyoda_assistant(self):
         """Test lazy import of create_cyoda_assistant from agents module."""
         from application.agents import create_cyoda_assistant
+
         assert callable(create_cyoda_assistant)
 
     def test_agents_module_lazy_import_wrapper(self):
         """Test lazy import of CyodaAssistantWrapper from agents module."""
         from application.agents import CyodaAssistantWrapper
+
         assert CyodaAssistantWrapper is not None
 
     def test_agents_module_exports(self):
         """Test agents module __all__ exports."""
         import application.agents as agents
 
-        assert hasattr(agents, '__all__')
-        assert 'create_cyoda_assistant' in agents.__all__
-        assert 'CyodaAssistantWrapper' in agents.__all__
-        assert 'OpenAIAssistantWrapper' in agents.__all__
+        assert hasattr(agents, "__all__")
+        assert "create_cyoda_assistant" in agents.__all__
+        assert "CyodaAssistantWrapper" in agents.__all__
+        assert "OpenAIAssistantWrapper" in agents.__all__
 
 
 class TestProcessMessage:
@@ -105,14 +111,13 @@ class TestProcessMessage:
         """Create a CyodaAssistantWrapper instance with mocked dependencies."""
         from application.agents.cyoda_assistant import CyodaAssistantWrapper
 
-        with patch('google.adk.runners.Runner') as mock_runner_class:
+        with patch("google.adk.runners.Runner") as mock_runner_class:
             mock_runner_instance = AsyncMock()
             mock_runner_instance.session_service = AsyncMock()
             mock_runner_class.return_value = mock_runner_instance
 
             wrapper = CyodaAssistantWrapper(
-                adk_agent=mock_adk_agent,
-                entity_service=mock_entity_service
+                adk_agent=mock_adk_agent, entity_service=mock_entity_service
             )
             wrapper.runner = mock_runner_instance
             return wrapper
@@ -155,7 +160,7 @@ class TestProcessMessage:
         result = await wrapper.process_message(
             user_message=user_message,
             conversation_history=conversation_history,
-            user_id=user_id
+            user_id=user_id,
         )
 
         assert result["response"] == "Here's how to build your app..."
@@ -178,7 +183,9 @@ class TestProcessMessage:
             "user_id": user_id,
         }
 
-        wrapper.runner.session_service.get_session = AsyncMock(return_value=mock_session)
+        wrapper.runner.session_service.get_session = AsyncMock(
+            return_value=mock_session
+        )
 
         # Mock runner.run_async
         mock_event = MagicMock()
@@ -193,14 +200,16 @@ class TestProcessMessage:
         wrapper.runner.run_async = mock_run_async
 
         # Mock session state loading
-        wrapper._load_session_state = AsyncMock(return_value={"previous_state": "value"})
+        wrapper._load_session_state = AsyncMock(
+            return_value={"previous_state": "value"}
+        )
         wrapper._save_session_state = AsyncMock()
 
         result = await wrapper.process_message(
             user_message=user_message,
             conversation_history=conversation_history,
             conversation_id=conversation_id,
-            user_id=user_id
+            user_id=user_id,
         )
 
         assert result["response"] == "Continuing from where we left off..."
@@ -225,7 +234,9 @@ class TestProcessMessage:
         mock_session.state = session_state_ref
 
         wrapper.runner.session_service.get_session = AsyncMock(return_value=None)
-        wrapper.runner.session_service.create_session = AsyncMock(return_value=mock_session)
+        wrapper.runner.session_service.create_session = AsyncMock(
+            return_value=mock_session
+        )
 
         mock_event = MagicMock()
         mock_part = MagicMock()
@@ -235,7 +246,9 @@ class TestProcessMessage:
 
         async def mock_run_async(*args, **kwargs):
             # Simulate agent execution adding ui_functions to session state
-            session_state_ref["ui_functions"] = [{"type": "hook", "action": "open_canvas"}]
+            session_state_ref["ui_functions"] = [
+                {"type": "hook", "action": "open_canvas"}
+            ]
             yield mock_event
 
         wrapper.runner.run_async = mock_run_async
@@ -246,7 +259,7 @@ class TestProcessMessage:
         result = await wrapper.process_message(
             user_message=user_message,
             conversation_history=conversation_history,
-            user_id=user_id
+            user_id=user_id,
         )
 
         assert len(result["metadata"]["ui_functions"]) == 1
@@ -268,7 +281,9 @@ class TestProcessMessage:
         mock_session.state = session_state_ref
 
         wrapper.runner.session_service.get_session = AsyncMock(return_value=None)
-        wrapper.runner.session_service.create_session = AsyncMock(return_value=mock_session)
+        wrapper.runner.session_service.create_session = AsyncMock(
+            return_value=mock_session
+        )
 
         mock_event = MagicMock()
         mock_part = MagicMock()
@@ -291,7 +306,7 @@ class TestProcessMessage:
         result = await wrapper.process_message(
             user_message=user_message,
             conversation_history=conversation_history,
-            user_id=user_id
+            user_id=user_id,
         )
 
         assert result["metadata"]["repository_info"] is not None
@@ -315,7 +330,9 @@ class TestProcessMessage:
         mock_session.state = session_state_ref
 
         wrapper.runner.session_service.get_session = AsyncMock(return_value=None)
-        wrapper.runner.session_service.create_session = AsyncMock(return_value=mock_session)
+        wrapper.runner.session_service.create_session = AsyncMock(
+            return_value=mock_session
+        )
 
         mock_event = MagicMock()
         mock_part = MagicMock()
@@ -336,7 +353,7 @@ class TestProcessMessage:
         result = await wrapper.process_message(
             user_message=user_message,
             conversation_history=conversation_history,
-            user_id=user_id
+            user_id=user_id,
         )
 
         assert result["metadata"]["build_task_id"] == "build_task_123"
@@ -354,7 +371,9 @@ class TestProcessMessage:
         }
 
         wrapper.runner.session_service.get_session = AsyncMock(return_value=None)
-        wrapper.runner.session_service.create_session = AsyncMock(return_value=mock_session)
+        wrapper.runner.session_service.create_session = AsyncMock(
+            return_value=mock_session
+        )
 
         # Make runner.run_async raise an exception
         async def mock_run_async_error(*args, **kwargs):
@@ -367,7 +386,7 @@ class TestProcessMessage:
             await wrapper.process_message(
                 user_message=user_message,
                 conversation_history=conversation_history,
-                user_id=user_id
+                user_id=user_id,
             )
 
     @pytest.mark.asyncio
@@ -383,25 +402,27 @@ class TestProcessMessage:
         mock_conversation_response.data = {
             "id": conversation_id,
             "user_id": user_id,
-            "workflow_cache": {
-                "adk_session_state": {"previous_state": "value"}
-            }
+            "workflow_cache": {"adk_session_state": {"previous_state": "value"}},
         }
-        wrapper.entity_service.get_by_id = AsyncMock(return_value=mock_conversation_response)
+        wrapper.entity_service.get_by_id = AsyncMock(
+            return_value=mock_conversation_response
+        )
         wrapper.entity_service.update = AsyncMock()
 
         # Mock session
         session_state_ref = {
             "conversation_history": conversation_history,
             "user_id": user_id,
-            "previous_state": "value"
+            "previous_state": "value",
         }
         mock_session = AsyncMock()
         mock_session.id = "session_id_123"
         mock_session.state = session_state_ref
 
         wrapper.runner.session_service.get_session = AsyncMock(return_value=None)
-        wrapper.runner.session_service.create_session = AsyncMock(return_value=mock_session)
+        wrapper.runner.session_service.create_session = AsyncMock(
+            return_value=mock_session
+        )
 
         mock_event = MagicMock()
         mock_part = MagicMock()
@@ -418,7 +439,7 @@ class TestProcessMessage:
             user_message=user_message,
             conversation_history=conversation_history,
             conversation_id=conversation_id,
-            user_id=user_id
+            user_id=user_id,
         )
 
         assert result["response"] == "App created"
@@ -439,9 +460,11 @@ class TestProcessMessage:
         mock_conversation_response.data = {
             "id": conversation_id,
             "user_id": user_id,
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
-        wrapper.entity_service.get_by_id = AsyncMock(return_value=mock_conversation_response)
+        wrapper.entity_service.get_by_id = AsyncMock(
+            return_value=mock_conversation_response
+        )
         wrapper.entity_service.update = AsyncMock()
 
         # Mock session retrieval by technical_id
@@ -449,7 +472,7 @@ class TestProcessMessage:
         mock_session.id = "some_session_id"
         mock_session.state = {
             "__cyoda_technical_id__": session_technical_id,
-            "conversation_history": []
+            "conversation_history": [],
         }
 
         # Mock get_session_by_technical_id to return the session
@@ -471,13 +494,14 @@ class TestProcessMessage:
             conversation_history=conversation_history,
             conversation_id=conversation_id,
             session_technical_id=session_technical_id,
-            user_id=user_id
+            user_id=user_id,
         )
 
         # Verify the response
         assert result["response"] == "Continuing..."
         # Verify session state was saved (update was called for conversation)
         wrapper.entity_service.update.assert_called_once()
+
 
 class TestSaveSessionState:
     """Comprehensive tests for _save_session_state function."""
@@ -497,7 +521,7 @@ class TestSaveSessionState:
         mock_conversation = {
             "id": "conv123",
             "user_id": "user123",
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
         mock_response = MagicMock()
         mock_response.data = mock_conversation
@@ -545,7 +569,7 @@ class TestSaveSessionState:
         mock_conversation = {
             "id": "conv123",
             "user_id": "user123",
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
         mock_response = MagicMock()
         mock_response.data = mock_conversation
@@ -554,10 +578,11 @@ class TestSaveSessionState:
 
         # First call fails with version conflict, second succeeds
         from common.service.service import EntityServiceError
+
         self.mock_entity_service.update = AsyncMock(
             side_effect=[
                 EntityServiceError("Error 422: version mismatch"),
-                None  # Success on retry
+                None,  # Success on retry
             ]
         )
 
@@ -580,7 +605,7 @@ class TestSaveSessionState:
         mock_conversation = {
             "id": "conv123",
             "user_id": "user123",
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
         mock_response = MagicMock()
         mock_response.data = mock_conversation
@@ -589,6 +614,7 @@ class TestSaveSessionState:
 
         # All attempts fail with version conflict
         from common.service.service import EntityServiceError
+
         self.mock_entity_service.update = AsyncMock(
             side_effect=EntityServiceError("Error 422: version mismatch")
         )
@@ -611,7 +637,7 @@ class TestSaveSessionState:
         mock_conversation = {
             "id": "conv123",
             "user_id": "user123",
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
         mock_response = MagicMock()
         mock_response.data = mock_conversation
@@ -620,6 +646,7 @@ class TestSaveSessionState:
 
         # Non-retryable error (not a version conflict)
         from common.service.service import EntityServiceError
+
         self.mock_entity_service.update = AsyncMock(
             side_effect=EntityServiceError("Authorization error")
         )
@@ -641,13 +668,15 @@ class TestSaveSessionState:
         mock_conversation = {
             "id": "conv123",
             "user_id": "user123",
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
         mock_response = MagicMock()
         mock_response.data = mock_conversation
 
         self.mock_entity_service.get_by_id = AsyncMock(return_value=mock_response)
-        self.mock_entity_service.update = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+        self.mock_entity_service.update = AsyncMock(
+            side_effect=RuntimeError("Unexpected error")
+        )
 
         session_state = {"key": "value"}
 
@@ -668,8 +697,8 @@ class TestSaveSessionState:
             "user_id": "user123",
             "workflow_cache": {
                 "existing_key": "existing_value",
-                "adk_session_state": {"old": "state"}
-            }
+                "adk_session_state": {"old": "state"},
+            },
         }
         mock_response = MagicMock()
         mock_response.data = mock_conversation
@@ -686,7 +715,9 @@ class TestSaveSessionState:
         updated_entity = update_call[1]["entity"]
 
         # Verify new session state is saved
-        assert updated_entity["workflow_cache"]["adk_session_state"] == new_session_state
+        assert (
+            updated_entity["workflow_cache"]["adk_session_state"] == new_session_state
+        )
         # Verify other keys are preserved
         assert updated_entity["workflow_cache"]["existing_key"] == "existing_value"
 
@@ -699,7 +730,7 @@ class TestSaveSessionState:
         mock_conversation = {
             "id": "conv123",
             "user_id": "user123",
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
         mock_response = MagicMock()
         mock_response.data = mock_conversation
@@ -712,14 +743,10 @@ class TestSaveSessionState:
             "user_id": "user123",
             "conversation_history": [
                 {"role": "user", "content": "Hello"},
-                {"role": "assistant", "content": "Hi there"}
+                {"role": "assistant", "content": "Hi there"},
             ],
-            "nested_data": {
-                "level1": {
-                    "level2": ["item1", "item2"]
-                }
-            },
-            "metadata": {"timestamp": 1234567890}
+            "nested_data": {"level1": {"level2": ["item1", "item2"]}},
+            "metadata": {"timestamp": 1234567890},
         }
 
         await wrapper._save_session_state("conv123", complex_state)
@@ -741,7 +768,7 @@ class TestSaveSessionState:
         mock_conversation = {
             "id": "conv123",
             "user_id": "user123",
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
         mock_response = MagicMock()
         mock_response.data = mock_conversation
@@ -757,15 +784,12 @@ class TestSaveSessionState:
             "version mismatch detected",
             "earliestUpdateAccept constraint violated",
             "was changed by another transaction",
-            "update operation returned no entity id"
+            "update operation returned no entity id",
         ]
 
         for error_msg in error_messages:
             self.mock_entity_service.update = AsyncMock(
-                side_effect=[
-                    EntityServiceError(error_msg),
-                    None  # Success on retry
-                ]
+                side_effect=[EntityServiceError(error_msg), None]  # Success on retry
             )
 
             with patch("asyncio.sleep", new_callable=AsyncMock):
@@ -783,7 +807,7 @@ class TestSaveSessionState:
         mock_conversation = {
             "id": "conv123",
             "user_id": "user123",
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
         mock_response = MagicMock()
         mock_response.data = mock_conversation
@@ -807,7 +831,7 @@ class TestSaveSessionState:
         mock_conversation = {
             "id": "conv123",
             "user_id": "user123",
-            "workflow_cache": {}
+            "workflow_cache": {},
         }
         mock_response = mock_conversation
 

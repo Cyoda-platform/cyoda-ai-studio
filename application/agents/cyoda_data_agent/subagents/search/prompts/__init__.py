@@ -1,2 +1,1 @@
 """Prompts for Search subagent."""
-

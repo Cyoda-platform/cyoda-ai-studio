@@ -14,7 +14,9 @@ from application.services.repository_parser import RepositoryParser
 logger = logging.getLogger(__name__)
 
 
-async def _fetch_conversation(conversation_id: str) -> tuple[Optional[Dict[str, Any]], bool]:
+async def _fetch_conversation(
+    conversation_id: str,
+) -> tuple[Optional[Dict[str, Any]], bool]:
     """Fetch conversation entity from entity service.
 
     Args:
@@ -56,29 +58,29 @@ def _extract_repository_info(conversation_data: Dict[str, Any]) -> Dict[str, Any
     """
     if isinstance(conversation_data, dict):
         return {
-            'repository_path': (
-                conversation_data.get('workflow_cache', {})
-                .get('adk_session_state', {})
-                .get('repository_path')
+            "repository_path": (
+                conversation_data.get("workflow_cache", {})
+                .get("adk_session_state", {})
+                .get("repository_path")
             ),
-            'repository_name': conversation_data.get('repository_name'),
-            'repository_branch': conversation_data.get('repository_branch'),
-            'repository_owner': conversation_data.get('repository_owner'),
-            'repository_url': conversation_data.get('repository_url'),
-            'installation_id': conversation_data.get('installation_id'),
+            "repository_name": conversation_data.get("repository_name"),
+            "repository_branch": conversation_data.get("repository_branch"),
+            "repository_owner": conversation_data.get("repository_owner"),
+            "repository_url": conversation_data.get("repository_url"),
+            "installation_id": conversation_data.get("installation_id"),
         }
     else:
         return {
-            'repository_path': (
-                getattr(conversation_data, 'workflow_cache', {})
-                .get('adk_session_state', {})
-                .get('repository_path')
+            "repository_path": (
+                getattr(conversation_data, "workflow_cache", {})
+                .get("adk_session_state", {})
+                .get("repository_path")
             ),
-            'repository_name': getattr(conversation_data, 'repository_name', None),
-            'repository_branch': getattr(conversation_data, 'repository_branch', None),
-            'repository_owner': getattr(conversation_data, 'repository_owner', None),
-            'repository_url': getattr(conversation_data, 'repository_url', None),
-            'installation_id': getattr(conversation_data, 'installation_id', None),
+            "repository_name": getattr(conversation_data, "repository_name", None),
+            "repository_branch": getattr(conversation_data, "repository_branch", None),
+            "repository_owner": getattr(conversation_data, "repository_owner", None),
+            "repository_url": getattr(conversation_data, "repository_url", None),
+            "installation_id": getattr(conversation_data, "installation_id", None),
         }
 
 
@@ -109,7 +111,10 @@ async def _scan_repository_resources(
     Returns:
         Dictionary with entities, workflows, and requirements.
     """
-    from application.agents.github.tools import _detect_project_type, _scan_versioned_resources
+    from application.agents.github.tools import (
+        _detect_project_type,
+        _scan_versioned_resources,
+    )
 
     paths = _detect_project_type(repository_path)
     repo_path_obj = Path(repository_path)
@@ -130,7 +135,9 @@ async def _scan_repository_resources(
     }
 
 
-async def _read_requirements(repo_path_obj: Path, requirements_path: str) -> list[Dict[str, Any]]:
+async def _read_requirements(
+    repo_path_obj: Path, requirements_path: str
+) -> list[Dict[str, Any]]:
     """Read requirements files from repository.
 
     Args:
@@ -153,11 +160,13 @@ async def _read_requirements(repo_path_obj: Path, requirements_path: str) -> lis
         try:
             with open(req_file, "r", encoding="utf-8") as f:
                 content = f.read()
-            requirements.append({
-                "name": req_file.stem,
-                "path": str(req_file.relative_to(repo_path_obj)),
-                "content": content,
-            })
+            requirements.append(
+                {
+                    "name": req_file.stem,
+                    "path": str(req_file.relative_to(repo_path_obj)),
+                    "content": content,
+                }
+            )
         except Exception as e:
             logger.warning(f"Failed to read requirement {req_file}: {e}")
 
@@ -178,7 +187,7 @@ def _format_workflows_response(workflows: list[Dict[str, Any]]) -> list[Dict[str
             "name": w.get("name", ""),
             "entityName": w.get("entity_name", ""),
             "filePath": w.get("path", ""),
-            "content": w.get("content", {})
+            "content": w.get("content", {}),
         }
         for w in workflows
     ]
@@ -211,5 +220,5 @@ def _format_analysis_response(
         "appType": app_type,
         "entities": entities,
         "workflows": _format_workflows_response(workflows),
-        "requirements": requirements
+        "requirements": requirements,
     }

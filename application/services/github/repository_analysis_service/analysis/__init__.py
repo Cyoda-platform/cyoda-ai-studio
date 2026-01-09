@@ -1,8 +1,8 @@
 """Repository analysis package."""
 
-from .service import RepositoryAnalysisService
 from .models import SearchMatch
 from .resource_scanner import ResourceScanner
+from .service import RepositoryAnalysisService
 
 __all__ = [
     "RepositoryAnalysisService",

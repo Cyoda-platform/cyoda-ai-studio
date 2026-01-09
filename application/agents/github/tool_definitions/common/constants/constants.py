@@ -55,8 +55,25 @@ EXT_TS = ".ts"
 EXT_SQL = ".sql"
 
 # Grouped extension sets for validation
-DOCUMENT_EXTENSIONS = [EXT_PDF, EXT_DOCX, EXT_XLSX, EXT_PPTX, EXT_XML, EXT_JSON, EXT_TXT]
-CONFIG_EXTENSIONS = [EXT_YML, EXT_YAML, EXT_TOML, EXT_INI, EXT_CFG, EXT_CONF, EXT_PROPERTIES, EXT_ENV]
+DOCUMENT_EXTENSIONS = [
+    EXT_PDF,
+    EXT_DOCX,
+    EXT_XLSX,
+    EXT_PPTX,
+    EXT_XML,
+    EXT_JSON,
+    EXT_TXT,
+]
+CONFIG_EXTENSIONS = [
+    EXT_YML,
+    EXT_YAML,
+    EXT_TOML,
+    EXT_INI,
+    EXT_CFG,
+    EXT_CONF,
+    EXT_PROPERTIES,
+    EXT_ENV,
+]
 MARKUP_EXTENSIONS = [EXT_MD, EXT_MARKDOWN, EXT_RST, EXT_TEX, EXT_LATEX, EXT_SQL]
 
 # ============================================================================
@@ -108,7 +125,11 @@ CLI_PROVIDER_AUGMENT = "augment"
 CLI_PROVIDER_CLAUDE = "claude"
 CLI_PROVIDER_GEMINI = "gemini"
 
-SUPPORTED_CLI_PROVIDERS = [CLI_PROVIDER_AUGMENT, CLI_PROVIDER_CLAUDE, CLI_PROVIDER_GEMINI]
+SUPPORTED_CLI_PROVIDERS = [
+    CLI_PROVIDER_AUGMENT,
+    CLI_PROVIDER_CLAUDE,
+    CLI_PROVIDER_GEMINI,
+]
 
 # ============================================================================
 # Build Modes

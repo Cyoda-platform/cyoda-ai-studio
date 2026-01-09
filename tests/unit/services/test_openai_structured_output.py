@@ -10,6 +10,7 @@ from application.services.openai.structured_output import StructuredOutputHandle
 
 class TestPerson(BaseModel):
     """Test schema."""
+
     name: str
     age: int
     email: str
@@ -17,6 +18,7 @@ class TestPerson(BaseModel):
 
 class TestAddress(BaseModel):
     """Test schema for merging."""
+
     street: str
     city: str
     zip_code: str
@@ -51,7 +53,7 @@ class TestValidateSchema:
             "name": "John",
             "age": 30,
             "email": "john@example.com",
-            "phone": "123-456-7890"
+            "phone": "123-456-7890",
         }
         result = StructuredOutputHandler.validate_schema(TestPerson, data)
         assert result.name == "John"
@@ -120,6 +122,7 @@ class TestSchemaToJson:
     def test_schema_to_json_valid_json(self):
         """Test JSON output is valid."""
         import json
+
         person = TestPerson(name="John", age=30, email="john@example.com")
         result = StructuredOutputHandler.schema_to_json(person)
         parsed = json.loads(result)
@@ -180,4 +183,3 @@ class TestMergeSchemas:
         merged = StructuredOutputHandler.merge_schemas(TestPerson, TestAddress)
         props = merged["properties"]
         assert len(props) == 6  # 3 from TestPerson + 3 from TestAddress
-

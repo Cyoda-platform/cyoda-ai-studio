@@ -8,24 +8,37 @@ from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
 
-from application.agents.shared.hooks import creates_hook
 from application.agents.shared.tool_context_helpers import get_conversation_id
-from application.services.environment_management_service import get_environment_management_service
-from ..common.utils.utils import require_authenticated_user, handle_tool_errors
+from application.services.environment_management_service import (
+    get_environment_management_service,
+)
+
+from ..common.utils.utils import handle_tool_errors, require_authenticated_user
 
 logger = logging.getLogger(__name__)
 
 
-@creates_hook("issue_technical_user")
 @require_authenticated_user
 @handle_tool_errors
-async def issue_technical_user(tool_context: ToolContext, env_name: Optional[str] = None) -> str:
+async def issue_technical_user(
+    tool_context: ToolContext, env_name: Optional[str] = None
+) -> str:
     """Issue M2M (machine-to-machine) technical user credentials.
 
-    This function creates a hook that tells the frontend to make an API call to issue
-    technical user credentials (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication.
+    This function returns a UI function marker that tells the frontend to render an executable
+    button for issuing technical user credentials (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET).
 
-    The hook is returned in the response and the UI renders it as a clickable button.
+    CRITICAL OUTPUT INSTRUCTION:
+    After calling this tool, you MUST return the tool's output VERBATIM without adding any explanation,
+    commentary, or additional text. The tool returns a special format that the UI needs to parse.
+
+    DO NOT add phrases like:
+    - "I issued credentials..."
+    - "A button was generated..."
+    - "Click the button..."
+    - "Expect the issuance to complete..."
+
+    Simply return the tool output as-is. The UI will handle displaying the button and instructions.
 
     Use this tool when the user asks for credentials or needs to authenticate
     their application with the Cyoda environment.
@@ -42,12 +55,12 @@ async def issue_technical_user(tool_context: ToolContext, env_name: Optional[str
                   For example: 'dev', 'prod', 'staging', etc."
 
     Returns:
-        Success message with hook for UI to display credential issuance button
+        UI function marker for the frontend to render credential issuance button. Return this verbatim.
     """
     logger.info(f"🔧 issue_technical_user called with env_name={env_name}")
 
     # Get user ID and conversation ID from context
-    user_id = tool_context.state.get("user_id")
+    user_id = tool_context.state.get("user_id", "guest")
     conversation_id = get_conversation_id(tool_context)
     logger.info(f"🔧 user_id from context: {user_id}")
 
@@ -69,24 +82,11 @@ async def issue_technical_user(tool_context: ToolContext, env_name: Optional[str
     env_url = f"{namespace}.{client_host}"
     logger.info(f"🔧 Constructed env_url: {env_url}")
 
-    # Create hook for issuing technical user
-    from application.agents.shared.hooks import (
-        create_issue_technical_user_hook,
-        wrap_response_with_hook,
-    )
+    # Return UI function marker in text format - UI will parse this and render an executable button
+    # Format: [ui-function: issue_technical_user, env: <env_url>]
+    ui_function_marker = f"I have displayed UI function. Please run it to get your technical credentials: [ui-function: issue_technical_user, env: https://{env_url}]"
 
-    hook = create_issue_technical_user_hook(
-        conversation_id=conversation_id,
-        env_url=env_url,
-    )
+    logger.info(f"🔧 Returning UI function marker: {ui_function_marker}")
 
-    # Store hook in context for SSE streaming
-    tool_context.state["last_tool_hook"] = hook
-
-    success_msg = (
-        f"✅ Credential issuance initiated for environment: {env_url}\n\n"
-        "Click the button below to create your M2M technical user credentials "
-        "(CYODA_CLIENT_ID and CYODA_CLIENT_SECRET) for OAuth2 authentication."
-    )
-    logger.info(f"🔧 Returning success message with hook for {env_url}")
-    return wrap_response_with_hook(success_msg, hook)
+    # Return the marker verbatim - agent should return this as-is without adding explanation
+    return ui_function_marker

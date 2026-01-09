@@ -2,12 +2,13 @@
 Test to save a sample entity using the entity service.
 """
 
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
-from common.service.service import EntityServiceImpl
+import pytest
+
 from common.entity.cyoda_entity import CyodaEntity
+from common.service.service import EntityServiceImpl
 
 
 class TestSaveSampleEntity:
@@ -40,7 +41,9 @@ class TestSaveSampleEntity:
         }
 
     @pytest.mark.asyncio
-    async def test_save_sample_entity(self, entity_service, mock_repository, sample_entity_data):
+    async def test_save_sample_entity(
+        self, entity_service, mock_repository, sample_entity_data
+    ):
         """Test saving a sample entity."""
         # Mock the repository methods
         mock_repository.get_meta = AsyncMock(return_value={"token": "test-token"})

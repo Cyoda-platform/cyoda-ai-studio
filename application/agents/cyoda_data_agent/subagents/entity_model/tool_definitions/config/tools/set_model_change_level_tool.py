@@ -44,6 +44,10 @@ async def set_model_change_level(
     Returns:
         Change level result or error information
     """
-    logger.info(f"Setting change level {change_level} for {entity_name} v{model_version}")
+    logger.info(
+        f"Setting change level {change_level} for {entity_name} v{model_version}"
+    )
     container = get_user_service_container(client_id, client_secret, cyoda_host)
-    return format_model_success({"message": "Set change level endpoint not yet implemented"})
+    return format_model_success(
+        {"message": "Set change level endpoint not yet implemented"}
+    )

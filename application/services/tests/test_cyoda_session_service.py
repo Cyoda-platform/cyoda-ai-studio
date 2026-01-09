@@ -13,20 +13,17 @@ For new code, consider importing directly from:
 from __future__ import annotations
 
 # Re-export all test functions and fixtures for backward compatibility
-from .test_cyoda_session_service import (
-    # Fixtures
+from .test_cyoda_session_service import (  # Fixtures; CRUD tests; Advanced tests
     mock_entity_service,
     session_service,
-    # CRUD tests
+    test_append_event,
     test_create_session,
     test_create_session_generates_id,
+    test_delete_session,
     test_get_session,
     test_get_session_not_found,
-    test_list_sessions,
-    test_delete_session,
-    # Advanced tests
     test_get_session_with_config,
-    test_append_event,
+    test_list_sessions,
     test_session_persistence_simulation,
 )
 

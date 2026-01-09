@@ -5,21 +5,20 @@ from __future__ import annotations
 import logging
 from typing import Optional, Tuple
 
-from pydantic import BaseModel
 from google.adk.tools.tool_context import ToolContext
-from common.config.config import ADK_TEST_MODE
-from application.agents.shared.hooks.hook_decorator import creates_hook
-from application.agents.shared.hooks.hook_utils import wrap_response_with_hook
-from application.services.deployment.service import get_deployment_service
+from pydantic import BaseModel
 
-from ..helpers._deployment_helpers import handle_deployment_success
-from ..helpers._conversation_helpers import update_conversation_workflow_cache
+from application.services.deployment.service import get_deployment_service
+from common.config.config import ADK_TEST_MODE
+
 from ...common.formatters.formatters import (
+    format_env_name_prompt_suggestion,
     format_environment_deployment_message,
     format_validation_error,
-    format_env_name_prompt_suggestion,
 )
-from ...common.utils.utils import handle_tool_errors
+from ...common.utils.utils import handle_tool_errors, require_authenticated_user
+from ..helpers._conversation_helpers import update_conversation_workflow_cache
+from ..helpers._deployment_helpers import handle_deployment_success
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,9 @@ class DeploymentInput(BaseModel):
             Tuple of (is_valid, error_message)
         """
         if not self.env_name:
-            return False, format_validation_error("env_name", format_env_name_prompt_suggestion())
+            return False, format_validation_error(
+                "env_name", format_env_name_prompt_suggestion()
+            )
         return True, None
 
 
@@ -175,9 +176,7 @@ async def _handle_post_deployment(
     return message, hook
 
 
-@creates_hook("background_task")
-@creates_hook("cloud_window")
-@creates_hook("open_tasks_panel")
+@require_authenticated_user
 @handle_tool_errors
 async def deploy_cyoda_environment(
     tool_context: ToolContext,
@@ -212,7 +211,9 @@ async def deploy_cyoda_environment(
     result = await _execute_deployment(deployment_context)
 
     # Step 3: Handle post-deployment tasks
-    message, hook = await _handle_post_deployment(tool_context, deployment_context, result)
+    message, hook = await _handle_post_deployment(
+        tool_context, deployment_context, result
+    )
 
-    # Step 4: Return response with hook
-    return wrap_response_with_hook(message, hook) if hook else message
+    # Step 4: Return response (hook functionality removed)
+    return message

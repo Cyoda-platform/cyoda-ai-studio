@@ -191,7 +191,9 @@ class ServiceContainer(containers.DeclarativeContainer):
 
     # Google ADK Service
     google_adk_service = providers.Singleton(
-        lambda: __import__('application.services.google_adk_service', fromlist=['GoogleADKService']).GoogleADKService()
+        lambda: __import__(
+            "application.services.google_adk_service", fromlist=["GoogleADKService"]
+        ).GoogleADKService()
     )
 
     # Cyoda Assistant (Google ADK Sequential Pipeline with Cyoda-persistent sessions)
@@ -201,13 +203,12 @@ class ServiceContainer(containers.DeclarativeContainer):
     # - Anthropic via LiteLLM: anthropic/claude-3-haiku-20240307
     cyoda_assistant = providers.Singleton(
         lambda google_adk, entity_svc: __import__(
-            'application.agents', fromlist=['create_cyoda_assistant']
+            "application.agents", fromlist=["create_cyoda_assistant"]
         ).create_cyoda_assistant(
-            google_adk_service=google_adk,
-            entity_service=entity_svc
+            google_adk_service=google_adk, entity_service=entity_svc
         ),
         google_adk=google_adk_service,
-        entity_svc=entity_service
+        entity_svc=entity_service,
     )
 
     # MCP Services
@@ -313,7 +314,9 @@ def initialize_services(config: Dict[str, Any]) -> None:
         logger.info("✓ Google ADK service initialized")
 
         _ = _container.cyoda_assistant()
-        logger.info("✓ Cyoda Assistant initialized (Sequential Pipeline: Validator → Processor → Reporter)")
+        logger.info(
+            "✓ Cyoda Assistant initialized (Sequential Pipeline: Validator → Processor → Reporter)"
+        )
 
         logger.info("All services initialized successfully")
     except Exception as e:

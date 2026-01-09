@@ -12,14 +12,18 @@ from pathlib import Path
 from google.adk.tools.tool_context import ToolContext
 
 from application.agents.github.tool_definitions.common.constants import STOP_ON_ERROR
-from application.agents.github.tool_definitions.common.utils import ensure_repository_available
+from application.agents.github.tool_definitions.common.utils import (
+    ensure_repository_available,
+)
 from application.entity.conversation import Conversation
 from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
 
-async def _get_branch_name(tool_context: ToolContext, conversation_id: str) -> tuple[bool, str, str]:
+async def _get_branch_name(
+    tool_context: ToolContext, conversation_id: str
+) -> tuple[bool, str, str]:
     """Get branch name from context or conversation entity.
 
     Args:
@@ -41,21 +45,31 @@ async def _get_branch_name(tool_context: ToolContext, conversation_id: str) -> t
     )
 
     if not conversation_response:
-        return False, f"ERROR: Conversation {conversation_id} not found.{STOP_ON_ERROR}", ""
+        return (
+            False,
+            f"ERROR: Conversation {conversation_id} not found.{STOP_ON_ERROR}",
+            "",
+        )
 
     conversation_data = conversation_response.data
     if isinstance(conversation_data, dict):
-        branch_name = conversation_data.get('repository_branch')
+        branch_name = conversation_data.get("repository_branch")
     else:
-        branch_name = getattr(conversation_data, 'repository_branch', None)
+        branch_name = getattr(conversation_data, "repository_branch", None)
 
     if not branch_name:
-        return False, f"ERROR: No branch configured for this conversation.{STOP_ON_ERROR}", ""
+        return (
+            False,
+            f"ERROR: No branch configured for this conversation.{STOP_ON_ERROR}",
+            "",
+        )
 
     return True, "", branch_name
 
 
-async def _execute_git_pull(repository_path: str, branch_name: str) -> tuple[bool, str, str]:
+async def _execute_git_pull(
+    repository_path: str, branch_name: str
+) -> tuple[bool, str, str]:
     """Execute git pull command.
 
     Args:
@@ -68,15 +82,18 @@ async def _execute_git_pull(repository_path: str, branch_name: str) -> tuple[boo
     logger.info(f"🔄 Pulling changes from origin/{branch_name} in {repository_path}")
 
     process = await asyncio.create_subprocess_exec(
-        "git", "pull", "origin", branch_name,
+        "git",
+        "pull",
+        "origin",
+        branch_name,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        cwd=repository_path
+        cwd=repository_path,
     )
 
     stdout, stderr = await process.communicate()
-    stdout_text = stdout.decode('utf-8', errors='replace') if stdout else ""
-    stderr_text = stderr.decode('utf-8', errors='replace') if stderr else ""
+    stdout_text = stdout.decode("utf-8", errors="replace") if stdout else ""
+    stderr_text = stderr.decode("utf-8", errors="replace") if stderr else ""
 
     if process.returncode != 0:
         logger.error(f"❌ Git pull failed: {stderr_text}")
@@ -106,7 +123,9 @@ async def pull_repository_changes(tool_context: ToolContext) -> str:
         if not conversation_id:
             return f"ERROR: conversation_id not found in context.{STOP_ON_ERROR}"
 
-        success, error_msg, branch_name = await _get_branch_name(tool_context, conversation_id)
+        success, error_msg, branch_name = await _get_branch_name(
+            tool_context, conversation_id
+        )
         if not success:
             return error_msg
 
@@ -119,7 +138,9 @@ async def pull_repository_changes(tool_context: ToolContext) -> str:
         if not success:
             return f"ERROR: {message}{STOP_ON_ERROR}"
 
-        success, error_msg, stdout_text = await _execute_git_pull(repository_path, branch_name)
+        success, error_msg, stdout_text = await _execute_git_pull(
+            repository_path, branch_name
+        )
         if not success:
             return error_msg
 
@@ -128,7 +149,9 @@ async def pull_repository_changes(tool_context: ToolContext) -> str:
             return "✅ Repository is already up to date. No changes to pull."
 
         logger.info(f"✅ Successfully pulled changes:\n{stdout_text}")
-        return f"✅ Successfully pulled changes from remote repository.\n\n{stdout_text}"
+        return (
+            f"✅ Successfully pulled changes from remote repository.\n\n{stdout_text}"
+        )
 
     except Exception as e:
         logger.error(f"Error pulling repository changes: {e}", exc_info=True)

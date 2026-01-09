@@ -87,12 +87,12 @@ def _validate_auth_params(
     if not installation_id:
         missing_params.append("installation_id (GitHub App installation ID)")
     if not repository_type:
-        missing_params.append("repository_type (Repository type: 'public' or 'private')")
+        missing_params.append(
+            "repository_type (Repository type: 'public' or 'private')"
+        )
 
     if missing_params:
-        error_msg = (
-            f"❌ Missing required authentication parameters: {', '.join(missing_params)}"
-        )
+        error_msg = f"❌ Missing required authentication parameters: {', '.join(missing_params)}"
         return False, error_msg
 
     return True, None
@@ -131,9 +131,7 @@ async def _get_authenticated_url_with_timeout(
         return None
 
 
-async def _update_git_remote_url(
-    repository_path: str, authenticated_url: str
-) -> bool:
+async def _update_git_remote_url(repository_path: str, authenticated_url: str) -> bool:
     """Update git remote origin URL with authenticated credentials.
 
     Args:
@@ -184,7 +182,9 @@ async def _refresh_git_authentication(
     )
 
     # Step 1: Get authenticated URL
-    authenticated_url = await _get_authenticated_url_with_timeout(repo_url, installation_id)
+    authenticated_url = await _get_authenticated_url_with_timeout(
+        repo_url, installation_id
+    )
     if not authenticated_url:
         return False
 

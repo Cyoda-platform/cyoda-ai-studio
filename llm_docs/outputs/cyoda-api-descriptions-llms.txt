@@ -109,4 +109,3 @@ Endpoints for streaming data operations, configuration management, and query pla
 ### [User, Machine](https://docs.cyoda.net/api-reference/scalar/#description/user-machine)
 
 5 endpoints
-

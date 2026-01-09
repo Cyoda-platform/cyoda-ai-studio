@@ -9,15 +9,15 @@ import argparse
 import sys
 from pathlib import Path
 
-from llm_docs.converters.openapi_converter import OpenAPIConverter
 from llm_docs.converters.docs_fetcher import DocumentationFetcher
+from llm_docs.converters.openapi_converter import OpenAPIConverter
 
 
 def generate_openapi_docs(
     openapi_file: str,
     output_dir: str,
     full_filename: str = "openapi-llm-full.txt",
-    condensed_filename: str = "openapi-llms.txt"
+    condensed_filename: str = "openapi-llms.txt",
 ):
     """
     Generate LLM documentation from OpenAPI specification.
@@ -47,7 +47,7 @@ def generate_openapi_docs(
     print(f"Generating full documentation: {full_path}")
     full_txt = converter.generate_full_llm_txt()
 
-    with open(full_path, 'w', encoding='utf-8') as f:
+    with open(full_path, "w", encoding="utf-8") as f:
         f.write(full_txt)
     print(f"  ✓ Generated {len(full_txt)} characters")
     print()
@@ -57,7 +57,7 @@ def generate_openapi_docs(
     print(f"Generating condensed documentation: {condensed_path}")
     condensed_txt = converter.generate_condensed_llms_txt()
 
-    with open(condensed_path, 'w', encoding='utf-8') as f:
+    with open(condensed_path, "w", encoding="utf-8") as f:
         f.write(condensed_txt)
     print(f"  ✓ Generated {len(condensed_txt)} characters")
     print()
@@ -73,7 +73,7 @@ def generate_web_docs(
     max_pages: int = 25,
     title: str = "Platform Documentation",
     full_filename: str = "docs-llm-full.txt",
-    condensed_filename: str = "docs-llms.txt"
+    condensed_filename: str = "docs-llms.txt",
 ):
     """
     Generate LLM documentation from web sitemap.
@@ -106,7 +106,7 @@ def generate_web_docs(
     print(f"Generating full documentation: {full_path}")
     full_txt = fetcher.generate_full_docs_txt(title=title)
 
-    with open(full_path, 'w', encoding='utf-8') as f:
+    with open(full_path, "w", encoding="utf-8") as f:
         f.write(full_txt)
     print(f"  ✓ Generated {len(full_txt)} characters")
     print()
@@ -116,7 +116,7 @@ def generate_web_docs(
     print(f"Generating condensed documentation: {condensed_path}")
     condensed_txt = fetcher.generate_condensed_docs_txt()
 
-    with open(condensed_path, 'w', encoding='utf-8') as f:
+    with open(condensed_path, "w", encoding="utf-8") as f:
         f.write(condensed_txt)
     print(f"  ✓ Generated {len(condensed_txt)} characters")
     print()
@@ -132,123 +132,117 @@ def main():
         description="Generate LLM-friendly documentation from OpenAPI specs and web docs"
     )
 
-    subparsers = parser.add_subparsers(dest='command', help='Command to run')
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # OpenAPI converter
-    openapi_parser = subparsers.add_parser('openapi', help='Convert OpenAPI specification')
+    openapi_parser = subparsers.add_parser(
+        "openapi", help="Convert OpenAPI specification"
+    )
+    openapi_parser.add_argument("openapi_file", help="Path to OpenAPI JSON file")
     openapi_parser.add_argument(
-        'openapi_file',
-        help='Path to OpenAPI JSON file'
+        "--output-dir",
+        default="llm_docs/outputs",
+        help="Output directory (default: llm_docs/outputs)",
     )
     openapi_parser.add_argument(
-        '--output-dir',
-        default='llm_docs/outputs',
-        help='Output directory (default: llm_docs/outputs)'
+        "--full-filename",
+        default="openapi-llm-full.txt",
+        help="Filename for full documentation (default: openapi-llm-full.txt)",
     )
     openapi_parser.add_argument(
-        '--full-filename',
-        default='openapi-llm-full.txt',
-        help='Filename for full documentation (default: openapi-llm-full.txt)'
-    )
-    openapi_parser.add_argument(
-        '--condensed-filename',
-        default='openapi-llms.txt',
-        help='Filename for condensed documentation (default: openapi-llms.txt)'
+        "--condensed-filename",
+        default="openapi-llms.txt",
+        help="Filename for condensed documentation (default: openapi-llms.txt)",
     )
 
     # Web docs fetcher
-    webdocs_parser = subparsers.add_parser('webdocs', help='Convert web documentation from sitemap')
+    webdocs_parser = subparsers.add_parser(
+        "webdocs", help="Convert web documentation from sitemap"
+    )
+    webdocs_parser.add_argument("sitemap_file", help="Path to sitemap XML file")
     webdocs_parser.add_argument(
-        'sitemap_file',
-        help='Path to sitemap XML file'
+        "--output-dir",
+        default="llm_docs/outputs",
+        help="Output directory (default: llm_docs/outputs)",
     )
     webdocs_parser.add_argument(
-        '--output-dir',
-        default='llm_docs/outputs',
-        help='Output directory (default: llm_docs/outputs)'
-    )
-    webdocs_parser.add_argument(
-        '--max-pages',
+        "--max-pages",
         type=int,
         default=25,
-        help='Maximum number of pages to fetch (default: 25)'
+        help="Maximum number of pages to fetch (default: 25)",
     )
     webdocs_parser.add_argument(
-        '--title',
-        default='Platform Documentation',
-        help='Title for the documentation (default: Platform Documentation)'
+        "--title",
+        default="Platform Documentation",
+        help="Title for the documentation (default: Platform Documentation)",
     )
     webdocs_parser.add_argument(
-        '--full-filename',
-        default='docs-llm-full.txt',
-        help='Filename for full documentation (default: docs-llm-full.txt)'
+        "--full-filename",
+        default="docs-llm-full.txt",
+        help="Filename for full documentation (default: docs-llm-full.txt)",
     )
     webdocs_parser.add_argument(
-        '--condensed-filename',
-        default='docs-llms.txt',
-        help='Filename for condensed documentation (default: docs-llms.txt)'
+        "--condensed-filename",
+        default="docs-llms.txt",
+        help="Filename for condensed documentation (default: docs-llms.txt)",
     )
 
     # All (both OpenAPI and web docs)
-    all_parser = subparsers.add_parser('all', help='Convert both OpenAPI and web documentation')
+    all_parser = subparsers.add_parser(
+        "all", help="Convert both OpenAPI and web documentation"
+    )
+    all_parser.add_argument("openapi_file", help="Path to OpenAPI JSON file")
+    all_parser.add_argument("sitemap_file", help="Path to sitemap XML file")
     all_parser.add_argument(
-        'openapi_file',
-        help='Path to OpenAPI JSON file'
+        "--output-dir",
+        default="llm_docs/outputs",
+        help="Output directory (default: llm_docs/outputs)",
     )
     all_parser.add_argument(
-        'sitemap_file',
-        help='Path to sitemap XML file'
-    )
-    all_parser.add_argument(
-        '--output-dir',
-        default='llm_docs/outputs',
-        help='Output directory (default: llm_docs/outputs)'
-    )
-    all_parser.add_argument(
-        '--max-pages',
+        "--max-pages",
         type=int,
         default=25,
-        help='Maximum number of web pages to fetch (default: 25)'
+        help="Maximum number of web pages to fetch (default: 25)",
     )
 
     args = parser.parse_args()
 
-    if args.command == 'openapi':
+    if args.command == "openapi":
         generate_openapi_docs(
             args.openapi_file,
             args.output_dir,
             args.full_filename,
-            args.condensed_filename
+            args.condensed_filename,
         )
-    elif args.command == 'webdocs':
+    elif args.command == "webdocs":
         generate_web_docs(
             args.sitemap_file,
             args.output_dir,
             args.max_pages,
             args.title,
             args.full_filename,
-            args.condensed_filename
+            args.condensed_filename,
         )
-    elif args.command == 'all':
+    elif args.command == "all":
         generate_openapi_docs(
             args.openapi_file,
             args.output_dir,
-            'openapi-llm-full.txt',
-            'openapi-llms.txt'
+            "openapi-llm-full.txt",
+            "openapi-llms.txt",
         )
         print()
         generate_web_docs(
             args.sitemap_file,
             args.output_dir,
             args.max_pages,
-            'Cyoda Platform Documentation',
-            'cyoda-docs-llm-full.txt',
-            'cyoda-docs-llms.txt'
+            "Cyoda Platform Documentation",
+            "cyoda-docs-llm-full.txt",
+            "cyoda-docs-llms.txt",
         )
     else:
         parser.print_help()
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -8,10 +8,17 @@ from pathlib import Path
 
 from google.adk.tools.tool_context import ToolContext
 
-from application.agents.github.tool_definitions.common.utils.file_utils import is_textual_file
-from application.agents.github.tool_definitions.repository.tools.execute_command_tool import execute_unix_command
+from application.agents.github.tool_definitions.common.utils.file_utils import (
+    is_textual_file,
+)
+from application.agents.github.tool_definitions.repository.tools.execute_command_tool import (
+    execute_unix_command,
+)
 
-from .validation import _extract_entity_name_and_version, _extract_workflow_name_and_version
+from .validation import (
+    _extract_entity_name_and_version,
+    _extract_workflow_name_and_version,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +50,14 @@ async def _analyze_entity_files(
 
         try:
             entity_content = json.loads(cat_data["stdout"])
-            entities.append({
-                "name": entity_name,
-                "version": version,
-                "path": entity_file,
-                "content": entity_content
-            })
+            entities.append(
+                {
+                    "name": entity_name,
+                    "version": version,
+                    "path": entity_file,
+                    "content": entity_content,
+                }
+            )
         except json.JSONDecodeError:
             logger.warning(f"Invalid JSON in entity file: {entity_file}")
 
@@ -80,12 +89,14 @@ async def _analyze_workflow_files(
 
         try:
             workflow_content = json.loads(cat_data["stdout"])
-            workflows.append({
-                "name": workflow_name,
-                "version": version,
-                "path": workflow_file,
-                "content": workflow_content
-            })
+            workflows.append(
+                {
+                    "name": workflow_name,
+                    "version": version,
+                    "path": workflow_file,
+                    "content": workflow_content,
+                }
+            )
         except json.JSONDecodeError:
             logger.warning(f"Invalid JSON in workflow file: {workflow_file}")
 
@@ -116,11 +127,9 @@ async def _analyze_requirement_files(
         cat_data = json.loads(cat_result)
 
         if cat_data.get("success"):
-            requirements.append({
-                "name": req_name,
-                "path": req_file,
-                "content": cat_data["stdout"]
-            })
+            requirements.append(
+                {"name": req_name, "path": req_file, "content": cat_data["stdout"]}
+            )
 
     return requirements
 
@@ -136,14 +145,14 @@ async def _analyze_directory_structure(tool_context: ToolContext) -> list[str]:
     """
     result = await execute_unix_command(
         "find . -type d | grep -E '(entity|workflow|functional_requirements)' | sort",
-        tool_context
+        tool_context,
     )
     data = json.loads(result)
 
     if not data.get("success"):
         return []
 
-    return [d.strip() for d in data["stdout"].split('\n') if d.strip()]
+    return [d.strip() for d in data["stdout"].split("\n") if d.strip()]
 
 
 __all__ = [

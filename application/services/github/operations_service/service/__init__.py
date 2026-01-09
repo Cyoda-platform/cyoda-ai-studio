@@ -1,37 +1,39 @@
 """GitHub operations service - Re-exports for backward compatibility."""
 
-from .repository_operations import (
-    clone_repository_from_url,
-    checkout_branch,
-    ensure_repository_cloned,
-    pull_changes,
-    get_repository_diff,
-)
-from .commit_operations import (
-    extract_changed_files,
-    configure_git_user,
-    stage_all_changes,
-    perform_commit,
-    refresh_authentication,
-    push_with_retry,
-    detect_canvas_resources,
-    commit_and_push,
-)
-from .subprocess_helpers import (
-    run_subprocess,
-    run_git_cmd,
-    CLONE_TIMEOUT_SECONDS,
-    CHECKOUT_TIMEOUT_SECONDS,
-)
+import os
 
 # Import service class from parent to maintain compatibility
 import sys
-import os
+
+from .commit_operations import (
+    commit_and_push,
+    configure_git_user,
+    detect_canvas_resources,
+    extract_changed_files,
+    perform_commit,
+    push_with_retry,
+    refresh_authentication,
+    stage_all_changes,
+)
+from .repository_operations import (
+    checkout_branch,
+    clone_repository_from_url,
+    ensure_repository_cloned,
+    get_repository_diff,
+    pull_changes,
+)
+from .subprocess_helpers import (
+    CHECKOUT_TIMEOUT_SECONDS,
+    CLONE_TIMEOUT_SECONDS,
+    run_git_cmd,
+    run_subprocess,
+)
 
 # Add current directory to path temporarily
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
+
 
 # Define GitHubOperationsService class
 class GitHubOperationsService:

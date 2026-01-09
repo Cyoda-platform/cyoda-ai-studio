@@ -1,33 +1,33 @@
 """GitOperations module - Re-exports for backward compatibility."""
 
-from .operations import GitOperations
 from .helpers import (
-    GitOperationState,
     DEFAULT_MERGE_STRATEGY,
     NO_CHANGES_TO_PULL_MSG,
     NOTHING_TO_COMMIT_MSG,
-    get_clone_dir,
+    GitOperationState,
     build_branch_result,
     build_pull_result,
     build_push_result,
+    get_clone_dir,
     should_skip_commit,
 )
+from .operations import GitOperations
 from .subprocess_execution import (
+    add_files,
     check_repo_exists,
+    checkout_and_create_branch,
+    checkout_branch,
+    clone_repository,
+    commit,
     configure_git,
-    set_branch_upstream_tracking,
+    configure_merge_strategy,
+    create_branch,
     ensure_branch,
     fetch_from_remote,
     get_git_diff,
-    configure_merge_strategy,
     pull_from_remote,
-    add_files,
-    commit,
     push,
-    checkout_branch,
-    create_branch,
-    clone_repository,
-    checkout_and_create_branch,
+    set_branch_upstream_tracking,
 )
 
 __all__ = [

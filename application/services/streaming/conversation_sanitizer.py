@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def sanitize_conversation_history(
-    conversation_history: List[Dict[str, Any]]
+    conversation_history: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """Sanitize conversation history to prevent incomplete tool call sequences.
 
@@ -26,23 +26,35 @@ def sanitize_conversation_history(
     Returns:
         Sanitized list of conversation messages
     """
-    logger.info(f"Sanitizing conversation history with {len(conversation_history)} messages")
+    logger.info(
+        f"Sanitizing conversation history with {len(conversation_history)} messages"
+    )
 
     # DEBUG: Log message structures
     if conversation_history:
         logger.info(f"First message keys: {list(conversation_history[0].keys())}")
-        logger.info(f"First message type: {conversation_history[0].get('type', 'NO_TYPE')}")
+        logger.info(
+            f"First message type: {conversation_history[0].get('type', 'NO_TYPE')}"
+        )
 
         # Look for AI messages to understand structure
-        for idx, msg in enumerate(conversation_history[:min(50, len(conversation_history))]):
-            if msg.get('type') == 'ai' or msg.get('type') == 'question':
-                inner_msg = msg.get('message')
+        for idx, msg in enumerate(
+            conversation_history[: min(50, len(conversation_history))]
+        ):
+            if msg.get("type") == "ai" or msg.get("type") == "question":
+                inner_msg = msg.get("message")
                 if inner_msg and isinstance(inner_msg, dict):
-                    if 'tool_calls' in inner_msg:
-                        logger.warning(f"Found AI message with tool_calls at index {idx}: {inner_msg.get('tool_calls', [])[:1]}")
-                    logger.info(f"AI message at {idx} has keys: {list(inner_msg.keys()) if isinstance(inner_msg, dict) else 'NOT_DICT'}")
+                    if "tool_calls" in inner_msg:
+                        logger.warning(
+                            f"Found AI message with tool_calls at index {idx}: {inner_msg.get('tool_calls', [])[:1]}"
+                        )
+                    logger.info(
+                        f"AI message at {idx} has keys: {list(inner_msg.keys()) if isinstance(inner_msg, dict) else 'NOT_DICT'}"
+                    )
                 else:
-                    logger.info(f"AI message at {idx} has message type: {type(inner_msg)}")
+                    logger.info(
+                        f"AI message at {idx} has message type: {type(inner_msg)}"
+                    )
 
     if not conversation_history:
         logger.info("Conversation history is empty, returning empty list")

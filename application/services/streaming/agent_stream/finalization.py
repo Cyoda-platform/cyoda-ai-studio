@@ -26,7 +26,9 @@ async def finalize_stream(processor: Any) -> AsyncGenerator[str, None]:
     Yields:
         Final SSE events
     """
-    logger.info(f"🔚 [_finalize_stream] Starting finalization for session {processor.conversation_id}")
+    logger.info(
+        f"🔚 [_finalize_stream] Starting finalization for session {processor.conversation_id}"
+    )
     try:
         # Step 1: Save final session state
         await _save_final_session_state(processor)
@@ -112,7 +114,11 @@ def _send_done_event(processor: Any) -> str:
         "adk_session_id": processor.session_technical_id,
         "ui_functions": processor.ui_functions_from_stream,
         "hook": final_hook,
-        "hooks": processor.tool_hooks_from_stream if processor.tool_hooks_from_stream else None,
+        "hooks": (
+            processor.tool_hooks_from_stream
+            if processor.tool_hooks_from_stream
+            else None
+        ),
         "total_events": processor.event_counter,
     }
 

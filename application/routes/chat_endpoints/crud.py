@@ -25,14 +25,19 @@ def _build_entities_data(conversation: Conversation) -> Dict[str, Any]:
     entities_data = {}
     if hasattr(conversation, "entities") and conversation.entities:
         for entity in conversation.entities:
-            entity_data = {"name": entity.get("name", ""), "type": entity.get("type", "")}
+            entity_data = {
+                "name": entity.get("name", ""),
+                "type": entity.get("type", ""),
+            }
             if "workflows" in entity:
                 entity_data["workflows"] = entity["workflows"]
             entities_data[entity.get("id", "")] = entity_data
     return entities_data
 
 
-def _build_chat_body(conversation: Conversation, dialogue: list[Dict[str, Any]]) -> Dict[str, Any]:
+def _build_chat_body(
+    conversation: Conversation, dialogue: list[Dict[str, Any]]
+) -> Dict[str, Any]:
     """Build the chat response body."""
     body = {
         "id": conversation.technical_id,
@@ -59,7 +64,9 @@ def _build_chat_body(conversation: Conversation, dialogue: list[Dict[str, Any]])
     return body
 
 
-async def _prepare_chat_body(technical_id: str, conversation: Conversation) -> Dict[str, Any]:
+async def _prepare_chat_body(
+    technical_id: str, conversation: Conversation
+) -> Dict[str, Any]:
     """Prepare chat body with messages and dialogue."""
     repo = get_repository()
     await conversation.populate_messages_from_edge_messages(repo)

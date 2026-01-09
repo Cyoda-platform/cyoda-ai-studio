@@ -14,10 +14,11 @@ Environment variables:
     APP_DEBUG: Enable debug mode (default: false)
     APP_TIMEOUT: Keep-alive timeout in seconds (default: 600)
 """
-import os
 import asyncio
-from hypercorn.config import Config
+import os
+
 from hypercorn.asyncio import serve
+from hypercorn.config import Config
 
 if __name__ == "__main__":
     from application.app import app
@@ -33,9 +34,9 @@ if __name__ == "__main__":
 
     # Critical timeouts for long-running SSE streams
     config.keep_alive_timeout = timeout  # Keep-alive for SSE connections
-    config.shutdown_timeout = timeout    # Allow graceful shutdown of long streams
-    config.startup_timeout = timeout     # Allow slow startup
-    config.graceful_timeout = 30         # Graceful shutdown timeout
+    config.shutdown_timeout = timeout  # Allow graceful shutdown of long streams
+    config.startup_timeout = timeout  # Allow slow startup
+    config.graceful_timeout = 30  # Graceful shutdown timeout
 
     if debug:
         config.loglevel = "DEBUG"
@@ -48,4 +49,3 @@ if __name__ == "__main__":
 
     # Run with Hypercorn
     asyncio.run(serve(app, config))
-

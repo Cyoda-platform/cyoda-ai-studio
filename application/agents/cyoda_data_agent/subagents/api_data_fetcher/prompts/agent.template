@@ -34,4 +34,3 @@ When a user asks to fetch data from an API (e.g., "Get data from Petstore Swagge
 - Respect API rate limits and authentication requirements
 - Ask for clarification if the request is ambiguous
 - Never expose sensitive credentials in responses
-

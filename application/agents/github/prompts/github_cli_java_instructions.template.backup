@@ -88,20 +88,20 @@ public class EntityName implements CyodaEntity {
     // Constants (REQUIRED)
     public static final String ENTITY_NAME = EntityName.class.getSimpleName();
     public static final Integer ENTITY_VERSION = 1;
-    
+
     // Business ID field (REQUIRED)
     private String entityId;
-    
+
     // Business fields
     private String fieldName;
     private String optionalField;
-    
+
     // Nested classes for complex structures
     @Data
     public static class NestedData {
         private String nestedField;
     }
-    
+
     @Override
     public OperationSpecification getModelKey() {
         ModelSpec modelSpec = new ModelSpec();
@@ -109,7 +109,7 @@ public class EntityName implements CyodaEntity {
         modelSpec.setVersion(ENTITY_VERSION);
         return new OperationSpecification.Entity(modelSpec, ENTITY_NAME);
     }
-    
+
     @Override
     public boolean isValid() {
         return entityId != null && !entityId.trim().isEmpty();
@@ -235,27 +235,27 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class EntityNameProcessor implements CyodaProcessor {
-    
+
     private final EntityService entityService;
-    
+
     public EntityNameProcessor(EntityService entityService) {
         this.entityService = entityService;
     }
-    
+
     @Override
     public void process(CyodaEventContext context) {
         // Get current entity (read-only)
         EntityName entity = context.getEntity(EntityName.class);
-        
+
         // Access other entities via EntityService
         // EntityWithMetadata<OtherEntity> other = entityService.getByBusinessId(...);
-        
+
         // Business logic here
         // ...
-        
+
         // Modify current entity
         entity.setFieldName("new value");
-        
+
         // Update context (will be saved automatically)
         context.setEntity(entity);
     }
@@ -273,21 +273,21 @@ public class EntityNameProcessor implements CyodaProcessor {
 ```java
 // Get entity by technical ID
 EntityWithMetadata<EntityName> entity = entityService.getById(
-    technicalId, 
-    EntityName.ENTITY_NAME, 
+    technicalId,
+    EntityName.ENTITY_NAME,
     EntityName.ENTITY_VERSION
 );
 
 // Get entity by business ID
 EntityWithMetadata<EntityName> entity = entityService.getByBusinessId(
-    businessId, 
-    EntityName.ENTITY_NAME, 
+    businessId,
+    EntityName.ENTITY_NAME,
     EntityName.ENTITY_VERSION
 );
 
 // Update entity (with manual transition)
 EntityWithMetadata<EntityName> result = entityService.update(
-    entity.getData(), 
+    entity.getData(),
     "update_entity"
 );
 
@@ -331,31 +331,31 @@ import java.util.Map;
 @RestController
 @RequestMapping("/ui/{entity_name}")
 public class EntityNameController {
-    
+
     private final EntityService entityService;
-    
+
     public EntityNameController(EntityService entityService) {
         this.entityService = entityService;
     }
-    
+
     @PostMapping
     public Map<String, String> createEntity(@RequestBody EntityName entity) {
         EntityWithMetadata<EntityName> result = entityService.create(entity);
         return Map.of("id", result.getMetadata().getId());
     }
-    
+
     @PutMapping("/{id}")
     public Map<String, String> updateEntity(
         @PathVariable String id,
         @RequestBody EntityName entity
     ) {
         EntityWithMetadata<EntityName> result = entityService.update(
-            entity, 
+            entity,
             "update_entity"
         );
         return Map.of("id", result.getMetadata().getId());
     }
-    
+
     @GetMapping("/{id}")
     public EntityName getEntity(@PathVariable String id) {
         EntityWithMetadata<EntityName> result = entityService.getById(
@@ -428,4 +428,3 @@ This codebase follows a Spring Boot architecture with:
 - **Controllers** as thin REST proxies
 
 All components follow established patterns from reference examples and must compile successfully with Gradle.
-

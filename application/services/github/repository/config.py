@@ -6,25 +6,25 @@ from dataclasses import dataclass
 from typing import Optional
 
 from common.config.config import (
-    REPOSITORY_URL,
-    RAW_REPOSITORY_URL,
-    GH_DEFAULT_OWNER,
     CLIENT_GIT_BRANCH,
-    PYTHON_REPOSITORY_NAME,
+    GH_DEFAULT_OWNER,
     JAVA_REPOSITORY_NAME,
+    PYTHON_REPOSITORY_NAME,
+    RAW_REPOSITORY_URL,
+    REPOSITORY_URL,
 )
 
 
 @dataclass
 class RepositoryConfig:
     """Configuration for a repository."""
-    
+
     name: str
     owner: str
     default_branch: str = CLIENT_GIT_BRANCH
     url_template: Optional[str] = None
     raw_url_template: Optional[str] = None
-    
+
     @property
     def url(self) -> str:
         """Get repository URL."""
@@ -36,9 +36,11 @@ class RepositoryConfig:
         """Get raw repository URL."""
         template = self.raw_url_template or RAW_REPOSITORY_URL
         return template.format(owner=self.owner, repository_name=self.name)
-    
+
     @classmethod
-    def from_name(cls, repository_name: str, owner: Optional[str] = None) -> "RepositoryConfig":
+    def from_name(
+        cls, repository_name: str, owner: Optional[str] = None
+    ) -> "RepositoryConfig":
         """Create repository config from name.
 
         Args:
@@ -63,4 +65,3 @@ class RepositoryConfig:
     def java_repository(cls) -> "RepositoryConfig":
         """Get Java repository configuration."""
         return cls.from_name(JAVA_REPOSITORY_NAME)
-

@@ -41,7 +41,7 @@ async def handle_get_file_content() -> ResponseReturnValue:
             return APIResponse.error(
                 "Missing required fields",
                 400,
-                details={"message": "repository_name and file_path are required"}
+                details={"message": "repository_name and file_path are required"},
             )
 
         logger.info(
@@ -58,7 +58,7 @@ async def handle_get_file_content() -> ResponseReturnValue:
             return APIResponse.error(
                 "File not found",
                 404,
-                details={"message": f"File {file_path} not found in repository"}
+                details={"message": f"File {file_path} not found in repository"},
             )
 
         return APIResponse.success({"content": content, "file_path": file_path})
@@ -66,8 +66,5 @@ async def handle_get_file_content() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error getting file content: {e}", exc_info=True)
         return APIResponse.error(
-            "Failed to get file content",
-            500,
-            details={"message": str(e)}
+            "Failed to get file content", 500, details={"message": str(e)}
         )
-

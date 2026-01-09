@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 BUILDS_DIR = Path("/tmp/cyoda_builds")
 
 
-def extract_repository_name_from_url(repository_url: str) -> Tuple[Optional[str], Optional[str]]:
+def extract_repository_name_from_url(
+    repository_url: str,
+) -> Tuple[Optional[str], Optional[str]]:
     """Extract repository name from GitHub URL.
 
     Args:
@@ -20,7 +22,7 @@ def extract_repository_name_from_url(repository_url: str) -> Tuple[Optional[str]
     Returns:
         Tuple of (repository_name, error_message). Name is None if extraction fails.
     """
-    match = re.search(r'/([^/]+?)(\?.git)?$', repository_url)
+    match = re.search(r"/([^/]+?)(\?.git)?$", repository_url)
     if match:
         return match.group(1), None
     return None, "Could not extract repository name from URL"

@@ -11,8 +11,11 @@ import httpx
 from google.adk.tools.tool_context import ToolContext
 from pydantic import BaseModel
 
-from application.services.environment_management_service import get_environment_management_service
-from ..common.utils.utils import require_authenticated_user, handle_tool_errors
+from application.services.environment_management_service import (
+    get_environment_management_service,
+)
+
+from ..common.utils.utils import handle_tool_errors, require_authenticated_user
 
 logger = logging.getLogger(__name__)
 
@@ -82,9 +85,7 @@ class LogSearchResult(BaseModel):
     logs: list[LogEntry]
 
 
-def _get_index_pattern(
-    org_id: str, env: str, app_name: str, is_cyoda: bool
-) -> str:
+def _get_index_pattern(org_id: str, env: str, app_name: str, is_cyoda: bool) -> str:
     """Build Elasticsearch index pattern based on app type.
 
     Args:
@@ -126,11 +127,7 @@ def _build_elasticsearch_query(
             "bool": {
                 "must": [],
                 "filter": [
-                    {
-                        "range": {
-                            "@timestamp": {"gte": since_timestamp, "lte": "now"}
-                        }
-                    }
+                    {"range": {"@timestamp": {"gte": since_timestamp, "lte": "now"}}}
                 ],
             }
         }
@@ -259,7 +256,7 @@ async def search_logs(
         return json.dumps({"error": str(e)})
 
     # Get user ID and normalize namespace values
-    user_id = tool_context.state.get("user_id")
+    user_id = tool_context.state.get("user_id", "guest")
     env_service = get_environment_management_service()
     org_id = env_service._normalize_for_namespace(user_id)
     normalized_env = env_service._normalize_for_namespace(env_name)

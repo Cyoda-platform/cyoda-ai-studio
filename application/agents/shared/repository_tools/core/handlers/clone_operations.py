@@ -13,8 +13,8 @@ from typing import Optional
 from google.adk.tools.tool_context import ToolContext
 
 from application.agents.shared.repository_tools.constants import (
-    PROTECTED_BRANCHES,
     JAVA_TEMPLATE_REPO,
+    PROTECTED_BRANCHES,
     PYTHON_TEMPLATE_REPO,
 )
 from application.agents.shared.repository_tools.git_operations import (
@@ -24,6 +24,7 @@ from application.agents.shared.repository_tools.validation import (
     _is_protected_branch,
     _validate_clone_parameters,
 )
+
 from ..context import _store_in_tool_context
 from ..git_ops import _clone_repo_to_path, _push_branch_to_remote
 from .branch_handlers import _handle_branch_setup
@@ -40,7 +41,7 @@ async def _handle_already_cloned_repo(
     repository_owner: str,
     user_repo_url: Optional[str],
     installation_id: Optional[str],
-    repo_type: Optional[str]
+    repo_type: Optional[str],
 ) -> str:
     """Handle case where repository is already cloned.
 
@@ -58,6 +59,8 @@ async def _handle_already_cloned_repo(
     Returns:
         Success message
     """
+    from .finalization import _finalize_clone
+
     logger.info(f"Repository already exists at {target_directory}, skipping clone")
 
     if tool_context:
@@ -70,16 +73,32 @@ async def _handle_already_cloned_repo(
             repository_owner,
             user_repo_url,
             installation_id,
-            repo_type
+            repo_type,
         )
+
+    # Get conversation_id from tool_context to update conversation entity
+    conversation_id = (
+        tool_context.state.get("conversation_id") if tool_context else None
+    )
+
+    # Update conversation entity with repository information (same as normal clone flow)
+    await _finalize_clone(
+        tool_context,
+        conversation_id,
+        target_directory,
+        branch_name,
+        language,
+        repository_name,
+        repository_owner,
+        user_repo_url,
+        installation_id,
+        repo_type,
+    )
 
     return f"SUCCESS: Repository already exists at {target_directory} on branch {branch_name}"
 
 
-async def _build_target_path(
-    target_directory: Optional[str],
-    branch_name: str
-) -> Path:
+async def _build_target_path(target_directory: Optional[str], branch_name: str) -> Path:
     """Build and create target directory path.
 
     Args:
@@ -100,9 +119,7 @@ async def _build_target_path(
 
 
 async def _determine_repo_url(
-    language: str,
-    user_repo_url: Optional[str],
-    installation_id: Optional[str]
+    language: str, user_repo_url: Optional[str], installation_id: Optional[str]
 ) -> tuple[str, bool]:
     """Determine repository URL to clone from.
 
@@ -115,7 +132,9 @@ async def _determine_repo_url(
         Tuple of (repo_url, is_user_repo)
     """
     if user_repo_url and installation_id:
-        repo_url = await _get_authenticated_repo_url_sync(user_repo_url, installation_id)
+        repo_url = await _get_authenticated_repo_url_sync(
+            user_repo_url, installation_id
+        )
         logger.info(f"🔐 Cloning from user's repository: {user_repo_url}")
         return repo_url, True
 
@@ -127,7 +146,9 @@ async def _determine_repo_url(
     else:
         raise ValueError(f"Unsupported language '{language}'. Supported: java, python")
 
-    logger.warning(f"⚠️ No user repository configured, cloning from template: {repo_url}")
+    logger.warning(
+        f"⚠️ No user repository configured, cloning from template: {repo_url}"
+    )
     return repo_url, False
 
 
@@ -164,15 +185,17 @@ def _extract_repo_name_and_owner(user_repo_url: Optional[str]) -> tuple[str, str
     repository_owner = os.getenv("REPOSITORY_OWNER", "Cyoda-platform")  # Default
 
     if user_repo_url:
-        # Pattern to match: https://github.com/owner/repo or https://github.com/owner/repo.git
-        match = re.search(r'github\.com[:/]([^/]+)/([^/]+?)(\.git)?$', user_repo_url)
+        # Pattern to match: https://github.com/owner/repo with optional .git or additional paths (/tree/branch, etc.)
+        match = re.search(
+            r"github\.com[:/]([^/]+)/([^/]+?)(?:\.git|/|$)", user_repo_url
+        )
         if match:
             repository_owner = match.group(1)
             repository_name = match.group(2)
             logger.info(f"📦 Extracted from URL: {repository_owner}/{repository_name}")
         else:
             # Fallback: just extract repo name
-            match = re.search(r'/([^/]+?)(\.git)?$', user_repo_url)
+            match = re.search(r"/([^/]+?)(?:\.git|/|$)", user_repo_url)
             if match:
                 repository_name = match.group(1)
                 logger.info(f"📦 Extracted repository name from URL: {repository_name}")
@@ -202,7 +225,9 @@ async def _setup_repository_clone(
         Tuple of (repo_url, target_directory, repository_owner, repository_name, error_msg)
     """
     try:
-        repo_url, _ = await _determine_repo_url(language, user_repo_url, installation_id)
+        repo_url, _ = await _determine_repo_url(
+            language, user_repo_url, installation_id
+        )
     except ValueError as e:
         return None, None, None, None, f"ERROR: {str(e)}"
 
@@ -288,11 +313,25 @@ async def _handle_push_and_finalize(
         logger.warning("⚠️ No user repository URL or installation ID - skipping push")
 
     await _finalize_clone(
-        tool_context, conversation_id, str(target_path), branch_name, language,
-        repository_name, repository_owner, user_repo_url, installation_id, repo_type
+        tool_context,
+        conversation_id,
+        str(target_path),
+        branch_name,
+        language,
+        repository_name,
+        repository_owner,
+        user_repo_url,
+        installation_id,
+        repo_type,
     )
 
-    logger.info(f"📦 Repository info: {repository_owner}/{repository_name}@{branch_name}")
+    logger.info(
+        f"📦 Repository info: {repository_owner}/{repository_name}@{branch_name}"
+    )
     return _format_clone_success_message(
-        use_existing_branch, repository_owner, repository_name, branch_name, str(target_path)
+        use_existing_branch,
+        repository_owner,
+        repository_name,
+        branch_name,
+        str(target_path),
     )

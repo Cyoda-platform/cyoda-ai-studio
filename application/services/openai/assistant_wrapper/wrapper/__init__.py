@@ -6,16 +6,15 @@ from typing import Any, AsyncGenerator
 
 from application.services.openai.agents_service import OpenAIAgentsService
 
-from ..models import StreamingState
 from ..constants import (
+    EVENT_TYPE_AGENT_UPDATED,
     EVENT_TYPE_RAW_RESPONSE,
     EVENT_TYPE_RUN_ITEM,
-    EVENT_TYPE_AGENT_UPDATED,
 )
 from ..event_handlers import EventHandlers
-
-from .persistence import persist_conversation, build_prompt
+from ..models import StreamingState
 from .message_processing import extract_hooks_from_result, process_message
+from .persistence import build_prompt, persist_conversation
 from .streaming import process_streaming_events, stream_message
 
 logger = logging.getLogger(__name__)
@@ -135,9 +134,7 @@ class OpenAIAssistantWrapper:
             logger.exception(f"Error processing message: {e}")
             raise
 
-    async def _process_streaming_events(
-        self, result: Any
-    ) -> AsyncGenerator[str, None]:
+    async def _process_streaming_events(self, result: Any) -> AsyncGenerator[str, None]:
         """Process streaming events from agent and yield content and hooks."""
         async for chunk in process_streaming_events(result, self.event_handlers):
             yield chunk

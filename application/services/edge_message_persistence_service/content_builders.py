@@ -115,7 +115,7 @@ def build_debug_history_content(
 
 
 def build_response_debug_history(
-    streaming_events: List[Dict[str, Any]]
+    streaming_events: List[Dict[str, Any]],
 ) -> DebugHistoryData:
     """Build debug history data structure for response.
 

@@ -4,7 +4,7 @@ Shared types and models for GitHub operations.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from common.config.config import CLIENT_GIT_BRANCH
 
@@ -118,4 +118,3 @@ class PullOptions:
     repository_name: str
     strategy: str = "recursive"
     strategy_option: str = "theirs"
-

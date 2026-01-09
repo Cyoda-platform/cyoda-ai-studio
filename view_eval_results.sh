@@ -50,4 +50,3 @@ echo "   ls -lt $RESULTS_DIR"
 echo ""
 echo "💡 To view a specific file:"
 echo "   jq . $RESULTS_DIR/eval_results_YYYYMMDD_HHMMSS.json"
-

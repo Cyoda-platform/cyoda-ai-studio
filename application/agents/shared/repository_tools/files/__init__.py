@@ -7,27 +7,30 @@ from typing import Optional
 from google.adk.tools.tool_context import ToolContext
 
 # Re-export dependencies (for test mocking)
-from application.agents.shared.repository_tools.git_operations import _get_authenticated_repo_url_sync
+from application.agents.shared.repository_tools.git_operations import (
+    _get_authenticated_repo_url_sync,
+)
+
+from .file_operations import (
+    _log_directory_debug_info,
+    _save_all_files,
+    _save_file_to_disk,
+)
+from .git_workflow import (
+    _add_files_to_git,
+    _check_git_status,
+    _commit_and_push_files,
+    _commit_files_to_git,
+    _configure_git_user,
+    _push_to_remote,
+    _update_remote_authentication,
+)
 
 # Re-export all components
 from .validation import (
+    _determine_functional_requirements_dir,
     _validate_files_input,
     _validate_tool_context_state,
-    _determine_functional_requirements_dir,
-)
-from .file_operations import (
-    _save_file_to_disk,
-    _log_directory_debug_info,
-    _save_all_files,
-)
-from .git_workflow import (
-    _configure_git_user,
-    _add_files_to_git,
-    _check_git_status,
-    _commit_files_to_git,
-    _update_remote_authentication,
-    _push_to_remote,
-    _commit_and_push_files,
 )
 
 __all__ = [
@@ -96,7 +99,9 @@ async def save_files_to_branch(
         # Determine target directory and save files
         func_req_dir = _determine_functional_requirements_dir(repo_path, language)
         func_req_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"📁 Created/verified functional requirements directory: {func_req_dir}")
+        logger.info(
+            f"📁 Created/verified functional requirements directory: {func_req_dir}"
+        )
 
         saved_files = await _save_all_files(files, func_req_dir)
         if not saved_files:

@@ -14,10 +14,18 @@ from typing import Any, Dict
 from google.adk.tools.tool_context import ToolContext
 
 from application.agents.github.tool_definitions.common.constants import STOP_ON_ERROR
-from application.agents.github.tool_definitions.common.utils import ensure_repository_available
-from application.agents.github.tool_definitions.common.utils.file_utils import is_textual_file
-from application.agents.github.tool_definitions.common.utils.project_utils import detect_project_type
-from application.agents.github.tool_definitions.repository.helpers import scan_versioned_resources
+from application.agents.github.tool_definitions.common.utils import (
+    ensure_repository_available,
+)
+from application.agents.github.tool_definitions.common.utils.file_utils import (
+    is_textual_file,
+)
+from application.agents.github.tool_definitions.common.utils.project_utils import (
+    detect_project_type,
+)
+from application.agents.github.tool_definitions.repository.helpers import (
+    scan_versioned_resources,
+)
 from application.agents.github.tool_definitions.repository.helpers._github_service import (
     get_entity_service,
 )
@@ -26,7 +34,9 @@ from application.entity.conversation import Conversation
 logger = logging.getLogger(__name__)
 
 
-async def _extract_repository_info(tool_context: ToolContext) -> tuple[bool, str, str, str, str]:
+async def _extract_repository_info(
+    tool_context: ToolContext,
+) -> tuple[bool, str, str, str, str]:
     """Extract repository info from context or conversation entity.
 
     Args:
@@ -37,7 +47,13 @@ async def _extract_repository_info(tool_context: ToolContext) -> tuple[bool, str
     """
     conversation_id = tool_context.state.get("conversation_id")
     if not conversation_id:
-        return False, f"ERROR: conversation_id not found in context.{STOP_ON_ERROR}", "", "", ""
+        return (
+            False,
+            f"ERROR: conversation_id not found in context.{STOP_ON_ERROR}",
+            "",
+            "",
+            "",
+        )
 
     # Try context state first
     repository_name = tool_context.state.get("repository_name")
@@ -54,20 +70,44 @@ async def _extract_repository_info(tool_context: ToolContext) -> tuple[bool, str
         )
 
         if not conversation_response:
-            return False, f"ERROR: Conversation {conversation_id} not found.{STOP_ON_ERROR}", "", "", ""
+            return (
+                False,
+                f"ERROR: Conversation {conversation_id} not found.{STOP_ON_ERROR}",
+                "",
+                "",
+                "",
+            )
 
         conversation_data = conversation_response.data
         if isinstance(conversation_data, dict):
-            repository_name = repository_name or conversation_data.get('repository_name')
-            repository_branch = repository_branch or conversation_data.get('repository_branch')
-            repository_owner = repository_owner or conversation_data.get('repository_owner')
+            repository_name = repository_name or conversation_data.get(
+                "repository_name"
+            )
+            repository_branch = repository_branch or conversation_data.get(
+                "repository_branch"
+            )
+            repository_owner = repository_owner or conversation_data.get(
+                "repository_owner"
+            )
         else:
-            repository_name = repository_name or getattr(conversation_data, 'repository_name', None)
-            repository_branch = repository_branch or getattr(conversation_data, 'repository_branch', None)
-            repository_owner = repository_owner or getattr(conversation_data, 'repository_owner', None)
+            repository_name = repository_name or getattr(
+                conversation_data, "repository_name", None
+            )
+            repository_branch = repository_branch or getattr(
+                conversation_data, "repository_branch", None
+            )
+            repository_owner = repository_owner or getattr(
+                conversation_data, "repository_owner", None
+            )
 
     if not repository_name or not repository_branch:
-        return False, f"ERROR: No repository configured for this conversation.{STOP_ON_ERROR}", "", "", ""
+        return (
+            False,
+            f"ERROR: No repository configured for this conversation.{STOP_ON_ERROR}",
+            "",
+            "",
+            "",
+        )
 
     return True, "", repository_name, repository_branch, repository_owner
 
@@ -112,11 +152,13 @@ async def _scan_resources(
                     try:
                         with open(req_file, "r", encoding="utf-8") as f:
                             content = f.read()
-                        requirements.append({
-                            "name": req_file.stem,
-                            "path": str(req_file.relative_to(repo_path_obj)),
-                            "content": content,
-                        })
+                        requirements.append(
+                            {
+                                "name": req_file.stem,
+                                "path": str(req_file.relative_to(repo_path_obj)),
+                                "content": content,
+                            }
+                        )
                     except Exception as e:
                         logger.warning(f"Failed to read requirement {req_file}: {e}")
         return requirements
@@ -144,7 +186,7 @@ def _build_version_map(items: list, item_key: str) -> tuple[set, dict]:
         unique_names.add(name)
         if name not in version_map:
             version_map[name] = []
-        version = item['version'] or 'direct'
+        version = item["version"] or "direct"
         version_map[name].append(version)
 
     return unique_names, version_map
@@ -163,17 +205,19 @@ def _log_version_info(resource_type: str, version_map: dict) -> None:
 
     logger.info(f"📋 {resource_type} versions found:")
     for name, versions in sorted(version_map.items()):
-        clean_versions = [v for v in versions if v != 'direct']
-        direct_files = [v for v in versions if v == 'direct']
+        clean_versions = [v for v in versions if v != "direct"]
+        direct_files = [v for v in versions if v == "direct"]
         version_info = []
         if clean_versions:
             version_info.extend(sorted(clean_versions))
         if direct_files:
-            version_info.append('(direct file)')
+            version_info.append("(direct file)")
         logger.info(f"   - {name}: {', '.join(version_info)}")
 
 
-def _count_and_log_resources(entities: list, workflows: list, requirements: list) -> None:
+def _count_and_log_resources(
+    entities: list, workflows: list, requirements: list
+) -> None:
     """Count resources and log summary.
 
     Args:
@@ -181,8 +225,8 @@ def _count_and_log_resources(entities: list, workflows: list, requirements: list
         workflows: List of workflows
         requirements: List of requirements
     """
-    unique_entities, entity_versions = _build_version_map(entities, 'name')
-    unique_workflows, workflow_versions = _build_version_map(workflows, 'name')
+    unique_entities, entity_versions = _build_version_map(entities, "name")
+    unique_workflows, workflow_versions = _build_version_map(workflows, "name")
 
     logger.info(
         f"✅ Repository analysis complete: "
@@ -260,7 +304,14 @@ async def _setup_repository_context(
     if not success:
         return False, f"ERROR: {message}{STOP_ON_ERROR}", "", "", "", ""
 
-    return True, "", repository_path, repository_name, repository_branch, repository_owner
+    return (
+        True,
+        "",
+        repository_path,
+        repository_name,
+        repository_branch,
+        repository_owner,
+    )
 
 
 async def analyze_repository_structure(tool_context: ToolContext) -> str:
@@ -280,9 +331,14 @@ async def analyze_repository_structure(tool_context: ToolContext) -> str:
     """
     try:
         # Setup and validate repository context
-        success, error_msg, repository_path, repository_name, repository_branch, repository_owner = (
-            await _setup_repository_context(tool_context)
-        )
+        (
+            success,
+            error_msg,
+            repository_path,
+            repository_name,
+            repository_branch,
+            repository_owner,
+        ) = await _setup_repository_context(tool_context)
         if not success:
             return error_msg
 
@@ -298,7 +354,9 @@ async def analyze_repository_structure(tool_context: ToolContext) -> str:
         )
 
         # Scan all resources
-        entities, workflows, requirements = await _scan_resources(repository_path, paths)
+        entities, workflows, requirements = await _scan_resources(
+            repository_path, paths
+        )
         result["entities"] = entities
         result["workflows"] = workflows
         result["requirements"] = requirements

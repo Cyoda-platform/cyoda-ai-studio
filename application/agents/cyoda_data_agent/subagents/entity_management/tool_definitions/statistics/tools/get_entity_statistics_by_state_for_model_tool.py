@@ -38,7 +38,11 @@ async def get_entity_statistics_by_state_for_model(
     Returns:
         Statistics data or error information
     """
-    logger.info(f"Getting entity statistics by state for {entity_model} from {cyoda_host}")
+    logger.info(
+        f"Getting entity statistics by state for {entity_model} from {cyoda_host}"
+    )
     container = get_user_service_container(client_id, client_secret, cyoda_host)
     # This would need to be implemented in the entity service
-    return format_entity_success({"message": "Statistics endpoint not yet implemented in service layer"})
+    return format_entity_success(
+        {"message": "Statistics endpoint not yet implemented in service layer"}
+    )

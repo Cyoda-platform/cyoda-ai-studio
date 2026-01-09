@@ -87,4 +87,3 @@ Be brief and friendly.
 
 # Create default instance for backward compatibility
 deployment_monitor = create_deployment_monitor()
-

@@ -8,10 +8,10 @@ from __future__ import annotations
 
 # Re-export all public components for backward compatibility
 from .cyoda_assistant import (
-    create_cyoda_assistant,
+    CyodaAssistantWrapper,
     _create_google_adk_assistant,
     _create_openai_assistant,
-    CyodaAssistantWrapper,
+    create_cyoda_assistant,
 )
 
 __all__ = [

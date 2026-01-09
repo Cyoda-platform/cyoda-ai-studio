@@ -47,12 +47,14 @@ class NamespaceOperations:
                 if ns_name.startswith(user_namespace_prefix):
                     env_name = ns_name.replace(user_namespace_prefix, "")
                     if "-app-" not in env_name:
-                        user_environments.append({
-                            "name": env_name,
-                            "namespace": ns_name,
-                            "status": ns.get("status", "Unknown"),
-                            "created_at": ns.get("created_at"),
-                        })
+                        user_environments.append(
+                            {
+                                "name": env_name,
+                                "namespace": ns_name,
+                                "status": ns.get("status", "Unknown"),
+                                "created_at": ns.get("created_at"),
+                            }
+                        )
             return user_environments
 
     async def describe_environment(self, user_id: str, env_name: str) -> Dict[str, Any]:
@@ -76,10 +78,12 @@ class NamespaceOperations:
                 "environment": env_name,
                 "namespace": namespace,
                 "applications": data.get("deployments", []),
-                "count": len(data.get("deployments", []))
+                "count": len(data.get("deployments", [])),
             }
 
-    async def get_environment_metrics(self, user_id: str, env_name: str) -> Dict[str, Any]:
+    async def get_environment_metrics(
+        self, user_id: str, env_name: str
+    ) -> Dict[str, Any]:
         """Get metrics for an environment."""
         base_url = self._get_base_url()
         sanitized_user = sanitize_namespace(user_id)

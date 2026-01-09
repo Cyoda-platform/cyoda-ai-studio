@@ -30,17 +30,18 @@ def get_sdk_service() -> Union[Any, Any]:
     if sdk_choice == "google":
         logger.info("Using Google ADK SDK")
         from application.services.google_adk_service import GoogleADKService
+
         return GoogleADKService()
 
     elif sdk_choice == "openai":
         logger.info("Using OpenAI SDK")
         from application.services.openai.sdk_service import OpenAISDKService
+
         return OpenAISDKService()
 
     else:
         raise ValueError(
-            f"Unsupported AI_SDK value: {sdk_choice}. "
-            f"Must be 'google' or 'openai'"
+            f"Unsupported AI_SDK value: {sdk_choice}. " f"Must be 'google' or 'openai'"
         )
 
 
@@ -54,8 +55,7 @@ def get_sdk_name() -> str:
     sdk_choice = os.getenv("AI_SDK", "google").lower().strip()
     if sdk_choice not in ("google", "openai"):
         raise ValueError(
-            f"Unsupported AI_SDK value: {sdk_choice}. "
-            f"Must be 'google' or 'openai'"
+            f"Unsupported AI_SDK value: {sdk_choice}. " f"Must be 'google' or 'openai'"
         )
     return sdk_choice
 
@@ -78,4 +78,3 @@ def is_using_google_sdk() -> bool:
         True if AI_SDK is set to "google" or not set (default), False otherwise
     """
     return get_sdk_name() == "google"
-

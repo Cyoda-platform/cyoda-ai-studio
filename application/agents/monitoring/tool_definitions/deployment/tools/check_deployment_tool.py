@@ -14,9 +14,7 @@ from ...common.formatters.monitoring_formatters import (
 logger = logging.getLogger(__name__)
 
 
-async def check_deployment_and_decide(
-    tool_context: ToolContext, build_id: str
-) -> str:
+async def check_deployment_and_decide(tool_context: ToolContext, build_id: str) -> str:
     """Check deployment status and decide whether to continue monitoring.
 
     This tool is used by the monitoring loop to check status and determine
@@ -58,7 +56,9 @@ async def check_deployment_and_decide(
                     # Still in progress - continue monitoring
                     return format_continue_monitoring(state, status)
             else:
-                return format_continue_monitoring("UNKNOWN", "UNKNOWN", "Unable to parse status, will retry.")
+                return format_continue_monitoring(
+                    "UNKNOWN", "UNKNOWN", "Unable to parse status, will retry."
+                )
         else:
             # Error occurred
             logger.warning(f"Status check returned error: {status_result}")

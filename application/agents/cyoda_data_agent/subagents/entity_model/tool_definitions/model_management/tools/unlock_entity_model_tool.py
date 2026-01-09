@@ -38,4 +38,6 @@ async def unlock_entity_model(
     """
     logger.info(f"Unlocking {entity_name} v{model_version} in {cyoda_host}")
     container = get_user_service_container(client_id, client_secret, cyoda_host)
-    return format_model_success({"message": "Unlock model endpoint not yet implemented"})
+    return format_model_success(
+        {"message": "Unlock model endpoint not yet implemented"}
+    )

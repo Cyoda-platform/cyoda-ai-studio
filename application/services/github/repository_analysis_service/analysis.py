@@ -7,8 +7,8 @@ All functionality has been split into focused modules within analysis/.
 # Re-export all public APIs from the package
 from .analysis import (
     RepositoryAnalysisService,
-    SearchMatch,
     ResourceScanner,
+    SearchMatch,
 )
 
 __all__ = [

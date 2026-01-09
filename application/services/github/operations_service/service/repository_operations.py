@@ -4,16 +4,16 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
+from ..auth import get_authenticated_clone_url
 from ..helpers import (
-    extract_repository_name_from_url,
     determine_repository_path,
+    extract_repository_name_from_url,
     verify_repository_exists,
 )
-from ..auth import get_authenticated_clone_url
 from .subprocess_helpers import (
-    run_subprocess,
-    CLONE_TIMEOUT_SECONDS,
     CHECKOUT_TIMEOUT_SECONDS,
+    CLONE_TIMEOUT_SECONDS,
+    run_subprocess,
 )
 
 logger = logging.getLogger(__name__)
@@ -84,9 +84,7 @@ async def checkout_branch(
     )
 
     if checkout_res["returncode"] != 0:
-        error_msg = (
-            f"Failed to checkout branch {branch_name}: {checkout_res['stderr']}"
-        )
+        error_msg = f"Failed to checkout branch {branch_name}: {checkout_res['stderr']}"
         logger.error(f"❌ {error_msg}")
         return False, error_msg
 
@@ -148,7 +146,9 @@ async def ensure_repository_cloned(
 
         # Create directory and clone
         repo_path_obj.mkdir(parents=True, exist_ok=True)
-        success = await clone_repository_from_url(clone_url, repo_path_obj, repository_url)
+        success = await clone_repository_from_url(
+            clone_url, repo_path_obj, repository_url
+        )
         if not success:
             return False, f"Failed to clone repository: {repository_url}", None
 
@@ -203,7 +203,9 @@ async def get_repository_diff(repository_path: str) -> Dict[str, list]:
         Exception: If diff operation fails
     """
     try:
-        result = await run_subprocess(["git", "status", "--porcelain"], cwd=repository_path)
+        result = await run_subprocess(
+            ["git", "status", "--porcelain"], cwd=repository_path
+        )
 
         changes: Dict[str, list] = {
             "modified": [],

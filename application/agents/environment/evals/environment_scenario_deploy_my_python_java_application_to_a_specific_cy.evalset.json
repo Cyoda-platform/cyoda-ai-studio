@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_deploy_my_python_java_application_to_a_specific_cy",
+  "name": "environment_scenario_deploy_my_python_java_application_to_a_specific_cy",
+  "description": "Test case for: As a user, I want to deploy my Python/Java application to a specific Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_deploy_app",
+      "conversation": [
+        {
+          "invocation_id": "e-94a16f06-07d9-4761-8d54-74ae939c6d51",
+          "user_content": {
+            "parts": [
+              {
+                "text": "deploy my Python/Java application to a specific Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Ready to deploy \u2014 I need a few details to start.\n\nRequired info:\n- Environment name (e.g., dev, staging, prod) \u2014 I must check it exists before deploying.\n- Repository URL (Git)\n- Branch (default: main)\n- App name (will be used as the Cyoda app_name)\n- Language (Python or Java)\n- Is the repo public? (yes/no)\n- Do you already have CYODA_CLIENT_ID and CYODA_CLIENT_SECRET, or should I issue technical credentials for the environment?\n\nOnce you provide the above I will:\n1. run check_environment_exists(env_name)  \n2. deploy the app with deploy_user_application(...) and return the build_id and status monitoring options\n\n[options-single-choice: Provide Deployment Details, Issue Technical Credentials, List Environments]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8044662
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8044665
+    }
+  ],
+  "creation_timestamp": 1767903917.8044667
+}

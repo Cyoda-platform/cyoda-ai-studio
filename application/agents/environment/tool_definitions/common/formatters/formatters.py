@@ -10,12 +10,12 @@ from typing import Optional
 
 
 def format_deployment_started_message(
-        build_id: str,
-        repository_url: str,
-        branch_name: str,
-        user_id: str,
-        task_id: Optional[str] = None,
-        namespace: Optional[str] = None,
+    build_id: str,
+    repository_url: str,
+    branch_name: str,
+    user_id: str,
+    task_id: Optional[str] = None,
+    namespace: Optional[str] = None,
 ) -> str:
     """Format message for successful deployment initiation.
 
@@ -52,11 +52,11 @@ def format_deployment_started_message(
 
 
 def format_environment_deployment_message(
-        build_id: str,
-        namespace: str,
-        env_url: str,
-        user_id: str,
-        task_id: Optional[str] = None,
+    build_id: str,
+    namespace: str,
+    env_url: str,
+    user_id: str,
+    task_id: Optional[str] = None,
 ) -> str:
     """Format message for Cyoda environment deployment.
 

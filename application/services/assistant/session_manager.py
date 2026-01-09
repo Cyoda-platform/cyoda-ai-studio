@@ -36,7 +36,9 @@ class SessionManager:
             logger.warning(f"Failed to load session state: {e}")
             return {}
 
-    async def save_session_state(self, conversation_id: str, session_state: Dict[str, Any]) -> None:
+    async def save_session_state(
+        self, conversation_id: str, session_state: Dict[str, Any]
+    ) -> None:
         """Save session state with retry logic."""
         max_retries = 5
         base_delay = 0.1
@@ -55,7 +57,7 @@ class SessionManager:
 
                 data = response.data if hasattr(response, "data") else response
                 conversation = Conversation(**data)
-                
+
                 conversation.workflow_cache["adk_session_state"] = session_state
                 entity_data = conversation.model_dump(by_alias=False)
 
@@ -81,9 +83,9 @@ class SessionManager:
         """Check if error is retryable (version conflict)."""
         error_str = error_str.lower()
         return (
-            "422" in error_str or 
-            "500" in error_str or 
-            "version mismatch" in error_str or 
-            "earliestupdateaccept" in error_str or
-            "changed by another transaction" in error_str
+            "422" in error_str
+            or "500" in error_str
+            or "version mismatch" in error_str
+            or "earliestupdateaccept" in error_str
+            or "changed by another transaction" in error_str
         )

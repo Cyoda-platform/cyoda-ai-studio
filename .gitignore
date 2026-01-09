@@ -168,3 +168,9 @@ cython_debug/
 # Google ADK session databases and eval history
 .adk/
 **/.adk/
+
+# Generated reports (lint, eval, complexity)
+reports/
+*.html
+**/report.html
+**/*_report.html

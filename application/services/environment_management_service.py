@@ -11,8 +11,8 @@ All imports remain the same - this is a transparent refactoring.
 # Re-export all classes from the environment_management subpackage
 from .environment_management import (
     EnvironmentManagementService,
-    get_environment_management_service,
     get_cloud_manager_service,
+    get_environment_management_service,
 )
 
 __all__ = [

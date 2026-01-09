@@ -113,4 +113,3 @@ The `tools.py` file in `application/agents/environment/` serves as a practical e
 By following these guidelines, tool development will be more consistent, robust, and maintainable, contributing to the overall quality of the Cyoda AI Studio.
 
 By following these guidelines, we can ensure that our integration with Gemini models is both powerful and responsible, contributing to the overall quality and reliability of the Cyoda AI Studio.
-

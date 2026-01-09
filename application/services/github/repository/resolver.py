@@ -7,11 +7,11 @@ Entity-based resolution has been removed as it depends on deprecated WorkflowEnt
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Any
+from typing import Any, Optional
 
 from common.config.config import (
-    PYTHON_REPOSITORY_NAME,
     JAVA_REPOSITORY_NAME,
+    PYTHON_REPOSITORY_NAME,
 )
 
 
@@ -19,7 +19,9 @@ class RepositoryResolver(ABC):
     """Abstract base class for repository resolution strategies."""
 
     @abstractmethod
-    def resolve_repository_name(self, programming_language: Optional[str] = None) -> str:
+    def resolve_repository_name(
+        self, programming_language: Optional[str] = None
+    ) -> str:
         """
         Resolve repository name based on programming language.
 
@@ -38,7 +40,9 @@ class DefaultRepositoryResolver(RepositoryResolver):
     Defaults to Python if no language is specified.
     """
 
-    def resolve_repository_name(self, programming_language: Optional[str] = None) -> str:
+    def resolve_repository_name(
+        self, programming_language: Optional[str] = None
+    ) -> str:
         """Resolve repository name based on programming language.
 
         Args:
@@ -78,7 +82,9 @@ class ParameterBasedRepositoryResolver(RepositoryResolver):
     Useful for functions that receive programming_language as a parameter.
     """
 
-    def resolve_repository_name(self, programming_language: Optional[str] = None) -> str:
+    def resolve_repository_name(
+        self, programming_language: Optional[str] = None
+    ) -> str:
         """
         Resolve repository name with priority on programming_language parameter.
 
@@ -116,7 +122,9 @@ class RepositoryResolverFactory:
         return ParameterBasedRepositoryResolver()
 
     @staticmethod
-    def get_resolver_for_context(has_programming_language_param: bool = False) -> RepositoryResolver:
+    def get_resolver_for_context(
+        has_programming_language_param: bool = False,
+    ) -> RepositoryResolver:
         """
         Get appropriate resolver based on context.
 
@@ -145,7 +153,9 @@ def resolve_repository_name(programming_language: Optional[str] = None) -> str:
     return resolver.resolve_repository_name(programming_language)
 
 
-def resolve_repository_name_with_language_param(programming_language: Optional[str] = None) -> str:
+def resolve_repository_name_with_language_param(
+    programming_language: Optional[str] = None,
+) -> str:
     """Resolve repository name with priority on programming_language parameter.
 
     Args:

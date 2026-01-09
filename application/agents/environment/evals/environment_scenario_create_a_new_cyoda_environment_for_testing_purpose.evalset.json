@@ -1,0 +1,96 @@
+{
+  "eval_set_id": "environment_scenario_create_a_new_cyoda_environment_for_testing_purpose",
+  "name": "environment_scenario_create_a_new_cyoda_environment_for_testing_purpose",
+  "description": "Test case for: As a user, I want to create a new Cyoda environment for testing purposes.",
+  "eval_cases": [
+    {
+      "eval_id": "env_create_new",
+      "conversation": [
+        {
+          "invocation_id": "e-b2ea4743-868a-4a56-8a93-3451029a7287",
+          "user_content": {
+            "parts": [
+              {
+                "text": "create a new Cyoda environment for testing purposes."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "- **Action taken:** check_environment_exists() \u2014 found existing namespace URL: `https://client-guest-testing.kube3.cyoda.org`  \n- **Status:** Unclear (tool returned: \"Environment status unclear for https://client-guest-testing.kube3.cyoda.org\")\n- **Deploy attempt:** Failed \u2014 error: \"Unable to determine conversation ID. Please try again.\"  \n  - No Build ID was created.\n\nNext recommended steps (pick one):\n[options-single-choice: Retry Deployment, List Environments, Transfer to Coordinator]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "env_name": "testing"
+                },
+                "name": "check_environment_exists",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "env_name": "testing"
+                },
+                "name": "deploy_cyoda_environment",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "env_name": "testing"
+                },
+                "name": "deploy_cyoda_environment",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "env_name": "testing"
+                },
+                "name": "deploy_cyoda_environment",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "env_name": "testing"
+                },
+                "name": "deploy_cyoda_environment",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8038814
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.803882
+    }
+  ],
+  "creation_timestamp": 1767903917.8038821
+}

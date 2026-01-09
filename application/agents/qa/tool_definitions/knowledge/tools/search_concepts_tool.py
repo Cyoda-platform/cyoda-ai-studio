@@ -13,7 +13,9 @@ from ...common.formatters.knowledge_formatters import (
 )
 
 
-async def search_cyoda_concepts(tool_context: ToolContext, query: str) -> dict[str, Any]:
+async def search_cyoda_concepts(
+    tool_context: ToolContext, query: str
+) -> dict[str, Any]:
     """Search for Cyoda concepts and terminology.
 
     Provides definitions and explanations for Cyoda-specific terms.
@@ -35,7 +37,7 @@ async def search_cyoda_concepts(tool_context: ToolContext, query: str) -> dict[s
     if not matches:
         return format_concepts_not_found(
             query,
-            "Try searching for: entity, workflow, processor, technical id, grpc, state"
+            "Try searching for: entity, workflow, processor, technical id, grpc, state",
         )
 
     return format_concepts_found(query, matches)

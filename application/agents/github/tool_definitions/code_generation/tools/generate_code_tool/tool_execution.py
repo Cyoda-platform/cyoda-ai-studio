@@ -11,16 +11,13 @@ from typing import Optional
 from google.adk.tools.tool_context import ToolContext
 
 from application.agents.github.tool_definitions.code_generation.helpers import (
-    _generate_code_core,
     CODE_GENERATION_CONFIG,
+    _generate_code_core,
 )
-from application.agents.shared.hooks.hook_decorator import creates_hook
 
 logger = logging.getLogger(__name__)
 
 
-@creates_hook("background_task")
-@creates_hook("code_changes")
 async def generate_code_with_cli(
     user_request: str,
     tool_context: Optional[ToolContext] = None,

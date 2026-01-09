@@ -10,19 +10,8 @@ logger = logging.getLogger(__name__)
 _openai_agents = importlib.import_module("agents")
 Agent = _openai_agents.Agent
 
-from application.agents.github.prompts import create_instruction_provider
-from application.agents.shared.openai_tool_adapter import adapt_adk_tools_list
-from application.agents.shared.repository_tools import (
-    clone_repository,
-    set_repository_config,
-    ask_user_to_select_option,
-    generate_branch_uuid,
-    check_existing_branch_configuration,
-    retrieve_and_save_conversation_files,
-    save_files_to_branch,
-    check_user_environment_status,
-)
 from application.agents.environment.tools import deploy_cyoda_environment
+from application.agents.github.prompts import create_instruction_provider
 from application.agents.github.tools import (
     analyze_repository_structure,
     analyze_repository_structure_agentic,
@@ -38,6 +27,16 @@ from application.agents.github.tools import (
     pull_repository_changes,
     save_file_to_repository,
 )
+from application.agents.shared.openai_tool_adapter import adapt_adk_tools_list
+from application.agents.shared.repository_tools import (
+    check_existing_branch_configuration,
+    check_user_environment_status,
+    clone_repository,
+    generate_branch_uuid,
+    retrieve_and_save_conversation_files,
+    save_files_to_branch,
+    set_repository_config,
+)
 
 
 def create_openai_github_agent() -> Agent:
@@ -52,7 +51,6 @@ def create_openai_github_agent() -> Agent:
 
     # Adapt ADK tools to OpenAI SDK format
     adk_tools = [
-        ask_user_to_select_option,
         set_repository_config,
         generate_branch_uuid,
         clone_repository,
@@ -86,4 +84,3 @@ def create_openai_github_agent() -> Agent:
 
     logger.info("✓ OpenAI GitHub Agent created with tools")
     return github_agent
-

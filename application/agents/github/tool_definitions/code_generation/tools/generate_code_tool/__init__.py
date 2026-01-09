@@ -13,21 +13,20 @@ from __future__ import annotations
 # Re-export dependencies (for test mocking)
 from common.config.config import CLI_PROVIDER
 
-# Re-export all public APIs from submodules
-from .validation import (
-    SUPPORTED_LANGUAGES,
-    AUGMENT_CLI_SUPPORTED_MODEL,
-    _validate_and_prepare_context,
-    _validate_repository_and_config,
-)
-
 from .process_management import (
-    _start_and_register_process,
     _create_and_setup_background_task,
+    _start_and_register_process,
 )
-
 from .tool_execution import (
     generate_code_with_cli,
+)
+
+# Re-export all public APIs from submodules
+from .validation import (
+    AUGMENT_CLI_SUPPORTED_MODEL,
+    SUPPORTED_LANGUAGES,
+    _validate_and_prepare_context,
+    _validate_repository_and_config,
 )
 
 __all__ = [

@@ -17,11 +17,11 @@ from typing import Any, AsyncGenerator, Optional, Tuple
 
 from google.genai import types
 
-from application.services.streaming.constants import (
-    STREAM_TIMEOUT,
-    HEARTBEAT_INTERVAL,
-)
 from application.services.streaming.agent_stream import AgentStreamProcessor
+from application.services.streaming.constants import (
+    HEARTBEAT_INTERVAL,
+    STREAM_TIMEOUT,
+)
 from application.services.streaming.events import StreamEvent
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,9 @@ class StreamingService:
             yield event
 
     @staticmethod
-    def _build_progress_event(task_id: str, task: Any, event_counter: int) -> Tuple[str, int]:
+    def _build_progress_event(
+        task_id: str, task: Any, event_counter: int
+    ) -> Tuple[str, int]:
         """Build progress event from task.
 
         Args:
@@ -183,4 +185,3 @@ class StreamingService:
             },
             event_id=str(event_counter),
         ).to_sse()
-

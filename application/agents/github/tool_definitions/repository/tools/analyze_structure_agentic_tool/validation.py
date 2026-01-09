@@ -41,18 +41,20 @@ def _extract_entity_name_and_version(entity_file: str) -> tuple[str, str]:
     Returns:
         Tuple of (entity_name, version). Version is None if not found.
     """
-    path_parts = entity_file.split('/')
-    if 'entity' not in path_parts:
+    path_parts = entity_file.split("/")
+    if "entity" not in path_parts:
         return None, None
 
-    entity_idx = path_parts.index('entity')
+    entity_idx = path_parts.index("entity")
     if entity_idx + 1 >= len(path_parts):
         return None, None
 
     entity_name = path_parts[entity_idx + 1]
     version = None
 
-    if entity_idx + 2 < len(path_parts) and path_parts[entity_idx + 2].startswith('version_'):
+    if entity_idx + 2 < len(path_parts) and path_parts[entity_idx + 2].startswith(
+        "version_"
+    ):
         version = path_parts[entity_idx + 2]
 
     return entity_name, version
@@ -70,9 +72,9 @@ def _extract_workflow_name_and_version(workflow_file: str) -> tuple[str, str]:
     workflow_name = Path(workflow_file).stem
     version = None
 
-    path_parts = workflow_file.split('/')
+    path_parts = workflow_file.split("/")
     for part in path_parts:
-        if part.startswith('version_'):
+        if part.startswith("version_"):
             version = part
             break
 
@@ -96,7 +98,7 @@ def _initialize_results(repository_path: str) -> dict:
         "workflows": [],
         "requirements": [],
         "structure": {},
-        "summary": {}
+        "summary": {},
     }
 
 
@@ -126,7 +128,7 @@ def _generate_analysis_summary(
         "unique_workflows": len(unique_workflows),
         "total_workflow_versions": len(workflows),
         "requirements_files": len(requirements),
-        "commands_executed": len(commands_executed)
+        "commands_executed": len(commands_executed),
     }
 
 

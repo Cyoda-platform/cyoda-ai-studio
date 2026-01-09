@@ -47,7 +47,9 @@ class CloudManagerService:
         if self._client is None:
             async with self._config_lock:
                 if self._client is None:  # Double-check after acquiring lock
-                    cloud_manager_host = os.getenv("CLOUD_MANAGER_HOST", "cloud-manager-cyoda.kube3.cyoda.org")
+                    cloud_manager_host = os.getenv(
+                        "CLOUD_MANAGER_HOST", "cloud-manager-cyoda.kube3.cyoda.org"
+                    )
                     protocol = "http" if "localhost" in cloud_manager_host else "https"
                     base_url = f"{protocol}://{cloud_manager_host}"
 
@@ -59,7 +61,9 @@ class CloudManagerService:
                             "Content-Type": "application/json",
                         },
                     )
-                    logger.info(f"Initialized Cloud Manager client with base URL: {base_url}")
+                    logger.info(
+                        f"Initialized Cloud Manager client with base URL: {base_url}"
+                    )
 
         return self._client
 
@@ -95,8 +99,12 @@ class CloudManagerService:
             )
 
         # Decode base64 credentials
-        cloud_manager_api_key = base64.b64decode(cloud_manager_api_key_encoded).decode("utf-8")
-        cloud_manager_api_secret = base64.b64decode(cloud_manager_api_secret_encoded).decode("utf-8")
+        cloud_manager_api_key = base64.b64decode(cloud_manager_api_key_encoded).decode(
+            "utf-8"
+        )
+        cloud_manager_api_secret = base64.b64decode(
+            cloud_manager_api_secret_encoded
+        ).decode("utf-8")
 
         # Prepare authentication request
         auth_payload = {
@@ -117,20 +125,28 @@ class CloudManagerService:
                     "Content-Type": "application/json",
                 },
             ) as auth_client:
-                auth_response = await auth_client.post("/api/auth/login", json=auth_payload)
+                auth_response = await auth_client.post(
+                    "/api/auth/login", json=auth_payload
+                )
                 auth_response.raise_for_status()
                 auth_data = auth_response.json()
                 access_token = auth_data.get("token")
 
                 if not access_token:
-                    raise Exception("Failed to authenticate with cloud manager: no token in response")
+                    raise Exception(
+                        "Failed to authenticate with cloud manager: no token in response"
+                    )
 
                 logger.info("Successfully authenticated with Cloud Manager")
                 return access_token
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"Authentication failed with status {e.response.status_code}: {e.response.text}")
-            raise Exception(f"Cloud Manager authentication failed: {e.response.status_code}")
+            logger.error(
+                f"Authentication failed with status {e.response.status_code}: {e.response.text}"
+            )
+            raise Exception(
+                f"Cloud Manager authentication failed: {e.response.status_code}"
+            )
         except Exception as e:
             logger.error(f"Authentication error: {str(e)}")
             raise
@@ -163,12 +179,7 @@ class CloudManagerService:
             return self._token
 
     async def request(
-        self,
-        method: str,
-        path: str,
-        *,
-        retry_auth: bool = True,
-        **kwargs: Any
+        self, method: str, path: str, *, retry_auth: bool = True, **kwargs: Any
     ) -> httpx.Response:
         """Make an authenticated request to the Cloud Manager API.
 
@@ -201,7 +212,9 @@ class CloudManagerService:
         except httpx.HTTPStatusError as e:
             # If 401 Unauthorized and retry is enabled, refresh token and try once more
             if e.response.status_code == 401 and retry_auth:
-                logger.warning("Received 401 Unauthorized, refreshing token and retrying...")
+                logger.warning(
+                    "Received 401 Unauthorized, refreshing token and retrying..."
+                )
 
                 # Force token refresh
                 async with self._auth_lock:
@@ -209,7 +222,9 @@ class CloudManagerService:
                     self._token_expiry = 0
 
                 # Retry with fresh token (disable retry to avoid infinite loop)
-                return await self.request(method, path, retry_auth=False, headers=headers, **kwargs)
+                return await self.request(
+                    method, path, retry_auth=False, headers=headers, **kwargs
+                )
 
             # Re-raise for all other errors or if retry already attempted
             raise

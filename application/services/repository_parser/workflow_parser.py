@@ -5,6 +5,7 @@ import re
 from typing import Any, List, Optional
 
 from application.services.github.github_service import GitHubService
+
 from .models import WorkflowInfo
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ class WorkflowParser:
         Returns:
             Version number or None if not found
         """
-        version_match = re.search(r'version_(\d+)', version_dir_name)
+        version_match = re.search(r"version_(\d+)", version_dir_name)
         return int(version_match.group(1)) if version_match else None
 
     def _is_workflow_file(self, file_item: Any) -> bool:
@@ -37,7 +38,7 @@ class WorkflowParser:
         Returns:
             True if file is a workflow JSON file
         """
-        return file_item.is_file and file_item.name.endswith('.json')
+        return file_item.is_file and file_item.name.endswith(".json")
 
     def _create_workflow_info(
         self,
@@ -59,7 +60,7 @@ class WorkflowParser:
             entity_name=entity_name,
             file_path=workflow_file.path,
             version=version,
-            workflow_file=workflow_file.name
+            workflow_file=workflow_file.name,
         )
 
     async def _process_version_directory(
@@ -82,7 +83,9 @@ class WorkflowParser:
         """
         workflows = []
 
-        if not version_item.is_directory or not version_item.name.startswith('version_'):
+        if not version_item.is_directory or not version_item.name.startswith(
+            "version_"
+        ):
             return workflows
 
         # Extract version number
@@ -107,10 +110,7 @@ class WorkflowParser:
         return workflows
 
     async def parse_workflows(
-        self,
-        repository_name: str,
-        branch: str,
-        workflow_path: str
+        self, repository_name: str, branch: str, workflow_path: str
     ) -> List[WorkflowInfo]:
         """Parse workflow files from repository.
 

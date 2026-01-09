@@ -7,8 +7,11 @@ import logging
 
 from google.adk.tools.tool_context import ToolContext
 
-from application.services.environment_management_service import get_environment_management_service
-from ..common.utils.utils import require_authenticated_user, handle_tool_errors
+from application.services.environment_management_service import (
+    get_environment_management_service,
+)
+
+from ..common.utils.utils import handle_tool_errors, require_authenticated_user
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +33,7 @@ async def list_user_apps(tool_context: ToolContext, env_name: str) -> str:
         return json.dumps({"error": "env_name parameter is required."})
 
     # Call environment management service
-    user_id = tool_context.state.get("user_id")
+    user_id = tool_context.state.get("user_id", "guest")
     env_service = get_environment_management_service()
     user_apps = await env_service.list_user_apps(
         user_id=user_id,

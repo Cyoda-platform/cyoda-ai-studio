@@ -37,9 +37,7 @@ class TestCyodaResponsePlugin:
     """Tests for CyodaResponsePlugin."""
 
     @pytest.mark.asyncio
-    async def test_text_response_present(
-        self, mock_base_agent, mock_callback_context
-    ):
+    async def test_text_response_present(self, mock_base_agent, mock_callback_context):
         """
         Tests that if a text response is present, the plugin returns None.
         """
@@ -74,12 +72,26 @@ class TestCyodaResponsePlugin:
         mock_callback_context.session.events = [
             MagicMock(
                 content=types.Content(
-                    role="model", parts=[types.Part(function_call=types.FunctionCall(name="tool1", args={}, id="1"))]
+                    role="model",
+                    parts=[
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                name="tool1", args={}, id="1"
+                            )
+                        )
+                    ],
                 )
             ),
             MagicMock(
                 content=types.Content(
-                    role="model", parts=[types.Part(function_call=types.FunctionCall(name="tool2", args={}, id="2"))]
+                    role="model",
+                    parts=[
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                name="tool2", args={}, id="2"
+                            )
+                        )
+                    ],
                 )
             ),
         ]
@@ -107,9 +119,7 @@ class TestCyodaResponsePlugin:
         plugin = CyodaResponsePlugin()
         mock_callback_context.session.events = [
             MagicMock(
-                content=types.Content(
-                    role="model", parts=[types.Part(text="")]
-                )
+                content=types.Content(role="model", parts=[types.Part(text="")])
             )  # Empty text part
         ]
 
@@ -125,9 +135,7 @@ class TestCyodaResponsePlugin:
         assert result.parts[0].text == "Task completed successfully."
 
     @pytest.mark.asyncio
-    async def test_hook_logging(
-        self, mock_base_agent, mock_callback_context, caplog
-    ):
+    async def test_hook_logging(self, mock_base_agent, mock_callback_context, caplog):
         """
         Tests that hook information is logged if present in the state.
         """
@@ -163,17 +171,38 @@ class TestCyodaResponsePlugin:
         mock_callback_context.session.events = [
             MagicMock(
                 content=types.Content(
-                    role="model", parts=[types.Part(function_call=types.FunctionCall(name="toolA", args={}, id="a1"))]
+                    role="model",
+                    parts=[
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                name="toolA", args={}, id="a1"
+                            )
+                        )
+                    ],
                 )
             ),
             MagicMock(
                 content=types.Content(
-                    role="model", parts=[types.Part(function_call=types.FunctionCall(name="toolB", args={}, id="b1"))]
+                    role="model",
+                    parts=[
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                name="toolB", args={}, id="b1"
+                            )
+                        )
+                    ],
                 )
             ),
             MagicMock(
                 content=types.Content(
-                    role="model", parts=[types.Part(function_call=types.FunctionCall(name="toolC", args={}, id="c1"))]
+                    role="model",
+                    parts=[
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                name="toolC", args={}, id="c1"
+                            )
+                        )
+                    ],
                 )
             ),
         ]
@@ -185,7 +214,10 @@ class TestCyodaResponsePlugin:
 
         # Assert
         assert isinstance(result, types.Content)
-        assert result.parts[0].text == "Executed the following tools: toolA, toolB and toolC."
+        assert (
+            result.parts[0].text
+            == "Executed the following tools: toolA, toolB and toolC."
+        )
 
     @pytest.mark.asyncio
     async def test_multiple_duplicate_tool_calls(
@@ -199,17 +231,38 @@ class TestCyodaResponsePlugin:
         mock_callback_context.session.events = [
             MagicMock(
                 content=types.Content(
-                    role="model", parts=[types.Part(function_call=types.FunctionCall(name="toolA", args={}, id="a1"))]
+                    role="model",
+                    parts=[
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                name="toolA", args={}, id="a1"
+                            )
+                        )
+                    ],
                 )
             ),
             MagicMock(
                 content=types.Content(
-                    role="model", parts=[types.Part(function_call=types.FunctionCall(name="toolB", args={}, id="b1"))]
+                    role="model",
+                    parts=[
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                name="toolB", args={}, id="b1"
+                            )
+                        )
+                    ],
                 )
             ),
             MagicMock(
                 content=types.Content(
-                    role="model", parts=[types.Part(function_call=types.FunctionCall(name="toolA", args={}, id="a2"))]
+                    role="model",
+                    parts=[
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                name="toolA", args={}, id="a2"
+                            )
+                        )
+                    ],
                 )
             ),
         ]
@@ -224,9 +277,7 @@ class TestCyodaResponsePlugin:
         assert result.parts[0].text == "Executed the following tools: toolA and toolB."
 
     @pytest.mark.asyncio
-    async def test_no_summary_if_disabled(
-        self, mock_base_agent, mock_callback_context
-    ):
+    async def test_no_summary_if_disabled(self, mock_base_agent, mock_callback_context):
         """
         Tests that no tool summary is provided if provide_tool_summary is False.
         """
@@ -235,7 +286,14 @@ class TestCyodaResponsePlugin:
         mock_callback_context.session.events = [
             MagicMock(
                 content=types.Content(
-                    role="model", parts=[types.Part(function_call=types.FunctionCall(name="tool1", args={}, id="1"))]
+                    role="model",
+                    parts=[
+                        types.Part(
+                            function_call=types.FunctionCall(
+                                name="tool1", args={}, id="1"
+                            )
+                        )
+                    ],
                 )
             )
         ]
@@ -289,9 +347,7 @@ class TestCyodaResponseValidationPlugin:
         plugin = CyodaResponseValidationPlugin()
         mock_callback_context.session.events = [
             MagicMock(
-                content=types.Content(
-                    role="model", parts=[types.Part(text="")]
-                )
+                content=types.Content(role="model", parts=[types.Part(text="")])
             )  # Empty text part
         ]
 
@@ -316,9 +372,7 @@ class TestCyodaResponseValidationPlugin:
         # Arrange
         plugin = CyodaResponseValidationPlugin()
         mock_callback_context.session.events = [
-            MagicMock(
-                content=None
-            )  # No content at all
+            MagicMock(content=None)  # No content at all
         ]
 
         # Act

@@ -1,13 +1,13 @@
 """Repository parser package."""
 
-from .service import RepositoryParser
+from .entity_parser import EntityParser
 from .models import (
     EntityInfo,
-    WorkflowInfo,
-    RequirementInfo,
     RepositoryStructure,
+    RequirementInfo,
+    WorkflowInfo,
 )
-from .entity_parser import EntityParser
+from .service import RepositoryParser
 from .workflow_parser import WorkflowParser
 
 __all__ = [

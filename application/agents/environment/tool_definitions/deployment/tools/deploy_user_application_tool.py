@@ -2,22 +2,23 @@
 
 from __future__ import annotations
 
-import httpx
 import logging
 from typing import Optional
 
+import httpx
 from google.adk.tools.tool_context import ToolContext
-from common.config.config import ADK_TEST_MODE
-from application.agents.shared.hooks import creates_hook, wrap_response_with_hook
-from application.services.deployment.service import get_deployment_service
 
-from ..helpers._deployment_helpers import handle_deployment_success
+from application.services.deployment.service import get_deployment_service
+from common.config.config import ADK_TEST_MODE
+
 from ...common.formatters.formatters import (
-    format_deployment_started_message,
-    format_validation_error,
-    format_env_name_prompt_suggestion,
     format_app_name_prompt_suggestion,
+    format_deployment_started_message,
+    format_env_name_prompt_suggestion,
+    format_validation_error,
 )
+from ...common.utils.utils import handle_tool_errors, require_authenticated_user
+from ..helpers._deployment_helpers import handle_deployment_success
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,9 @@ def _validate_user_authentication(user_id: str) -> Optional[str]:
         Error message if user is not authenticated, None otherwise.
     """
     if ADK_TEST_MODE:
-        logger.info("ADK_TEST_MODE=true: Skipping authentication check for user application deployment")
+        logger.info(
+            "ADK_TEST_MODE=true: Skipping authentication check for user application deployment"
+        )
         return None
 
     if user_id.startswith("guest"):
@@ -105,19 +108,18 @@ def _validate_context_state(tool_context: ToolContext) -> Optional[str]:
     return None
 
 
-@creates_hook("background_task")
-@creates_hook("cloud_window")
-@creates_hook("open_tasks_panel")
+@require_authenticated_user
+@handle_tool_errors
 async def deploy_user_application(
-        tool_context: ToolContext,
-        repository_url: str,
-        branch_name: str,
-        cyoda_client_id: str,
-        cyoda_client_secret: str,
-        env_name: Optional[str] = None,
-        app_name: Optional[str] = None,
-        is_public: bool = True,
-        installation_id: Optional[str] = None,
+    tool_context: ToolContext,
+    repository_url: str,
+    branch_name: str,
+    cyoda_client_id: str,
+    cyoda_client_secret: str,
+    env_name: Optional[str] = None,
+    app_name: Optional[str] = None,
+    is_public: bool = True,
+    installation_id: Optional[str] = None,
 ) -> str:
     """Deploy a user application to their Cyoda environment.
 
@@ -186,7 +188,10 @@ async def deploy_user_application(
             task_name=f"Deploy application: {repository_url}",
             task_description=f"Deploying user application from {repository_url}@{branch_name}",
             env_url=None,
-            additional_metadata={"repository_url": repository_url, "branch_name": branch_name},
+            additional_metadata={
+                "repository_url": repository_url,
+                "branch_name": branch_name,
+            },
         )
 
         # Format and return response
@@ -199,10 +204,13 @@ async def deploy_user_application(
             namespace=result.namespace,
         )
 
-        return wrap_response_with_hook(message, hook) if hook else message
+        # Hook functionality removed
+        return message
 
     except httpx.HTTPStatusError as e:
-        logger.error(f"Deployment failed with status {e.response.status_code}: {e.response.text}")
+        logger.error(
+            f"Deployment failed with status {e.response.status_code}: {e.response.text}"
+        )
         return (
             f"Error: Deployment request failed with status {e.response.status_code}. "
             "Please verify your repository URL and credentials and try again."

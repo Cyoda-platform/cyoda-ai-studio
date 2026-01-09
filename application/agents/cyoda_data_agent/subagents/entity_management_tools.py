@@ -43,7 +43,9 @@ async def create_entity(
             cyoda_host=cyoda_host,
         )
         entity_service = container.get_entity_service()
-        result = await entity_service.save(entity_data, entity_model, entity_version="1")
+        result = await entity_service.save(
+            entity_data, entity_model, entity_version="1"
+        )
         return {"success": True, "data": result}
     except Exception as e:
         logger.exception(f"Failed to create entity: {e}")
@@ -120,8 +122,10 @@ async def delete_entity(
         )
         entity_service = container.get_entity_service()
         await entity_service.delete_by_id(entity_id, entity_model, entity_version="1")
-        return {"success": True, "data": {"message": f"Entity {entity_id} deleted successfully"}}
+        return {
+            "success": True,
+            "data": {"message": f"Entity {entity_id} deleted successfully"},
+        }
     except Exception as e:
         logger.exception(f"Failed to delete entity: {e}")
         return {"success": False, "error": str(e)}
-

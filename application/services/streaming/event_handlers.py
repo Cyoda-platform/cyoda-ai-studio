@@ -4,11 +4,11 @@ import logging
 from typing import Any, AsyncGenerator, Optional
 
 from application.services.streaming.constants import MAX_RESPONSE_SIZE
-from application.services.streaming.events import StreamEvent
 from application.services.streaming.event_processor import (
     extract_tool_hook_from_response,
     extract_ui_functions_from_session,
 )
+from application.services.streaming.events import StreamEvent
 from application.services.streaming.hook_normalizer import normalize_hook
 
 logger = logging.getLogger(__name__)
@@ -80,9 +80,7 @@ class EventHandlers:
         """Handle function call event."""
         tool_name = part.function_call.name
         tool_args = (
-            dict(part.function_call.args)
-            if hasattr(part.function_call, "args")
-            else {}
+            dict(part.function_call.args) if hasattr(part.function_call, "args") else {}
         )
         tool_id = getattr(part.function_call, "id", None)
 
@@ -145,11 +143,9 @@ class EventHandlers:
         if self.processor.session and "last_tool_hook" in self.processor.session.state:
             tool_hook = self.processor.session.state.get("last_tool_hook")
 
-        self.processor.ui_functions_from_stream = (
-            extract_ui_functions_from_session(
-                self.processor.session,
-                self.processor.ui_functions_from_stream,
-            )
+        self.processor.ui_functions_from_stream = extract_ui_functions_from_session(
+            self.processor.session,
+            self.processor.ui_functions_from_stream,
         )
 
         tool_message, response_hook = extract_tool_hook_from_response(tool_response)
@@ -176,13 +172,12 @@ class EventHandlers:
         """Handle text content event."""
         chunk = part.text
 
-        if (
-            len(self.processor.response_text) + len(chunk)
-            > MAX_RESPONSE_SIZE
-        ):
+        if len(self.processor.response_text) + len(chunk) > MAX_RESPONSE_SIZE:
             if not self.processor.max_response_reached:
                 self.processor.max_response_reached = True
-                logger.warning(f"Response size limit reached ({MAX_RESPONSE_SIZE} bytes)")
+                logger.warning(
+                    f"Response size limit reached ({MAX_RESPONSE_SIZE} bytes)"
+                )
                 yield StreamEvent(
                     event_type="content",
                     data={
@@ -198,7 +193,9 @@ class EventHandlers:
             return
 
         self.processor.response_text += chunk
-        is_partial = getattr(part, "partial", False) if hasattr(part, "partial") else False
+        is_partial = (
+            getattr(part, "partial", False) if hasattr(part, "partial") else False
+        )
 
         yield StreamEvent(
             event_type="content",
@@ -231,8 +228,7 @@ class EventHandlers:
                 event_type="artifact_change",
                 data={
                     "artifact_delta": {
-                        k: str(v)
-                        for k, v in dict(event.actions.artifact_delta).items()
+                        k: str(v) for k, v in dict(event.actions.artifact_delta).items()
                     },
                     "message": "Artifacts updated",
                     "agent": self.current_agent,
@@ -255,4 +251,3 @@ class EventHandlers:
                 event_id=str(self.processor.event_counter),
             ).to_sse()
             self.processor.event_counter += 1
-

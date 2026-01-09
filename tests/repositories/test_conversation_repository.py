@@ -4,9 +4,10 @@ Unit tests for ConversationRepository.
 Tests data access logic including retry and merge functionality.
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock, patch
 import asyncio
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from application.entity.conversation import Conversation
 from application.repositories.conversation_repository import ConversationRepository
@@ -26,9 +27,7 @@ class TestConversationRepositoryGet:
         conv_data = create_test_conversation().model_dump()
 
         mock_entity_service = Mock()
-        mock_entity_service.get_by_id = AsyncMock(
-            return_value=Mock(data=conv_data)
-        )
+        mock_entity_service.get_by_id = AsyncMock(return_value=Mock(data=conv_data))
 
         repo = ConversationRepository(mock_entity_service)
 
@@ -45,9 +44,7 @@ class TestConversationRepositoryGet:
         """Test returns None when not found."""
         # Arrange
         mock_entity_service = Mock()
-        mock_entity_service.get_by_id = AsyncMock(
-            side_effect=Exception("Not found")
-        )
+        mock_entity_service.get_by_id = AsyncMock(side_effect=Exception("Not found"))
 
         repo = ConversationRepository(mock_entity_service)
 
@@ -69,9 +66,7 @@ class TestConversationRepositoryCreate:
         conv_data = conversation.model_dump()
 
         mock_entity_service = Mock()
-        mock_entity_service.save = AsyncMock(
-            return_value=Mock(data=conv_data)
-        )
+        mock_entity_service.save = AsyncMock(return_value=Mock(data=conv_data))
 
         repo = ConversationRepository(mock_entity_service)
 
@@ -94,9 +89,7 @@ class TestConversationRepositoryUpdateWithRetry:
         conv_data = conversation.model_dump()
 
         mock_entity_service = Mock()
-        mock_entity_service.update = AsyncMock(
-            return_value=Mock(data=conv_data)
-        )
+        mock_entity_service.update = AsyncMock(return_value=Mock(data=conv_data))
 
         repo = ConversationRepository(mock_entity_service)
 
@@ -117,14 +110,9 @@ class TestConversationRepositoryUpdateWithRetry:
         mock_entity_service = Mock()
         # First call fails with 422, second succeeds
         mock_entity_service.update = AsyncMock(
-            side_effect=[
-                Exception("422 version mismatch"),
-                Mock(data=conv_data)
-            ]
+            side_effect=[Exception("422 version mismatch"), Mock(data=conv_data)]
         )
-        mock_entity_service.get_by_id = AsyncMock(
-            return_value=Mock(data=conv_data)
-        )
+        mock_entity_service.get_by_id = AsyncMock(return_value=Mock(data=conv_data))
 
         repo = ConversationRepository(mock_entity_service)
 
@@ -152,10 +140,7 @@ class TestConversationRepositoryUpdateWithRetry:
         mock_entity_service = Mock()
         # First update fails (conflict)
         mock_entity_service.update = AsyncMock(
-            side_effect=[
-                Exception("422 conflict"),
-                Mock(data=fresh_conv.model_dump())
-            ]
+            side_effect=[Exception("422 conflict"), Mock(data=fresh_conv.model_dump())]
         )
         # When fetching fresh version, return the DB version
         mock_entity_service.get_by_id = AsyncMock(
@@ -181,9 +166,7 @@ class TestConversationRepositoryUpdateWithRetry:
 
         mock_entity_service = Mock()
         # Always fail with 422
-        mock_entity_service.update = AsyncMock(
-            side_effect=Exception("422 conflict")
-        )
+        mock_entity_service.update = AsyncMock(side_effect=Exception("422 conflict"))
         mock_entity_service.get_by_id = AsyncMock(
             return_value=Mock(data=conversation.model_dump())
         )
@@ -235,9 +218,7 @@ class TestConversationRepositoryDelete:
 
         # Assert
         mock_entity_service.delete_by_id.assert_called_once_with(
-            entity_id="test-conv-123",
-            entity_class="Conversation",
-            entity_version="1"
+            entity_id="test-conv-123", entity_class="Conversation", entity_version="1"
         )
 
 

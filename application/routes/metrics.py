@@ -15,12 +15,11 @@ from datetime import timedelta
 from quart import Blueprint, request
 from quart_rate_limiter import rate_limit
 
-from common.middleware.auth_middleware import require_auth
-
 # NEW: Use common infrastructure and services
 from application.routes.common.rate_limiting import default_rate_limit_key
 from application.routes.common.response import APIResponse
 from application.services.service_factory import get_service_factory
+from common.middleware.auth_middleware import require_auth
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +65,7 @@ async def generate_grafana_token():
     try:
         # Get user info from auth middleware
         user_id = request.user_id
-        org_id = getattr(request, 'org_id', user_id.lower())
+        org_id = getattr(request, "org_id", user_id.lower())
 
         logger.info(f"Generating Grafana token for user {user_id} (org: {org_id})")
 
@@ -138,7 +137,7 @@ async def query_metrics():
     try:
         # Get user info
         user_id = request.user_id
-        org_id = getattr(request, 'org_id', user_id.lower())
+        org_id = getattr(request, "org_id", user_id.lower())
 
         # Get query parameters from request body
         data = await request.get_json() if await request.get_data() else {}
@@ -147,14 +146,16 @@ async def query_metrics():
             return APIResponse.error("Request body required", 400)
 
         # Determine which mode to use and query Prometheus via MetricsService
-        if 'query_type' in data:
+        if "query_type" in data:
             # New mode: predefined query types
-            query_type = data['query_type']
-            env_name = data.get('env_name')
-            app_name = data.get('app_name', 'cyoda')
+            query_type = data["query_type"]
+            env_name = data.get("env_name")
+            app_name = data.get("app_name", "cyoda")
 
             if not env_name:
-                return APIResponse.error("env_name parameter required when using query_type", 400)
+                return APIResponse.error(
+                    "env_name parameter required when using query_type", 400
+                )
 
             logger.info(
                 f"Querying Prometheus (query_type mode) for user {user_id} "
@@ -167,17 +168,19 @@ async def query_metrics():
                     env_name=env_name,
                     app_name=app_name,
                     query_type=query_type,
-                    time=data.get('time'),
-                    timeout=data.get('timeout')
+                    time=data.get("time"),
+                    timeout=data.get("timeout"),
                 )
             except ValueError as e:
                 return APIResponse.error(str(e), 400)
 
-        elif 'query' in data:
+        elif "query" in data:
             # Legacy mode: custom query with {namespace} placeholder
-            query = data['query']
-            deployment_type = data.get('type', 'environment')
-            deployment_id = data.get('id', 'start' if deployment_type == 'application' else 'develop')
+            query = data["query"]
+            deployment_type = data.get("type", "environment")
+            deployment_id = data.get(
+                "id", "start" if deployment_type == "application" else "develop"
+            )
 
             logger.info(
                 f"Querying Prometheus (legacy mode) for user {user_id} "
@@ -189,12 +192,14 @@ async def query_metrics():
                 query=query,
                 deployment_type=deployment_type,
                 deployment_id=deployment_id,
-                time=data.get('time'),
-                timeout=data.get('timeout')
+                time=data.get("time"),
+                timeout=data.get("timeout"),
             )
 
         else:
-            return APIResponse.error("Either 'query_type' or 'query' parameter required", 400)
+            return APIResponse.error(
+                "Either 'query_type' or 'query' parameter required", 400
+            )
 
         logger.info(f"Prometheus query successful for user {user_id}")
 
@@ -245,24 +250,26 @@ async def query_range_metrics():
     try:
         # Get user info
         user_id = request.user_id
-        org_id = getattr(request, 'org_id', user_id.lower())
+        org_id = getattr(request, "org_id", user_id.lower())
 
         # Get query parameters
         data = await request.get_json()
         if not data:
             return APIResponse.error("Request body required", 400)
-        if 'start' not in data or 'end' not in data:
+        if "start" not in data or "end" not in data:
             return APIResponse.error("start and end parameters required", 400)
 
         # Determine which mode to use and query Prometheus via MetricsService
-        if 'query_type' in data:
+        if "query_type" in data:
             # New mode: predefined query types
-            query_type = data['query_type']
-            env_name = data.get('env_name')
-            app_name = data.get('app_name', 'cyoda')
+            query_type = data["query_type"]
+            env_name = data.get("env_name")
+            app_name = data.get("app_name", "cyoda")
 
             if not env_name:
-                return APIResponse.error("env_name parameter required when using query_type", 400)
+                return APIResponse.error(
+                    "env_name parameter required when using query_type", 400
+                )
 
             logger.info(
                 f"Range querying Prometheus (query_type mode) for user {user_id} "
@@ -275,29 +282,33 @@ async def query_range_metrics():
                     env_name=env_name,
                     app_name=app_name,
                     query_type=query_type,
-                    start=data['start'],
-                    end=data['end'],
-                    step=data.get('step', '15s')
+                    start=data["start"],
+                    end=data["end"],
+                    step=data.get("step", "15s"),
                 )
             except ValueError as e:
                 return APIResponse.error(str(e), 400)
 
-        elif 'query' in data:
+        elif "query" in data:
             # Legacy mode: custom query with namespace filter
-            query = data['query']
+            query = data["query"]
 
-            logger.info(f"Range querying Prometheus (legacy mode) for user {user_id} (org_id: {org_id})")
+            logger.info(
+                f"Range querying Prometheus (legacy mode) for user {user_id} (org_id: {org_id})"
+            )
 
             result = await metrics_service.query_prometheus_range_custom(
                 org_id=org_id,
                 query=query,
-                start=data['start'],
-                end=data['end'],
-                step=data.get('step', '15s')
+                start=data["start"],
+                end=data["end"],
+                step=data.get("step", "15s"),
             )
 
         else:
-            return APIResponse.error("Either 'query_type' or 'query' parameter required", 400)
+            return APIResponse.error(
+                "Either 'query_type' or 'query' parameter required", 400
+            )
 
         logger.info(f"Prometheus range query successful for user {user_id}")
 
@@ -335,9 +346,9 @@ async def metrics_health():
                 APIResponse.error(
                     health_status.get("error", "Services degraded"),
                     status_code,
-                    details=health_status
+                    details=health_status,
                 ),
-                status_code
+                status_code,
             )
 
     except Exception as e:

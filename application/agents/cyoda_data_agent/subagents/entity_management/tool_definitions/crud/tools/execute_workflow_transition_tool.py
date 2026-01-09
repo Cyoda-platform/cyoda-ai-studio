@@ -38,8 +38,14 @@ async def execute_workflow_transition(
     Returns:
         Updated entity or error information
     """
-    logger.info(f"Executing transition '{transition}' on {entity_model} {entity_id} in {cyoda_host}")
+    logger.info(
+        f"Executing transition '{transition}' on {entity_model} {entity_id} in {cyoda_host}"
+    )
     container = get_user_service_container(client_id, client_secret, cyoda_host)
     entity_service = container.get_entity_service()
-    result = await entity_service.execute_transition(entity_id, transition, entity_model, entity_version="1")
-    return format_entity_success({"id": result.get_id(), "state": result.get_state(), "entity": result.data})
+    result = await entity_service.execute_transition(
+        entity_id, transition, entity_model, entity_version="1"
+    )
+    return format_entity_success(
+        {"id": result.get_id(), "state": result.get_state(), "entity": result.data}
+    )

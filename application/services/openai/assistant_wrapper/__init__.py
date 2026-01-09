@@ -1,19 +1,19 @@
 """OpenAI assistant wrapper package."""
 
-from .wrapper import OpenAIAssistantWrapper, Agent, Runner
-from .models import StreamingState
+# Re-export dependencies (for test mocking)
+from application.config.streaming_config import streaming_config
+
+from ..agents_service import OpenAIAgentsService
 from .constants import (
+    EVENT_TYPE_AGENT_UPDATED,
     EVENT_TYPE_RAW_RESPONSE,
     EVENT_TYPE_RUN_ITEM,
-    EVENT_TYPE_AGENT_UPDATED,
     ITEM_TYPE_MESSAGE_OUTPUT,
     ITEM_TYPE_TOOL_CALL,
 )
 from .event_handlers import EventHandlers
-from ..agents_service import OpenAIAgentsService
-
-# Re-export dependencies (for test mocking)
-from application.config.streaming_config import streaming_config
+from .models import StreamingState
+from .wrapper import Agent, OpenAIAssistantWrapper, Runner
 
 __all__ = [
     "OpenAIAssistantWrapper",

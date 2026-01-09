@@ -5,7 +5,7 @@ Provides reusable test data for conversations, messages, and related entities.
 """
 
 from datetime import datetime, timezone
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from application.entity.conversation import Conversation
 
@@ -15,7 +15,7 @@ def create_test_conversation(
     user_id: str = "test-user",
     name: str = "Test Conversation",
     description: str = "Test conversation for unit tests",
-    **kwargs
+    **kwargs,
 ) -> Conversation:
     """
     Create a test Conversation instance.
@@ -53,7 +53,7 @@ def create_test_message(
     technical_id: str = "msg-123",
     role: str = "user",
     content: str = "Test message",
-    **kwargs
+    **kwargs,
 ) -> Dict[str, Any]:
     """
     Create a test message dictionary.
@@ -81,8 +81,7 @@ def create_test_message(
 
 
 def create_test_conversation_with_messages(
-    num_messages: int = 3,
-    **kwargs
+    num_messages: int = 3, **kwargs
 ) -> Conversation:
     """
     Create a test conversation with messages.
@@ -103,9 +102,7 @@ def create_test_conversation_with_messages(
         role = "user" if i % 2 == 0 else "assistant"
         messages.append(
             create_test_message(
-                technical_id=f"msg-{i}",
-                role=role,
-                content=f"Test message {i}"
+                technical_id=f"msg-{i}", role=role, content=f"Test message {i}"
             )
         )
 
@@ -127,17 +124,17 @@ def create_mock_entity_response(data: Any) -> Any:
         >>> response = create_mock_entity_response({"key": "value"})
         >>> assert response.data == {"key": "value"}
     """
+
     class MockResponse:
         def __init__(self, data):
             self.data = data
-            self.metadata = type('obj', (object,), {'id': 'test-id'})()
+            self.metadata = type("obj", (object,), {"id": "test-id"})()
 
     return MockResponse(data)
 
 
 def create_conversation_list_response(
-    count: int = 3,
-    user_id: str = "test-user"
+    count: int = 3, user_id: str = "test-user"
 ) -> List[Any]:
     """
     Create a list of mock conversation responses.
@@ -156,9 +153,7 @@ def create_conversation_list_response(
     responses = []
     for i in range(count):
         conv = create_test_conversation(
-            technical_id=f"conv-{i}",
-            user_id=user_id,
-            name=f"Conversation {i}"
+            technical_id=f"conv-{i}", user_id=user_id, name=f"Conversation {i}"
         )
         responses.append(create_mock_entity_response(conv.model_dump()))
 

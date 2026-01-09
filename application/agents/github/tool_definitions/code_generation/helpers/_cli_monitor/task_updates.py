@@ -91,9 +91,7 @@ async def _update_task_progress(task_id: str, elapsed_time: float, pid: int) -> 
         logger.warning(f"⚠️ Failed to update BackgroundTask progress: {e}")
 
 
-async def _update_task_with_commit_info(
-    task_id: str, commit_result: dict
-) -> None:
+async def _update_task_with_commit_info(task_id: str, commit_result: dict) -> None:
     """Update task with latest commit information.
 
     Args:
@@ -129,7 +127,9 @@ async def _update_task_with_commit_info(
         logger.warning(f"⚠️ Failed to update task with diff info: {e}")
 
 
-async def _handle_process_timeout_task_update(task_id: str, timeout_seconds: int) -> None:
+async def _handle_process_timeout_task_update(
+    task_id: str, timeout_seconds: int
+) -> None:
     """Update task to failed status on timeout.
 
     Args:

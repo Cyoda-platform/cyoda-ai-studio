@@ -14,16 +14,12 @@ Outputs:
 """
 
 import json
-import yaml
-from typing import Dict, Any, List, Type, Optional
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Type
 
-# Import all Pydantic models
-from application.routes.models.token_models import (
-    GenerateTestTokenRequest,
-    TokenResponse,
-)
+import yaml
+from pydantic import BaseModel
+
 from application.routes.models.logs_models import (
     LogsAPIKeyRequest,
     LogsAPIKeyResponse,
@@ -33,6 +29,12 @@ from application.routes.models.metrics_models import (
     GrafanaTokenRequest,
     GrafanaTokenResponse,
     PrometheusQueryRequest,
+)
+
+# Import all Pydantic models
+from application.routes.models.token_models import (
+    GenerateTestTokenRequest,
+    TokenResponse,
 )
 
 
@@ -53,20 +55,17 @@ class OpenAPIGenerator:
                 "title": self.title,
                 "version": self.version,
                 "description": self.description,
-                "contact": {
-                    "name": "API Support",
-                    "email": "support@example.com"
-                }
+                "contact": {"name": "API Support", "email": "support@example.com"},
             },
             "servers": [
                 {
                     "url": "http://localhost:5000/api/v1",
-                    "description": "Development server"
+                    "description": "Development server",
                 },
                 {
                     "url": "https://api.example.com/api/v1",
-                    "description": "Production server"
-                }
+                    "description": "Production server",
+                },
             ],
             "tags": [
                 {"name": "tokens", "description": "Token generation and management"},
@@ -82,7 +81,7 @@ class OpenAPIGenerator:
                         "type": "http",
                         "scheme": "bearer",
                         "bearerFormat": "JWT",
-                        "description": "JWT token obtained from /get_guest_token or /generate_test_token"
+                        "description": "JWT token obtained from /get_guest_token or /generate_test_token",
                     }
                 },
                 "responses": {
@@ -93,20 +92,23 @@ class OpenAPIGenerator:
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "error": {"type": "string", "example": "Validation failed"},
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Validation failed",
+                                        },
                                         "details": {
                                             "type": "object",
                                             "properties": {
                                                 "errors": {
                                                     "type": "array",
-                                                    "items": {"type": "string"}
+                                                    "items": {"type": "string"},
                                                 }
-                                            }
-                                        }
-                                    }
+                                            },
+                                        },
+                                    },
                                 }
                             }
-                        }
+                        },
                     },
                     "Unauthorized": {
                         "description": "Unauthorized - invalid or missing token",
@@ -115,11 +117,14 @@ class OpenAPIGenerator:
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "error": {"type": "string", "example": "Token expired"}
-                                    }
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Token expired",
+                                        }
+                                    },
                                 }
                             }
-                        }
+                        },
                     },
                     "Forbidden": {
                         "description": "Forbidden - insufficient permissions",
@@ -128,11 +133,14 @@ class OpenAPIGenerator:
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "error": {"type": "string", "example": "Permission denied"}
-                                    }
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Permission denied",
+                                        }
+                                    },
                                 }
                             }
-                        }
+                        },
                     },
                     "InternalError": {
                         "description": "Internal server error",
@@ -141,14 +149,17 @@ class OpenAPIGenerator:
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "error": {"type": "string", "example": "Internal server error"}
-                                    }
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Internal server error",
+                                        }
+                                    },
                                 }
                             }
-                        }
-                    }
-                }
-            }
+                        },
+                    },
+                },
+            },
         }
 
         # Generate schemas from Pydantic models
@@ -196,10 +207,10 @@ class OpenAPIGenerator:
                             "application/json": {
                                 "schema": {"$ref": "#/components/schemas/TokenResponse"}
                             }
-                        }
+                        },
                     },
-                    "500": {"$ref": "#/components/responses/InternalError"}
-                }
+                    "500": {"$ref": "#/components/responses/InternalError"},
+                },
             }
         }
 
@@ -213,9 +224,11 @@ class OpenAPIGenerator:
                     "required": True,
                     "content": {
                         "application/json": {
-                            "schema": {"$ref": "#/components/schemas/GenerateTestTokenRequest"}
+                            "schema": {
+                                "$ref": "#/components/schemas/GenerateTestTokenRequest"
+                            }
                         }
-                    }
+                    },
                 },
                 "responses": {
                     "200": {
@@ -224,11 +237,11 @@ class OpenAPIGenerator:
                             "application/json": {
                                 "schema": {"$ref": "#/components/schemas/TokenResponse"}
                             }
-                        }
+                        },
                     },
                     "400": {"$ref": "#/components/responses/ValidationError"},
-                    "500": {"$ref": "#/components/responses/InternalError"}
-                }
+                    "500": {"$ref": "#/components/responses/InternalError"},
+                },
             }
         }
 
@@ -247,21 +260,23 @@ class OpenAPIGenerator:
                         "application/json": {
                             "schema": {"$ref": "#/components/schemas/LogsAPIKeyRequest"}
                         }
-                    }
+                    },
                 },
                 "responses": {
                     "200": {
                         "description": "API key generated successfully",
                         "content": {
                             "application/json": {
-                                "schema": {"$ref": "#/components/schemas/LogsAPIKeyResponse"}
+                                "schema": {
+                                    "$ref": "#/components/schemas/LogsAPIKeyResponse"
+                                }
                             }
-                        }
+                        },
                     },
                     "400": {"$ref": "#/components/responses/ValidationError"},
                     "401": {"$ref": "#/components/responses/Unauthorized"},
-                    "500": {"$ref": "#/components/responses/InternalError"}
-                }
+                    "500": {"$ref": "#/components/responses/InternalError"},
+                },
             }
         }
 
@@ -278,7 +293,7 @@ class OpenAPIGenerator:
                         "application/json": {
                             "schema": {"$ref": "#/components/schemas/LogSearchRequest"}
                         }
-                    }
+                    },
                 },
                 "responses": {
                     "200": {
@@ -290,18 +305,18 @@ class OpenAPIGenerator:
                                     "properties": {
                                         "hits": {
                                             "type": "array",
-                                            "items": {"type": "object"}
+                                            "items": {"type": "object"},
                                         },
-                                        "total": {"type": "integer"}
-                                    }
+                                        "total": {"type": "integer"},
+                                    },
                                 }
                             }
-                        }
+                        },
                     },
                     "400": {"$ref": "#/components/responses/ValidationError"},
                     "401": {"$ref": "#/components/responses/Unauthorized"},
-                    "500": {"$ref": "#/components/responses/InternalError"}
-                }
+                    "500": {"$ref": "#/components/responses/InternalError"},
+                },
             }
         }
 
@@ -318,23 +333,27 @@ class OpenAPIGenerator:
                     "required": True,
                     "content": {
                         "application/json": {
-                            "schema": {"$ref": "#/components/schemas/GrafanaTokenRequest"}
+                            "schema": {
+                                "$ref": "#/components/schemas/GrafanaTokenRequest"
+                            }
                         }
-                    }
+                    },
                 },
                 "responses": {
                     "200": {
                         "description": "Grafana token generated successfully",
                         "content": {
                             "application/json": {
-                                "schema": {"$ref": "#/components/schemas/GrafanaTokenResponse"}
+                                "schema": {
+                                    "$ref": "#/components/schemas/GrafanaTokenResponse"
+                                }
                             }
-                        }
+                        },
                     },
                     "400": {"$ref": "#/components/responses/ValidationError"},
                     "401": {"$ref": "#/components/responses/Unauthorized"},
-                    "500": {"$ref": "#/components/responses/InternalError"}
-                }
+                    "500": {"$ref": "#/components/responses/InternalError"},
+                },
             }
         }
 
@@ -349,9 +368,11 @@ class OpenAPIGenerator:
                     "required": True,
                     "content": {
                         "application/json": {
-                            "schema": {"$ref": "#/components/schemas/PrometheusQueryRequest"}
+                            "schema": {
+                                "$ref": "#/components/schemas/PrometheusQueryRequest"
+                            }
                         }
-                    }
+                    },
                 },
                 "responses": {
                     "200": {
@@ -362,28 +383,28 @@ class OpenAPIGenerator:
                                     "type": "object",
                                     "properties": {
                                         "status": {"type": "string"},
-                                        "data": {"type": "object"}
-                                    }
+                                        "data": {"type": "object"},
+                                    },
                                 }
                             }
-                        }
+                        },
                     },
                     "400": {"$ref": "#/components/responses/ValidationError"},
                     "401": {"$ref": "#/components/responses/Unauthorized"},
-                    "500": {"$ref": "#/components/responses/InternalError"}
-                }
+                    "500": {"$ref": "#/components/responses/InternalError"},
+                },
             }
         }
 
     def save_json(self, filepath: str):
         """Save specification as JSON."""
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(self.spec, f, indent=2)
         print(f"✅ OpenAPI JSON saved to: {filepath}")
 
     def save_yaml(self, filepath: str):
         """Save specification as YAML."""
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             yaml.dump(self.spec, f, default_flow_style=False, sort_keys=False)
         print(f"✅ OpenAPI YAML saved to: {filepath}")
 
@@ -403,13 +424,14 @@ def main():
             "- Chat conversation management\n"
             "\n"
             "All endpoints (except token generation) require Bearer authentication."
-        )
+        ),
     )
 
     spec = generator.generate()
 
     # Create output directory
     import os
+
     os.makedirs("docs/api", exist_ok=True)
 
     # Save in both formats

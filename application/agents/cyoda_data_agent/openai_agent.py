@@ -11,13 +11,13 @@ logger = logging.getLogger(__name__)
 _openai_agents = importlib.import_module("agents")
 Agent = _openai_agents.Agent
 
-from application.agents.shared.prompts import create_instruction_provider
-from application.agents.shared.openai_tool_adapter import adapt_adk_tools_list
 from application.agents.cyoda_data_agent.tools import (
+    create_entity,
     get_entity,
     search_entities,
-    create_entity,
 )
+from application.agents.shared.openai_tool_adapter import adapt_adk_tools_list
+from application.agents.shared.prompts import create_instruction_provider
 
 
 def create_openai_cyoda_data_agent() -> Agent:
@@ -53,4 +53,3 @@ def create_openai_cyoda_data_agent() -> Agent:
 
     logger.info("✓ OpenAI Cyoda Data Agent created with tools")
     return cyoda_data_agent
-

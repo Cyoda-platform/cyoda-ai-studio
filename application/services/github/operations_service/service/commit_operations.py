@@ -48,7 +48,10 @@ async def perform_commit(commit_message: str) -> Tuple[bool, Optional[str]]:
     commit_res = await run_git_cmd(["commit", "-m", commit_message], check=False)
     if commit_res["returncode"] != 0:
         output = commit_res["stdout"] + commit_res["stderr"]
-        if "nothing to commit" in output.lower() or "working tree clean" in output.lower():
+        if (
+            "nothing to commit" in output.lower()
+            or "working tree clean" in output.lower()
+        ):
             return False, "nothing_to_commit"
         return False, output
     return True, None
@@ -81,9 +84,7 @@ async def refresh_authentication(repo_auth_config: Dict[str, Any]) -> None:
             await run_git_cmd(["remote", "set-url", "origin", auth_url])
             logger.debug("🔐 Refreshed authentication token before push")
     except Exception as e:
-        logger.warning(
-            f"⚠️ Failed to refresh auth token, attempting push anyway: {e}"
-        )
+        logger.warning(f"⚠️ Failed to refresh auth token, attempting push anyway: {e}")
 
 
 async def push_with_retry(branch_name: str, max_attempts: int = 2) -> None:
@@ -103,9 +104,7 @@ async def push_with_retry(branch_name: str, max_attempts: int = 2) -> None:
             return
         except Exception as error:
             if attempt < max_attempts:
-                logger.warning(
-                    f"⚠️ Push attempt {attempt} failed, retrying: {error}"
-                )
+                logger.warning(f"⚠️ Push attempt {attempt} failed, retrying: {error}")
                 await asyncio.sleep(2)
             else:
                 logger.error(f"❌ Push failed after {max_attempts} attempts")
@@ -121,9 +120,8 @@ async def detect_canvas_resources(changed_files: List[str]) -> Dict[str, Any]:
     Returns:
         Dictionary of detected canvas resources.
     """
-    from application.agents.shared.hooks import detect_canvas_resources
-
-    return detect_canvas_resources(changed_files)
+    # Hook framework removed - return empty dict
+    return {}
 
 
 async def commit_and_push(

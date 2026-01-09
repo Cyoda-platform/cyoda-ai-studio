@@ -215,9 +215,13 @@ async def _prepare_build_command(
         Tuple of (command_list, error_message) or (None, error_message) if failed.
     """
     try:
-        from application.agents.shared.repository_tools.operations.utils import _build_augment_command
+        from application.agents.shared.repository_tools.operations.utils import (
+            _build_augment_command,
+        )
 
-        command = _build_augment_command(language, repository_path, branch_name, augment_model)
+        command = _build_augment_command(
+            language, repository_path, branch_name, augment_model
+        )
         logger.info(f"Build command prepared: {' '.join(command)}")
         return command, None
 

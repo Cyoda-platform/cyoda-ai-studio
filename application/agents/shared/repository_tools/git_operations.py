@@ -4,7 +4,9 @@ import asyncio
 import logging
 from typing import Optional
 
-from application.services.github.auth.installation_token_manager import InstallationTokenManager
+from application.services.github.auth.installation_token_manager import (
+    InstallationTokenManager,
+)
 from application.services.github.repository.url_parser import parse_repository_url
 from common.exception.exceptions import InvalidTokenException
 
@@ -47,8 +49,6 @@ async def _run_git_command(
         return 1, "", str(e)
 
 
-
-
 async def _get_git_diff(repository_path: str) -> str:
     """
     Get git diff stats for the repository.
@@ -83,9 +83,9 @@ async def _get_git_diff(repository_path: str) -> str:
 # No need to send messages to conversation anymore
 
 
-
-
-async def _get_authenticated_repo_url_sync(repository_url: str, installation_id: str) -> str:
+async def _get_authenticated_repo_url_sync(
+    repository_url: str, installation_id: str
+) -> str:
     """
     Get authenticated repository URL for git operations (fully async).
 
@@ -105,13 +105,12 @@ async def _get_authenticated_repo_url_sync(repository_url: str, installation_id:
         url_info = parse_repository_url(repository_url)
         authenticated_url = url_info.to_authenticated_url(token)
 
-        logger.info(f"✅ Generated authenticated URL for {url_info.owner}/{url_info.repo_name}")
+        logger.info(
+            f"✅ Generated authenticated URL for {url_info.owner}/{url_info.repo_name}"
+        )
         return authenticated_url
 
     except Exception as e:
         logger.error(f"❌ Failed to generate authenticated URL: {e}")
         # Return original URL as fallback (will likely fail for private repos)
         return repository_url
-
-
-

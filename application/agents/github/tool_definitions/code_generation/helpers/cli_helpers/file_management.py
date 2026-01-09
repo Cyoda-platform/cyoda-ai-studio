@@ -54,7 +54,9 @@ def _create_output_log_file(
     """
     try:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_filename = f"{CLI_PROVIDER}_{process_type}_{branch_name}_TEMP_{timestamp}.log"
+        output_filename = (
+            f"{CLI_PROVIDER}_{process_type}_{branch_name}_TEMP_{timestamp}.log"
+        )
         output_file = os.path.join("/tmp", output_filename)
         output_fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
 

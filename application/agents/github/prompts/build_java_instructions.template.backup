@@ -27,7 +27,7 @@ This project is a **Cyoda client application** built with Spring Boot and Gradle
   `entityResponse.getMetadata().getState()`
   Entity state is managed by the workflow and you can not change it manually, you can only read it.
  If requirements mention "state" or "status", map them to `entity.meta.state` instead and explain this to the user.
-    
+
 - **Business ID (user-defined, non-unique, mutable)**:
   retrievable/updatable with business ID–specific methods.
 - **Update semantics**:
@@ -140,14 +140,14 @@ If not run `./gradlew build`
 public class EntityName implements CyodaEntity {
     public static final String ENTITY_NAME = EntityName.class.getSimpleName();
     public static final Integer ENTITY_VERSION = 1;
-    
+
     // Business ID field (required)
     private String entityId;
-    
+
     // Required fields per requirements
     // Optional fields
     // Nested classes for complex structures
-    
+
     @Override
     public OperationSpecification getModelKey() {
         ModelSpec modelSpec = new ModelSpec();
@@ -155,7 +155,7 @@ public class EntityName implements CyodaEntity {
         modelSpec.setVersion(ENTITY_VERSION);
         return new OperationSpecification.Entity(modelSpec, ENTITY_NAME);
     }
-    
+
     @Override
     public boolean isValid() {
         return entityId != null && !entityId.trim().isEmpty();
@@ -263,7 +263,7 @@ public class ProcessorName implements CyodaProcessor {
     public boolean supports(OperationSpecification modelSpec) {
         return className.equalsIgnoreCase(modelSpec.operationName());
     }
-    
+
     // Implementation methods...
 }
 ```

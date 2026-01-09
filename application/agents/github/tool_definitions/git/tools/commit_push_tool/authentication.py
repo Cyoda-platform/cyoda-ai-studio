@@ -32,17 +32,15 @@ async def _get_repo_url_and_installation_id(
 
     if repository_type == "public":
         from common.config.config import (
-            PYTHON_PUBLIC_REPO_URL,
-            JAVA_PUBLIC_REPO_URL,
             GITHUB_PUBLIC_REPO_INSTALLATION_ID,
+            JAVA_PUBLIC_REPO_URL,
+            PYTHON_PUBLIC_REPO_URL,
         )
 
         repo_url = (
             PYTHON_PUBLIC_REPO_URL
             if language.lower() == "python"
-            else JAVA_PUBLIC_REPO_URL
-            if language.lower() == "java"
-            else None
+            else JAVA_PUBLIC_REPO_URL if language.lower() == "java" else None
         )
         logger.info(f"🔐 Using public repository: {repo_url}")
         return repo_url, GITHUB_PUBLIC_REPO_INSTALLATION_ID
@@ -64,9 +62,13 @@ async def _update_remote_url(
         True if successful, False otherwise
     """
     try:
-        from application.agents.shared.repository_tools import _get_authenticated_repo_url_sync
+        from application.agents.shared.repository_tools import (
+            _get_authenticated_repo_url_sync,
+        )
 
-        authenticated_url = await _get_authenticated_repo_url_sync(repo_url, installation_id)
+        authenticated_url = await _get_authenticated_repo_url_sync(
+            repo_url, installation_id
+        )
 
         process = await asyncio.create_subprocess_exec(
             "git",

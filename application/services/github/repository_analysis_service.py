@@ -6,9 +6,9 @@ This file maintains backward compatibility by re-exporting all components.
 
 # Re-export all public components for backward compatibility
 from .repository_analysis_service import (
+    RepositoryAnalysisService,
     SearchMatch,
     SearchResult,
-    RepositoryAnalysisService,
 )
 
 __all__ = [

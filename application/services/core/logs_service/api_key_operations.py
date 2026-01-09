@@ -11,7 +11,7 @@ from application.routes.common.constants import (
 )
 from application.services.core.config_service import ConfigService
 
-from .helpers import build_role_descriptors, encode_api_key, create_basic_auth_header
+from .helpers import build_role_descriptors, create_basic_auth_header, encode_api_key
 
 logger = logging.getLogger(__name__)
 

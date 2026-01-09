@@ -88,4 +88,12 @@ def _extract_context_values(
         f"branch={branch_name}, repo={repository_name}"
     )
 
-    return language, repository_path, branch_name, repository_name, session_id, repository_type, conversation_id
+    return (
+        language,
+        repository_path,
+        branch_name,
+        repository_name,
+        session_id,
+        repository_type,
+        conversation_id,
+    )

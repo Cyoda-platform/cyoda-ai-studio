@@ -61,4 +61,3 @@ class LogicalOperator(Enum):
 
     AND = "and"
     OR = "or"
-

@@ -3,9 +3,8 @@
 
 import json
 import sys
-from pathlib import Path
 from datetime import datetime
-
+from pathlib import Path
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -278,19 +277,17 @@ TEST_CASE_TEMPLATE = """
 </div>
 """
 
+
 def extract_tool_calls(events):
     """Extract tool calls from invocation events."""
     tools = []
     for event in events:
-        if event.get('content', {}).get('role') == 'model':
-            parts = event.get('content', {}).get('parts', [])
+        if event.get("content", {}).get("role") == "model":
+            parts = event.get("content", {}).get("parts", [])
             for part in parts:
-                if part.get('function_call'):
-                    fc = part['function_call']
-                    tools.append({
-                        'name': fc.get('name'),
-                        'args': fc.get('args', {})
-                    })
+                if part.get("function_call"):
+                    fc = part["function_call"]
+                    tools.append({"name": fc.get("name"), "args": fc.get("args", {})})
     return tools
 
 
@@ -298,12 +295,12 @@ def extract_response_text(events):
     """Extract response text from invocation events."""
     texts = []
     for event in events:
-        if event.get('content', {}).get('role') == 'model':
-            parts = event.get('content', {}).get('parts', [])
+        if event.get("content", {}).get("role") == "model":
+            parts = event.get("content", {}).get("parts", [])
             for part in parts:
-                if part.get('text'):
-                    texts.append(part['text'])
-    return ' '.join(texts) if texts else None
+                if part.get("text"):
+                    texts.append(part["text"])
+    return " ".join(texts) if texts else None
 
 
 def generate_html_report(result_files, output_path):
@@ -316,12 +313,12 @@ def generate_html_report(result_files, output_path):
         if isinstance(data, str):
             data = json.loads(data)
 
-        eval_set_id = data.get('eval_set_id', eval_set_id)
-        all_cases.extend(data.get('eval_case_results', []))
+        eval_set_id = data.get("eval_set_id", eval_set_id)
+        all_cases.extend(data.get("eval_case_results", []))
 
     # Calculate summary stats
     total_cases = len(all_cases)
-    passed_count = sum(1 for c in all_cases if c.get('final_eval_status') == 1)
+    passed_count = sum(1 for c in all_cases if c.get("final_eval_status") == 1)
     failed_count = total_cases - passed_count
     pass_rate = (passed_count / total_cases * 100) if total_cases > 0 else 0
     fail_rate = 100 - pass_rate
@@ -329,22 +326,25 @@ def generate_html_report(result_files, output_path):
     # Generate test case HTML
     test_cases_html = []
     for case in all_cases:
-        case_id = case.get('eval_id', 'Unknown')
-        status = case.get('final_eval_status')
-        status_class = 'passed' if status == 1 else 'failed'
-        status_text = 'Passed' if status == 1 else 'Failed'
+        case_id = case.get("eval_id", "Unknown")
+        status = case.get("final_eval_status")
+        status_class = "passed" if status == 1 else "failed"
+        status_text = "Passed" if status == 1 else "Failed"
 
         # Generate metrics HTML
-        metrics = case.get('overall_eval_metric_results', [])
+        metrics = case.get("overall_eval_metric_results", [])
         metrics_html = []
         for metric in metrics:
-            name = metric.get('metric_name', 'Unknown')
-            score = metric.get('score', 0)
-            threshold = metric.get('threshold', 0)
-            m_status = metric.get('eval_status')
-            m_class = 'passed' if m_status == 1 else 'failed'
+            name = metric.get("metric_name", "Unknown")
+            score = metric.get("score")
+            score = 0 if score is None else score
+            threshold = metric.get("threshold")
+            threshold = 0 if threshold is None else threshold
+            m_status = metric.get("eval_status")
+            m_class = "passed" if m_status == 1 else "failed"
 
-            metrics_html.append(f"""
+            metrics_html.append(
+                f"""
                 <div class="metric {m_class}">
                     <div class="metric-name">{name}</div>
                     <div>
@@ -352,33 +352,48 @@ def generate_html_report(result_files, output_path):
                         <span class="metric-threshold">/ {threshold}</span>
                     </div>
                 </div>
-            """)
+            """
+            )
 
         # Generate invocations HTML
-        invocations = case.get('eval_metric_result_per_invocation', [])
+        invocations = case.get("eval_metric_result_per_invocation", [])
         invocations_html = []
 
         for idx, inv in enumerate(invocations):
-            expected_inv = inv.get('expected_invocation', {})
-            actual_inv = inv.get('actual_invocation', {})
+            expected_inv = inv.get("expected_invocation", {})
+            actual_inv = inv.get("actual_invocation", {})
 
             # Get user query
-            exp_query = expected_inv.get('user_content', {}).get('parts', [{}])[0].get('text', 'N/A')
+            exp_query = (
+                expected_inv.get("user_content", {})
+                .get("parts", [{}])[0]
+                .get("text", "N/A")
+            )
 
             # Get expected tools
-            expected_tools = expected_inv.get('intermediate_data', {}).get('tool_uses', [])
+            expected_tools = expected_inv.get("intermediate_data", {}).get(
+                "tool_uses", []
+            )
 
             # Get actual tools
-            actual_events = actual_inv.get('intermediate_data', {}).get('invocation_events', [])
+            actual_events = actual_inv.get("intermediate_data", {}).get(
+                "invocation_events", []
+            )
             actual_tools = extract_tool_calls(actual_events)
 
             # Get expected response text
-            expected_response = expected_inv.get('final_response', {}).get('parts', [{}])[0].get('text', None)
+            expected_response = (
+                expected_inv.get("final_response", {})
+                .get("parts", [{}])[0]
+                .get("text", None)
+            )
 
             # Get actual response text from final_response field (what ADK evaluator sees)
-            actual_final_response = actual_inv.get('final_response')
-            if actual_final_response and actual_final_response.get('parts'):
-                actual_response = actual_final_response.get('parts', [{}])[0].get('text', None)
+            actual_final_response = actual_inv.get("final_response")
+            if actual_final_response and actual_final_response.get("parts"):
+                actual_response = actual_final_response.get("parts", [{}])[0].get(
+                    "text", None
+                )
             else:
                 actual_response = None
 
@@ -388,49 +403,55 @@ def generate_html_report(result_files, output_path):
             # Build conversation flow HTML from events
             conversation_flow_html = ""
             for event_idx, event in enumerate(actual_events):
-                author = event.get('author', 'unknown')
-                content = event.get('content', {})
-                role = content.get('role', 'unknown')
-                parts = content.get('parts', [])
+                author = event.get("author", "unknown")
+                content = event.get("content", {})
+                role = content.get("role", "unknown")
+                parts = content.get("parts", [])
 
-                event_class = role if role in ['model', 'user'] else 'unknown'
+                event_class = role if role in ["model", "user"] else "unknown"
                 event_parts_html = []
 
                 for part in parts:
-                    if part.get('text'):
-                        event_parts_html.append(f'<div class="event-content">{part["text"]}</div>')
+                    if part.get("text"):
+                        event_parts_html.append(
+                            f'<div class="event-content">{part["text"]}</div>'
+                        )
 
-                    if part.get('function_call'):
-                        fc = part['function_call']
-                        args_str = json.dumps(fc.get('args', {}))
-                        event_parts_html.append(f'''
+                    if part.get("function_call"):
+                        fc = part["function_call"]
+                        args_str = json.dumps(fc.get("args", {}))
+                        event_parts_html.append(
+                            f"""
                             <div class="function-call">
                                 <strong>🔧 Function Call:</strong> {fc.get('name')}({args_str})
                             </div>
-                        ''')
+                        """
+                        )
 
-                    if part.get('function_response'):
-                        fr = part['function_response']
-                        response_str = json.dumps(fr.get('response', {}), indent=2)
-                        event_parts_html.append(f'''
+                    if part.get("function_response"):
+                        fr = part["function_response"]
+                        response_str = json.dumps(fr.get("response", {}), indent=2)
+                        event_parts_html.append(
+                            f"""
                             <div class="function-response">
                                 <strong>✅ Function Response:</strong> {fr.get('name')}<br>
                                 <pre style="margin: 5px 0; font-size: 0.85em;">{response_str}</pre>
                             </div>
-                        ''')
+                        """
+                        )
 
                 if event_parts_html:
-                    conversation_flow_html += f'''
+                    conversation_flow_html += f"""
                         <div class="event {event_class}">
                             <div class="event-header">Event #{event_idx + 1} - {author} ({role})</div>
                             {''.join(event_parts_html)}
                         </div>
-                    '''
+                    """
 
             # Build tools comparison
             expected_tools_html = ""
             for tool in expected_tools:
-                args_str = json.dumps(tool.get('args', {}))
+                args_str = json.dumps(tool.get("args", {}))
                 expected_tools_html += f"""
                     <div class="tool-call">
                         <span class="tool-name">{tool.get('name')}</span>
@@ -440,7 +461,7 @@ def generate_html_report(result_files, output_path):
 
             actual_tools_html = ""
             for tool in actual_tools:
-                args_str = json.dumps(tool.get('args', {}))
+                args_str = json.dumps(tool.get("args", {}))
                 actual_tools_html += f"""
                     <div class="tool-call">
                         <span class="tool-name">{tool.get('name')}</span>
@@ -452,7 +473,7 @@ def generate_html_report(result_files, output_path):
             match = len(expected_tools) == len(actual_tools)
             if match:
                 for exp, act in zip(expected_tools, actual_tools):
-                    if exp.get('name') != act.get('name'):
+                    if exp.get("name") != act.get("name"):
                         match = False
                         break
 
@@ -460,21 +481,30 @@ def generate_html_report(result_files, output_path):
             match_class = "match" if match else "mismatch"
 
             # Build response comparison HTML
-            expected_response_html = f'<div class="response-text">{expected_response}</div>' if expected_response else '<div class="response-text no-response">No response</div>'
+            expected_response_html = (
+                f'<div class="response-text">{expected_response}</div>'
+                if expected_response
+                else '<div class="response-text no-response">No response</div>'
+            )
 
             if actual_response:
-                actual_response_html = f'<div class="response-text">{actual_response}</div>'
+                actual_response_html = (
+                    f'<div class="response-text">{actual_response}</div>'
+                )
             else:
                 # Show null but also show what was in events if different
                 if actual_response_from_events:
-                    actual_response_html = f'''<div class="response-text no-response">null (ADK sees no final_response)</div>
+                    actual_response_html = f"""<div class="response-text no-response">null (ADK sees no final_response)</div>
                     <div style="margin-top: 8px; padding: 10px; background: #fff3cd; border-left: 3px solid #ffc107; border-radius: 4px; font-size: 0.85em;">
                         <strong>Note:</strong> Coordinator said: "{actual_response_from_events}" but transfer ended turn before final_response was set.
-                    </div>'''
+                    </div>"""
                 else:
-                    actual_response_html = '<div class="response-text no-response">null</div>'
+                    actual_response_html = (
+                        '<div class="response-text no-response">null</div>'
+                    )
 
-            invocations_html.append(f"""
+            invocations_html.append(
+                f"""
                 <div class="invocation">
                     <div class="section-title">Invocation #{idx + 1}</div>
                     <div class="query"><strong>Query:</strong> {exp_query}</div>
@@ -509,42 +539,47 @@ def generate_html_report(result_files, output_path):
                     </div>
                     <div class="match-indicator {match_class}">{match_indicator}</div>
                 </div>
-            """)
+            """
+            )
 
-        test_cases_html.append(TEST_CASE_TEMPLATE.format(
-            test_id=case_id,
-            status_class=status_class,
-            status_text=status_text,
-            metrics_html=''.join(metrics_html),
-            invocations_html=''.join(invocations_html)
-        ))
+        test_cases_html.append(
+            TEST_CASE_TEMPLATE.format(
+                test_id=case_id,
+                status_class=status_class,
+                status_text=status_text,
+                metrics_html="".join(metrics_html),
+                invocations_html="".join(invocations_html),
+            )
+        )
 
     # Generate final HTML
     html = HTML_TEMPLATE.format(
         eval_set_id=eval_set_id,
-        timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         total_cases=total_cases,
         passed_count=passed_count,
         failed_count=failed_count,
         pass_rate=pass_rate,
         fail_rate=fail_rate,
-        test_cases_html=''.join(test_cases_html)
+        test_cases_html="".join(test_cases_html),
     )
 
     # Write to file
     output_file = Path(output_path)
-    output_file.write_text(html, encoding='utf-8')
+    output_file.write_text(html, encoding="utf-8")
 
     print(f"✅ HTML report generated: {output_file.absolute()}")
     print(f"📊 Summary: {passed_count}/{total_cases} tests passed ({pass_rate:.0f}%)")
     print(f"🌐 Open in browser: file://{output_file.absolute()}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: generate_html_report.py <eval_result_files...> [-o output.html]")
         print("\nExample:")
-        print("  python generate_html_report.py application/agents/.adk/eval_history/agents_*.json")
+        print(
+            "  python generate_html_report.py application/agents/.adk/eval_history/agents_*.json"
+        )
         print("  python generate_html_report.py results/*.json -o report.html")
         sys.exit(1)
 
@@ -554,12 +589,13 @@ if __name__ == '__main__':
 
     i = 1
     while i < len(sys.argv):
-        if sys.argv[i] == '-o' and i + 1 < len(sys.argv):
+        if sys.argv[i] == "-o" and i + 1 < len(sys.argv):
             output_path = sys.argv[i + 1]
             i += 2
         else:
             # Expand glob patterns
             from glob import glob
+
             result_files.extend(glob(sys.argv[i]))
             i += 1
 

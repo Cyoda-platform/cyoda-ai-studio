@@ -42,4 +42,3 @@ Sure! I will launch the setup assistant for you. Please wait a moment while I la
 Once ready, you can access the setup assistant in the cloud. You can track the progress in the Tasks panel.
 
 The query is passed to the Setup Assistant Agent. The assistant will guide the user through the setup process.
-

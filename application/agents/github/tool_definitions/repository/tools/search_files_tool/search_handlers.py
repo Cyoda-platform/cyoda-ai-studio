@@ -9,9 +9,9 @@ from pathlib import Path
 
 from .command_execution import (
     execute_find_command,
-    get_matching_lines,
     get_directory_contents,
     get_file_type,
+    get_matching_lines,
 )
 
 
@@ -48,9 +48,7 @@ async def search_content(
     return matches
 
 
-async def search_filename(
-    repo_path: Path, search_pattern: str
-) -> list[dict]:
+async def search_filename(repo_path: Path, search_pattern: str) -> list[dict]:
     """Search by filename pattern.
 
     Args:
@@ -80,9 +78,7 @@ async def search_filename(
     return matches
 
 
-async def search_structure(
-    repo_path: Path, search_pattern: str
-) -> list[dict]:
+async def search_structure(repo_path: Path, search_pattern: str) -> list[dict]:
     """Search directory structure.
 
     Args:
@@ -111,9 +107,7 @@ async def search_structure(
     return matches
 
 
-async def search_filetype(
-    repo_path: Path, search_pattern: str
-) -> list[dict]:
+async def search_filetype(repo_path: Path, search_pattern: str) -> list[dict]:
     """Search by file type.
 
     Args:

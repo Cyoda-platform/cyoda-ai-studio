@@ -1,7 +1,9 @@
 """Tests for documentation fetcher."""
 
-import pytest
 import xml.etree.ElementTree as ET
+
+import pytest
+
 from llm_docs.converters.docs_fetcher import DocumentationFetcher
 
 
@@ -38,7 +40,9 @@ class TestDocumentationFetcher:
 
     def test_initialization(self, sample_sitemap):
         """Test fetcher initialization."""
-        fetcher = DocumentationFetcher(sample_sitemap, max_pages=10, delay_between_requests=0.1)
+        fetcher = DocumentationFetcher(
+            sample_sitemap, max_pages=10, delay_between_requests=0.1
+        )
 
         assert fetcher.sitemap_path == sample_sitemap
         assert fetcher.max_pages == 10
@@ -52,21 +56,21 @@ class TestDocumentationFetcher:
 
         # Should skip privacy page, load 2 others (excluding root)
         assert len(urls) == 3
-        assert all('url' in u and 'priority' in u for u in urls)
+        assert all("url" in u and "priority" in u for u in urls)
 
         # Check that privacy page was skipped
-        assert not any('privacy' in u['url'] for u in urls)
+        assert not any("privacy" in u["url"] for u in urls)
 
         # Verify sorted by priority
-        assert urls[0]['priority'] >= urls[1]['priority']
+        assert urls[0]["priority"] >= urls[1]["priority"]
 
     def test_load_sitemap_custom_skip_patterns(self, sample_sitemap):
         """Test sitemap loading with custom skip patterns."""
         fetcher = DocumentationFetcher(sample_sitemap)
-        urls = fetcher.load_sitemap(skip_patterns=['getting-started'])
+        urls = fetcher.load_sitemap(skip_patterns=["getting-started"])
 
         # Should skip getting-started pages
-        assert not any('getting-started' in u['url'] for u in urls)
+        assert not any("getting-started" in u["url"] for u in urls)
 
     def test_generate_condensed_docs_txt(self, sample_sitemap):
         """Test condensed docs generation."""
@@ -86,10 +90,7 @@ class TestDocumentationFetcher:
         fetcher = DocumentationFetcher(sample_sitemap)
         fetcher.load_sitemap()
 
-        categories = {
-            'getting-started': 'Quick Start',
-            'guides': 'User Guides'
-        }
+        categories = {"getting-started": "Quick Start", "guides": "User Guides"}
 
         condensed = fetcher.generate_condensed_docs_txt(categories=categories)
 
@@ -121,8 +122,8 @@ class TestDocumentationFetcher:
         fetcher = DocumentationFetcher(sample_sitemap)
         urls = fetcher.load_sitemap()
 
-        getting_started_urls = [u for u in urls if '/getting-started/' in u['url']]
-        guide_urls = [u for u in urls if '/guides/' in u['url']]
+        getting_started_urls = [u for u in urls if "/getting-started/" in u["url"]]
+        guide_urls = [u for u in urls if "/guides/" in u["url"]]
 
         assert len(getting_started_urls) > 0
         assert len(guide_urls) > 0

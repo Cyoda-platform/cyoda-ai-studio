@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_get_the_logs_of_a_specific_application_deployed_in",
+  "name": "environment_scenario_get_the_logs_of_a_specific_application_deployed_in",
+  "description": "Test case for: As a user, I want to get the logs of a specific application deployed in a Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_get_app_logs",
+      "conversation": [
+        {
+          "invocation_id": "e-48157270-8016-4bab-bbe6-69f057b2c44f",
+          "user_content": {
+            "parts": [
+              {
+                "text": "get the logs of a specific application deployed in a Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I can fetch those logs \u2014 I need a couple details first.\n\n- Which environment? (e.g., dev, staging, prod) \u2014 I will run check_environment_exists(env_name) first.\n- Which application name?\n- Optional: a query (e.g., ERROR), time_range (e.g., 1h) or a deployment start ISO timestamp (since_timestamp) for newly deployed apps.\n\nDefaults: time_range = 15m, size = 50 lines. For new deployments, prefer since_timestamp to avoid old logs.\n\nWhat do you want to do next?\n\n[options-single-choice: Provide Environment & App, List Environments, Cancel]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8056664
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8056674
+    }
+  ],
+  "creation_timestamp": 1767903917.8056676
+}

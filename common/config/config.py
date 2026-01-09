@@ -63,18 +63,28 @@ GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
 
 # GitHub App - Public Repository Configuration
 GITHUB_PUBLIC_REPO_INSTALLATION_ID = os.getenv("GITHUB_PUBLIC_REPO_INSTALLATION_ID")
-PYTHON_PUBLIC_REPO_URL = os.getenv("PYTHON_PUBLIC_REPO_URL", "https://github.com/Cyoda-platform/mcp-cyoda-quart-app")
-JAVA_PUBLIC_REPO_URL = os.getenv("JAVA_PUBLIC_REPO_URL", "https://github.com/Cyoda-platform/java-client-template")
+PYTHON_PUBLIC_REPO_URL = os.getenv(
+    "PYTHON_PUBLIC_REPO_URL", "https://github.com/Cyoda-platform/mcp-cyoda-quart-app"
+)
+JAVA_PUBLIC_REPO_URL = os.getenv(
+    "JAVA_PUBLIC_REPO_URL", "https://github.com/Cyoda-platform/java-client-template"
+)
 
 # GitHub repository defaults
 GH_DEFAULT_OWNER = os.getenv("GH_DEFAULT_OWNER", "Cyoda-platform")
-GH_DEFAULT_REPOS = os.getenv("GH_DEFAULT_REPOS", "mcp-cyoda-quart-app,java-client-template").split(",")
+GH_DEFAULT_REPOS = os.getenv(
+    "GH_DEFAULT_REPOS", "mcp-cyoda-quart-app,java-client-template"
+).split(",")
 GH_DEFAULT_USERNAME = os.getenv("GH_DEFAULT_USERNAME", "target-username")
 GH_DEFAULT_PERMISSION = os.getenv("GH_DEFAULT_PERMISSION", "push")
 
 # Repository configuration
-REPOSITORY_URL = os.getenv("REPOSITORY_URL", "https://github.com/{owner}/{repository_name}")
-RAW_REPOSITORY_URL = os.getenv("RAW_REPOSITORY_URL", "https://raw.githubusercontent.com/{owner}/{repository_name}")
+REPOSITORY_URL = os.getenv(
+    "REPOSITORY_URL", "https://github.com/{owner}/{repository_name}"
+)
+RAW_REPOSITORY_URL = os.getenv(
+    "RAW_REPOSITORY_URL", "https://raw.githubusercontent.com/{owner}/{repository_name}"
+)
 PYTHON_REPOSITORY_NAME = os.getenv("PYTHON_REPOSITORY_NAME", "mcp-cyoda-quart-app")
 JAVA_REPOSITORY_NAME = os.getenv("JAVA_REPOSITORY_NAME", "java-client-template")
 CLIENT_GIT_BRANCH = os.getenv("CLIENT_GIT_BRANCH", "main")
@@ -89,13 +99,23 @@ AI_SDK = os.getenv("AI_SDK", "google")  # "google" or "openai"
 
 # Code Generation CLI Configuration
 CLI_PROVIDER = os.getenv("CLI_PROVIDER", "augment")  # "augment", "claude", or "gemini"
-AUGMENT_MODEL = os.getenv("AUGMENT_MODEL", "haiku4.5")  # Model for augment code generation
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "default")  # Model for Claude CLI (use "default" to let CLI choose)
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "default")  # Model for Gemini CLI (use "default" to let CLI choose)
+AUGMENT_MODEL = os.getenv(
+    "AUGMENT_MODEL", "haiku4.5"
+)  # Model for augment code generation
+CLAUDE_MODEL = os.getenv(
+    "CLAUDE_MODEL", "default"
+)  # Model for Claude CLI (use "default" to let CLI choose)
+GEMINI_MODEL = os.getenv(
+    "GEMINI_MODEL", "default"
+)  # Model for Gemini CLI (use "default" to let CLI choose)
 
 # Claude CLI execution limits
-CLAUDE_TIMEOUT_SECONDS = int(os.getenv("CLAUDE_TIMEOUT_SECONDS", "3600"))  # Default: 1 hour (3600s)
-CLAUDE_MAX_TOOL_CALLS = os.getenv("CLAUDE_MAX_TOOL_CALLS", "100")  # Default: 100 tool calls (use "0" or "unlimited" to disable)
+CLAUDE_TIMEOUT_SECONDS = int(
+    os.getenv("CLAUDE_TIMEOUT_SECONDS", "3600")
+)  # Default: 1 hour (3600s)
+CLAUDE_MAX_TOOL_CALLS = os.getenv(
+    "CLAUDE_MAX_TOOL_CALLS", "100"
+)  # Default: 100 tool calls (use "0" or "unlimited" to disable)
 
 # Constants
 CYODA_ENTITY_TYPE_EDGE_MESSAGE = "EDGE_MESSAGE"

@@ -37,10 +37,15 @@ async def add_files_to_git(clone_dir: str, file_paths: List[str]) -> Optional[st
     for file_path in file_paths:
         logger.info(f"Adding file to git: {file_path}")
         add_process = await asyncio.create_subprocess_exec(
-            'git', '--git-dir', f"{clone_dir}/.git", '--work-tree', clone_dir,
-            'add', file_path,
+            "git",
+            "--git-dir",
+            f"{clone_dir}/.git",
+            "--work-tree",
+            clone_dir,
+            "add",
+            file_path,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await add_process.communicate()
         if add_process.returncode != 0:
@@ -52,7 +57,9 @@ async def add_files_to_git(clone_dir: str, file_paths: List[str]) -> Optional[st
     return None
 
 
-async def commit_changes(clone_dir: str, commit_message: str, git_branch_id: str) -> Optional[str]:
+async def commit_changes(
+    clone_dir: str, commit_message: str, git_branch_id: str
+) -> Optional[str]:
     """Commit staged changes to git.
 
     Args:
@@ -65,19 +72,30 @@ async def commit_changes(clone_dir: str, commit_message: str, git_branch_id: str
     """
     # Check git status before committing
     status_process = await asyncio.create_subprocess_exec(
-        'git', '--git-dir', f"{clone_dir}/.git", '--work-tree', clone_dir,
-        'status', '--short',
+        "git",
+        "--git-dir",
+        f"{clone_dir}/.git",
+        "--work-tree",
+        clone_dir,
+        "status",
+        "--short",
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     status_stdout, status_stderr = await status_process.communicate()
     logger.info(f"Git status before commit: {status_stdout.decode().strip()}")
 
     commit_process = await asyncio.create_subprocess_exec(
-        'git', '--git-dir', f"{clone_dir}/.git", '--work-tree', clone_dir,
-        'commit', '-m', f"{commit_message}: {git_branch_id}",
+        "git",
+        "--git-dir",
+        f"{clone_dir}/.git",
+        "--work-tree",
+        clone_dir,
+        "commit",
+        "-m",
+        f"{commit_message}: {git_branch_id}",
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await commit_process.communicate()
     stdout_str = stdout.decode().strip()
@@ -89,10 +107,15 @@ async def commit_changes(clone_dir: str, commit_message: str, git_branch_id: str
 
     if commit_process.returncode != 0:
         # Check if the error is "nothing to commit" - not a real error
-        if "nothing to commit" in stdout_str.lower() or "nothing to commit" in stderr_str.lower():
+        if (
+            "nothing to commit" in stdout_str.lower()
+            or "nothing to commit" in stderr_str.lower()
+        ):
             logger.info(NOTHING_TO_COMMIT_MSG)
             return NOTHING_TO_COMMIT_MSG
-        error_msg = f"Error during git commit: stdout='{stdout_str}', stderr='{stderr_str}'"
+        error_msg = (
+            f"Error during git commit: stdout='{stdout_str}', stderr='{stderr_str}'"
+        )
         logger.error(error_msg)
         return error_msg
 
@@ -110,10 +133,17 @@ async def push_to_remote(clone_dir: str, git_branch_id: str) -> Optional[str]:
         Error message if push failed, None if successful.
     """
     push_process = await asyncio.create_subprocess_exec(
-        'git', '--git-dir', f"{clone_dir}/.git", '--work-tree', clone_dir,
-        'push', '-u', 'origin', str(git_branch_id),
+        "git",
+        "--git-dir",
+        f"{clone_dir}/.git",
+        "--work-tree",
+        clone_dir,
+        "push",
+        "-u",
+        "origin",
+        str(git_branch_id),
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await push_process.communicate()
     if push_process.returncode != 0:
@@ -135,10 +165,15 @@ async def run_git_fetch(clone_dir: str) -> tuple[bool, Optional[str]]:
         Tuple of (success, error_message)
     """
     fetch_process = await asyncio.create_subprocess_exec(
-        "git", "--git-dir", f"{clone_dir}/.git", "--work-tree", clone_dir,
-        "fetch", "origin",
+        "git",
+        "--git-dir",
+        f"{clone_dir}/.git",
+        "--work-tree",
+        clone_dir,
+        "fetch",
+        "origin",
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     fetch_stdout, fetch_stderr = await fetch_process.communicate()
 
@@ -150,7 +185,9 @@ async def run_git_fetch(clone_dir: str) -> tuple[bool, Optional[str]]:
     return True, None
 
 
-async def run_git_diff(clone_dir: str, git_branch_id: str) -> tuple[bool, Optional[str], Optional[str]]:
+async def run_git_diff(
+    clone_dir: str, git_branch_id: str
+) -> tuple[bool, Optional[str], Optional[str]]:
     """Get diff between local and remote branch.
 
     Args:
@@ -161,10 +198,16 @@ async def run_git_diff(clone_dir: str, git_branch_id: str) -> tuple[bool, Option
         Tuple of (success, error_message, diff_result)
     """
     diff_process = await asyncio.create_subprocess_exec(
-        "git", "--git-dir", f"{clone_dir}/.git", "--work-tree", clone_dir,
-        "diff", f"origin/{str(git_branch_id)}", str(git_branch_id),
+        "git",
+        "--git-dir",
+        f"{clone_dir}/.git",
+        "--work-tree",
+        clone_dir,
+        "diff",
+        f"origin/{str(git_branch_id)}",
+        str(git_branch_id),
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     diff_stdout, diff_stderr = await diff_process.communicate()
 
@@ -188,15 +231,23 @@ async def configure_pull_strategy(clone_dir: str) -> bool:
         True if configuration succeeded
     """
     config_process = await asyncio.create_subprocess_exec(
-        "git", "--git-dir", f"{clone_dir}/.git", "--work-tree", clone_dir,
-        "config", "pull.rebase", GIT_CONFIG_PULL_REBASE,
+        "git",
+        "--git-dir",
+        f"{clone_dir}/.git",
+        "--work-tree",
+        clone_dir,
+        "config",
+        "pull.rebase",
+        GIT_CONFIG_PULL_REBASE,
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     config_stdout, config_stderr = await config_process.communicate()
 
     if config_process.returncode != 0:
-        logger.warning(f"Warning: Failed to set git pull.rebase config: {config_stderr.decode()}")
+        logger.warning(
+            f"Warning: Failed to set git pull.rebase config: {config_stderr.decode()}"
+        )
         return False
 
     logger.info("Git pull.rebase set to false (merge strategy)")
@@ -217,11 +268,19 @@ async def run_git_pull(
         Tuple of (success, error_message)
     """
     pull_process = await asyncio.create_subprocess_exec(
-        "git", "--git-dir", f"{clone_dir}/.git", "--work-tree", clone_dir,
-        "pull", "--strategy", merge_strategy, f"--strategy-option={MERGE_STRATEGY_OPTION}",
-        "origin", str(git_branch_id),
+        "git",
+        "--git-dir",
+        f"{clone_dir}/.git",
+        "--work-tree",
+        clone_dir,
+        "pull",
+        "--strategy",
+        merge_strategy,
+        f"--strategy-option={MERGE_STRATEGY_OPTION}",
+        "origin",
+        str(git_branch_id),
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     pull_stdout, pull_stderr = await pull_process.communicate()
 
@@ -245,9 +304,12 @@ async def perform_git_clone(repo_url: str, clone_dir: str) -> Optional[str]:
         Error message if clone failed, None if successful.
     """
     clone_process = await asyncio.create_subprocess_exec(
-        'git', 'clone', repo_url, clone_dir,
+        "git",
+        "clone",
+        repo_url,
+        clone_dir,
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await clone_process.communicate()
 
@@ -262,7 +324,11 @@ async def perform_git_clone(repo_url: str, clone_dir: str) -> Optional[str]:
 async def run_git_config():
     """Configure git pull behavior."""
     process = await asyncio.create_subprocess_exec(
-        "git", "config", "pull.rebase", "false", "--global",
+        "git",
+        "config",
+        "pull.rebase",
+        "false",
+        "--global",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )

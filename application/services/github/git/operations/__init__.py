@@ -15,43 +15,41 @@ For new code, consider importing directly from the submodules as needed.
 
 from __future__ import annotations
 
+# Re-export result types from models
+from application.services.github.models.types import GitOperationResult
 from common.config.config import CLONE_REPO
 
-# Re-export submodule functions
-from .url_management import get_repository_url
-
 from .branch_management import (
+    checkout_base_and_create_branch,
     checkout_branch_if_exists,
     create_branch_from_base,
-    checkout_base_and_create_branch,
-    set_upstream_tracking,
     ensure_branch_exists,
-)
-
-from .local_operations import (
-    add_files_to_git,
-    commit_changes,
-    push_to_remote,
-    run_git_fetch,
-    run_git_diff,
-    configure_pull_strategy,
-    run_git_pull,
-    perform_git_clone,
-    run_git_config,
-    repo_exists,
-    DEFAULT_MERGE_STRATEGY,
-    NO_CHANGES_TO_PULL_MSG,
-    NOTHING_TO_COMMIT_MSG,
+    set_upstream_tracking,
 )
 
 # Re-export main classes
 from .git_operations import (
-    GitOperationState,
     GitOperations,
+    GitOperationState,
+)
+from .local_operations import (
+    DEFAULT_MERGE_STRATEGY,
+    NO_CHANGES_TO_PULL_MSG,
+    NOTHING_TO_COMMIT_MSG,
+    add_files_to_git,
+    commit_changes,
+    configure_pull_strategy,
+    perform_git_clone,
+    push_to_remote,
+    repo_exists,
+    run_git_config,
+    run_git_diff,
+    run_git_fetch,
+    run_git_pull,
 )
 
-# Re-export result types from models
-from application.services.github.models.types import GitOperationResult
+# Re-export submodule functions
+from .url_management import get_repository_url
 
 __all__ = [
     # Config constants (for test mocking)

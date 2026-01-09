@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Dict
 
 from ..constants import (
-    PROJECT_TYPE_PYTHON,
     PROJECT_TYPE_JAVA,
+    PROJECT_TYPE_PYTHON,
     RESOURCE_TYPE_ENTITY,
     RESOURCE_TYPE_WORKFLOW,
 )

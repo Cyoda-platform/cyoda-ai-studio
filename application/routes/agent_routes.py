@@ -22,6 +22,7 @@ agent_bp = Blueprint("agent", __name__, url_prefix="/api/agent")
 
 class SimpleToolContext:
     """Minimal tool context for calling agent tools."""
+
     def __init__(self, state: dict):
         self.state = state
 
@@ -37,7 +38,7 @@ async def _rate_limit_key() -> str:
 async def list_environments_endpoint() -> tuple[Dict[str, Any], int]:
     """
     List all environments for the current user.
-    
+
     Returns:
         {
             "environments": [
@@ -55,10 +56,12 @@ async def list_environments_endpoint() -> tuple[Dict[str, Any], int]:
         from application.agents.environment.tools import list_environments
 
         # Create a minimal tool context with user info
-        tool_context = SimpleToolContext(state={
-            "user_id": request.user_id,
-            "conversation_id": request.headers.get("X-Conversation-ID", ""),
-        })
+        tool_context = SimpleToolContext(
+            state={
+                "user_id": request.user_id,
+                "conversation_id": request.headers.get("X-Conversation-ID", ""),
+            }
+        )
 
         # Call the tool
         result_json = await list_environments(tool_context)
@@ -80,12 +83,12 @@ async def list_environments_endpoint() -> tuple[Dict[str, Any], int]:
 async def list_user_apps_endpoint() -> tuple[Dict[str, Any], int]:
     """
     List all user applications in a specific environment.
-    
+
     Request body:
         {
             "env_name": "dev"
         }
-    
+
     Returns:
         {
             "environment": "dev",
@@ -111,11 +114,15 @@ async def list_user_apps_endpoint() -> tuple[Dict[str, Any], int]:
             return {"error": "env_name parameter is required"}, 400
 
         # Create a minimal tool context with user info
-        tool_context = SimpleToolContext(state={
-            "user_id": request.user_id,
-            "conversation_id": request.headers.get("X-Conversation-ID", ""),
-            "auth_token": request.headers.get("Authorization", "").replace("Bearer ", ""),
-        })
+        tool_context = SimpleToolContext(
+            state={
+                "user_id": request.user_id,
+                "conversation_id": request.headers.get("X-Conversation-ID", ""),
+                "auth_token": request.headers.get("Authorization", "").replace(
+                    "Bearer ", ""
+                ),
+            }
+        )
 
         # Call the tool
         result_json = await list_user_apps(tool_context, env_name)
@@ -129,4 +136,3 @@ async def list_user_apps_endpoint() -> tuple[Dict[str, Any], int]:
     except Exception as e:
         logger.exception(f"Error listing user applications: {e}")
         return {"error": str(e)}, 500
-

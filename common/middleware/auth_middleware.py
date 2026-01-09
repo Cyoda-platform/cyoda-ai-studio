@@ -39,6 +39,7 @@ def require_auth(func: Callable) -> Callable:
             user_id = request.user_id
             return {'message': f'Hello {user_id}'}
     """
+
     @functools.wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         auth_header = request.headers.get("Authorization", "")

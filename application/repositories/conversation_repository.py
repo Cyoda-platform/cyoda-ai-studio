@@ -100,7 +100,9 @@ class ConversationRepository:
 
             if point_in_time:
                 # Parse ISO format string to datetime object
-                point_in_time_dt = datetime.fromisoformat(point_in_time.replace("Z", "+00:00"))
+                point_in_time_dt = datetime.fromisoformat(
+                    point_in_time.replace("Z", "+00:00")
+                )
                 response_list = await self.entity_service.search_at_time(
                     entity_class=Conversation.ENTITY_NAME,
                     condition=search_condition,
@@ -160,11 +162,13 @@ class ConversationRepository:
         """
         # Snapshot target state
         target_state = {
-            "chat_flow": copy.deepcopy(conversation.chat_flow) if conversation.chat_flow else {},
+            "chat_flow": (
+                copy.deepcopy(conversation.chat_flow) if conversation.chat_flow else {}
+            ),
             "adk_session_id": conversation.adk_session_id,
             "name": conversation.name,
             "description": conversation.description,
-            "background_task_ids": conversation.background_task_ids or []
+            "background_task_ids": conversation.background_task_ids or [],
         }
 
         for attempt in range(MAX_CONVERSATION_UPDATE_RETRIES):
@@ -189,8 +193,13 @@ class ConversationRepository:
                 return Conversation(**saved_data)
 
             except Exception as e:
-                if not self._is_retryable_error(str(e)) or attempt >= MAX_CONVERSATION_UPDATE_RETRIES - 1:
-                    logger.error(f"Failed to update conversation after {attempt + 1} attempts: {e}")
+                if (
+                    not self._is_retryable_error(str(e))
+                    or attempt >= MAX_CONVERSATION_UPDATE_RETRIES - 1
+                ):
+                    logger.error(
+                        f"Failed to update conversation after {attempt + 1} attempts: {e}"
+                    )
                     raise
 
                 delay = RETRY_BASE_DELAY_SECONDS * (2**attempt)
@@ -215,7 +224,9 @@ class ConversationRepository:
             entity_version=str(Conversation.ENTITY_VERSION),
         )
 
-    def _merge_conversation_state(self, fresh: Conversation, target: Dict[str, Any]) -> None:
+    def _merge_conversation_state(
+        self, fresh: Conversation, target: Dict[str, Any]
+    ) -> None:
         """
         Merge target state into fresh conversation object.
 
@@ -229,9 +240,11 @@ class ConversationRepository:
         # Merge messages
         fresh_messages = fresh.chat_flow.get("finished_flow", [])
         target_messages = target["chat_flow"].get("finished_flow", [])
-        
-        existing_ids = {m.get("technical_id") for m in fresh_messages if m.get("technical_id")}
-        
+
+        existing_ids = {
+            m.get("technical_id") for m in fresh_messages if m.get("technical_id")
+        }
+
         for msg in target_messages:
             msg_id = msg.get("technical_id")
             if msg_id and msg_id not in existing_ids:

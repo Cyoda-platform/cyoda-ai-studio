@@ -26,13 +26,13 @@ container:
       GITHUB_PUBLIC_REPO_INSTALLATION_ID: "123"
       PYTHON_PUBLIC_REPO_URL: "https://github.com/Cyoda-platform/mcp-cyoda-quart-app"
       JAVA_PUBLIC_REPO_URL: "https://github.com/Cyoda-platform/java-client-template"
-      
+
       # OPTION 1: Use mounted PEM file (recommended - see githubApp.privateKey.mountFromSecret below)
       GITHUB_APP_PRIVATE_KEY_PATH: "/secrets/private-key.pem"
-      
+
       # OPTION 2: Use PEM content from environment variable (see secretVars below)
       # GITHUB_APP_PRIVATE_KEY_PATH: ""  # Leave empty if using GITHUB_APP_PRIVATE_KEY_CONTENT
-    
+
     # Sensitive environment variables (stored in Kubernetes Secret)
     # These values should be base64 encoded
     secretVars:
@@ -40,13 +40,13 @@ container:
       CYODA_URL: "123"  # base64: https://cyoda-dev.cyoda.net
       CYODA_USERNAME: "YWRtaW4="  # base64: admin
       CYODA_PASSWORD: "eW91ci1wYXNzd29yZA=="  # base64: your-password
-      
+
       # GitHub webhook secret
       GITHUB_WEBHOOK_SECRET: "eW91ci1wYXNzd29yZA=="  # base64: your-password
 
     # Additional ConfigMaps to load
     configMaps: []
-    
+
     # Additional Secrets to load
     secrets: []
 
@@ -118,7 +118,7 @@ githubApp:
     secretKey: "private-key.pem"
     # Mount path in container
     mountPath: "/secrets"
-  
+
   # OPTION 2: Store PEM content in environment variable
   # If you prefer this option:
   # 1. Set mountFromSecret: false
@@ -197,4 +197,3 @@ global:
   registry:
     host: "your-registry.azurecr.io"
   hostAliases: []
-

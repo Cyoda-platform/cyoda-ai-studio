@@ -5,6 +5,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from application.services.github.github_service import GitHubService
+
 from .models import EntityInfo
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,12 @@ logger = logging.getLogger(__name__)
 class EntityParser:
     """Parser for entity files."""
 
-    def __init__(self, github_service: GitHubService, python_entity_path: str, python_workflow_path: str):
+    def __init__(
+        self,
+        github_service: GitHubService,
+        python_entity_path: str,
+        python_workflow_path: str,
+    ):
         self.github_service = github_service
         self.python_entity_path = python_entity_path
         self.python_workflow_path = python_workflow_path
@@ -24,7 +30,7 @@ class EntityParser:
             return "Unknown"
 
         # Look for class definition
-        match = re.search(r'class\s+(\w+)\s*\(', content)
+        match = re.search(r"class\s+(\w+)\s*\(", content)
         if match:
             return match.group(1)
 
@@ -38,15 +44,12 @@ class EntityParser:
         fields = []
 
         # Look for Field definitions
-        field_pattern = r'(\w+):\s*(?:Optional\[)?(\w+)(?:\])?\s*=\s*Field\('
+        field_pattern = r"(\w+):\s*(?:Optional\[)?(\w+)(?:\])?\s*=\s*Field\("
         for match in re.finditer(field_pattern, content):
             field_name = match.group(1)
             field_type = match.group(2)
 
-            fields.append({
-                "name": field_name,
-                "type": field_type
-            })
+            fields.append({"name": field_name, "type": field_type})
 
         return fields
 
@@ -68,7 +71,7 @@ class EntityParser:
         Returns:
             EntityInfo or None if parsing fails
         """
-        version_match = re.match(r'version_(\d+)', version_item.name)
+        version_match = re.match(r"version_(\d+)", version_item.name)
         if not version_match:
             return None
 
@@ -106,9 +109,7 @@ class EntityParser:
         )
 
     async def parse_python_entities(
-        self,
-        repository_name: str,
-        branch: str
+        self, repository_name: str, branch: str
     ) -> List[EntityInfo]:
         """Parse Python entities from repository.
 
@@ -127,7 +128,7 @@ class EntityParser:
             )
 
             for item in entity_items:
-                if not item.is_directory or item.name.startswith('_'):
+                if not item.is_directory or item.name.startswith("_"):
                     continue
 
                 entity_name = item.name
@@ -138,7 +139,10 @@ class EntityParser:
                 )
 
                 for version_item in version_items:
-                    if not version_item.is_directory or not version_item.name.startswith('version_'):
+                    if (
+                        not version_item.is_directory
+                        or not version_item.name.startswith("version_")
+                    ):
                         continue
 
                     entity_info = await self._parse_entity_version(
@@ -154,9 +158,7 @@ class EntityParser:
         return entities
 
     async def parse_java_entities(
-        self,
-        repository_name: str,
-        branch: str
+        self, repository_name: str, branch: str
     ) -> List[EntityInfo]:
         """Parse Java entities from repository."""
         # TODO: Implement Java entity parsing

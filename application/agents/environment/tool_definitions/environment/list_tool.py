@@ -7,8 +7,11 @@ import logging
 
 from google.adk.tools.tool_context import ToolContext
 
-from application.services.environment_management_service import get_environment_management_service
-from ..common.utils.utils import require_authenticated_user, handle_tool_errors
+from application.services.environment_management_service import (
+    get_environment_management_service,
+)
+
+from ..common.utils.utils import handle_tool_errors, require_authenticated_user
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +31,7 @@ async def list_environments(tool_context: ToolContext) -> str:
         JSON string with list of environments: {"environments": [...], "count": N}, or error message
     """
     # 1. Input validation
-    user_id = tool_context.state.get("user_id")
+    user_id = tool_context.state.get("user_id", "guest")
 
     # 2. Call environment management service
     env_service = get_environment_management_service()

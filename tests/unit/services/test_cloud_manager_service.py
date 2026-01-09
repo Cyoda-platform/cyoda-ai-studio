@@ -72,7 +72,9 @@ class TestCloudManagerService:
         mock_response.json.return_value = {"token": "test-access-token-123"}
         mock_response.raise_for_status = MagicMock()
 
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response):
+        with patch(
+            "httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response
+        ):
             token = await client._authenticate()
 
             assert token == "test-access-token-123"
@@ -81,7 +83,9 @@ class TestCloudManagerService:
     async def test_authenticate_missing_credentials(self, client):
         """Test authentication fails with missing credentials."""
         with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(Exception, match="Cloud manager credentials not configured"):
+            with pytest.raises(
+                Exception, match="Cloud manager credentials not configured"
+            ):
                 await client._authenticate()
 
     @pytest.mark.asyncio
@@ -91,7 +95,9 @@ class TestCloudManagerService:
         mock_response.json.return_value = {}  # No token field
         mock_response.raise_for_status = MagicMock()
 
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response):
+        with patch(
+            "httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response
+        ):
             with pytest.raises(Exception, match="Failed to authenticate.*no token"):
                 await client._authenticate()
 
@@ -105,7 +111,9 @@ class TestCloudManagerService:
         with patch(
             "httpx.AsyncClient.post",
             new_callable=AsyncMock,
-            side_effect=httpx.HTTPStatusError("401", request=MagicMock(), response=mock_response),
+            side_effect=httpx.HTTPStatusError(
+                "401", request=MagicMock(), response=mock_response
+            ),
         ):
             with pytest.raises(Exception, match="authentication failed.*401"):
                 await client._authenticate()
@@ -138,7 +146,9 @@ class TestCloudManagerService:
         mock_response.json.return_value = {"token": "cached-token-123"}
         mock_response.raise_for_status = MagicMock()
 
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response) as mock_post:
+        with patch(
+            "httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response
+        ) as mock_post:
             # First call: should authenticate
             token1 = await client.get_token()
             assert token1 == "cached-token-123"
@@ -165,7 +175,9 @@ class TestCloudManagerService:
         mock_response2.raise_for_status = MagicMock()
 
         with patch(
-            "httpx.AsyncClient.post", new_callable=AsyncMock, side_effect=[mock_response1, mock_response2]
+            "httpx.AsyncClient.post",
+            new_callable=AsyncMock,
+            side_effect=[mock_response1, mock_response2],
         ) as mock_post:
             # First call
             token1 = await client.get_token()
@@ -191,7 +203,11 @@ class TestCloudManagerService:
         mock_response.json.return_value = {"data": "test"}
         mock_response.raise_for_status = MagicMock()
 
-        with patch("httpx.AsyncClient.request", new_callable=AsyncMock, return_value=mock_response) as mock_request:
+        with patch(
+            "httpx.AsyncClient.request",
+            new_callable=AsyncMock,
+            return_value=mock_response,
+        ) as mock_request:
             await client.request("GET", "/api/test")
 
             # Verify authorization header was added
@@ -222,12 +238,18 @@ class TestCloudManagerService:
         mock_refresh_response.json.return_value = {"token": "refreshed-token"}
         mock_refresh_response.raise_for_status = MagicMock()
 
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock, side_effect=[mock_auth_response, mock_refresh_response]):
+        with patch(
+            "httpx.AsyncClient.post",
+            new_callable=AsyncMock,
+            side_effect=[mock_auth_response, mock_refresh_response],
+        ):
             with patch(
                 "httpx.AsyncClient.request",
                 new_callable=AsyncMock,
                 side_effect=[
-                    httpx.HTTPStatusError("401", request=MagicMock(), response=mock_401_response),
+                    httpx.HTTPStatusError(
+                        "401", request=MagicMock(), response=mock_401_response
+                    ),
                     mock_success_response,
                 ],
             ) as mock_request:
@@ -246,9 +268,15 @@ class TestCloudManagerService:
         mock_response = AsyncMock()
         mock_response.raise_for_status = MagicMock()
 
-        with patch("httpx.AsyncClient.request", new_callable=AsyncMock, return_value=mock_response) as mock_request:
+        with patch(
+            "httpx.AsyncClient.request",
+            new_callable=AsyncMock,
+            return_value=mock_response,
+        ) as mock_request:
             await client.get("/api/test")
-            mock_request.assert_called_with("GET", "/api/test", headers={"Authorization": "Bearer test-token"})
+            mock_request.assert_called_with(
+                "GET", "/api/test", headers={"Authorization": "Bearer test-token"}
+            )
 
             await client.post("/api/test", json={"key": "value"})
             assert mock_request.call_args[0][0] == "POST"

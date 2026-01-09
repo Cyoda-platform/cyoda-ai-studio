@@ -1,15 +1,15 @@
 """Tests for MetricsService.generate_grafana_token function."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import sys
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Mock circular imports before importing MetricsService
-sys.modules['application.routes'] = MagicMock()
-sys.modules['application.routes.common'] = MagicMock()
-sys.modules['application.routes.common.constants'] = MagicMock(
-    DEFAULT_HTTP_TIMEOUT_SECONDS=30,
-    SERVICE_ACCOUNT_TOKEN_EXPIRY_SECONDS=3600
+sys.modules["application.routes"] = MagicMock()
+sys.modules["application.routes.common"] = MagicMock()
+sys.modules["application.routes.common.constants"] = MagicMock(
+    DEFAULT_HTTP_TIMEOUT_SECONDS=30, SERVICE_ACCOUNT_TOKEN_EXPIRY_SECONDS=3600
 )
 
 from application.services.metrics_service import MetricsService
@@ -30,8 +30,12 @@ class TestGenerateGrafanaToken:
 
         service = MetricsService(mock_config_service)
 
-        with patch.object(service.grafana_ops, 'create_basic_auth_header', return_value="auth-header"):
-            with patch("application.services.metrics_service.service.httpx.AsyncClient") as mock_client_class:
+        with patch.object(
+            service.grafana_ops, "create_basic_auth_header", return_value="auth-header"
+        ):
+            with patch(
+                "application.services.metrics_service.service.httpx.AsyncClient"
+            ) as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value.__aenter__.return_value = mock_client
 
@@ -51,7 +55,9 @@ class TestGenerateGrafanaToken:
                 token_response.json = MagicMock(return_value={"key": "test-token-key"})
 
                 mock_client.get = AsyncMock(return_value=sa_list_response)
-                mock_client.post = AsyncMock(side_effect=[sa_create_response, token_response])
+                mock_client.post = AsyncMock(
+                    side_effect=[sa_create_response, token_response]
+                )
 
                 result = await service.generate_grafana_token("myorg")
                 assert result["token"] == "test-token-key"
@@ -68,22 +74,30 @@ class TestGenerateGrafanaToken:
 
         service = MetricsService(mock_config_service)
 
-        with patch.object(service.grafana_ops, 'create_basic_auth_header', return_value="auth-header"):
-            with patch("application.services.metrics_service.service.httpx.AsyncClient") as mock_client_class:
+        with patch.object(
+            service.grafana_ops, "create_basic_auth_header", return_value="auth-header"
+        ):
+            with patch(
+                "application.services.metrics_service.service.httpx.AsyncClient"
+            ) as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value.__aenter__.return_value = mock_client
 
                 # Mock service account list (with existing account)
                 sa_list_response = MagicMock()
                 sa_list_response.status_code = 200
-                sa_list_response.json = MagicMock(return_value={
-                    "serviceAccounts": [{"id": 1, "name": "metrics-myorg"}]
-                })
+                sa_list_response.json = MagicMock(
+                    return_value={
+                        "serviceAccounts": [{"id": 1, "name": "metrics-myorg"}]
+                    }
+                )
 
                 # Mock token creation
                 token_response = MagicMock()
                 token_response.status_code = 200
-                token_response.json = MagicMock(return_value={"key": "existing-token-key"})
+                token_response.json = MagicMock(
+                    return_value={"key": "existing-token-key"}
+                )
 
                 mock_client.get = AsyncMock(return_value=sa_list_response)
                 mock_client.post = AsyncMock(return_value=token_response)
@@ -103,7 +117,9 @@ class TestGenerateGrafanaToken:
 
         service = MetricsService(mock_config_service)
 
-        with patch("application.services.metrics_service.service.httpx.AsyncClient") as mock_client_class:
+        with patch(
+            "application.services.metrics_service.service.httpx.AsyncClient"
+        ) as mock_client_class:
             mock_client = AsyncMock()
             mock_client_class.return_value.__aenter__.return_value = mock_client
 
@@ -129,7 +145,9 @@ class TestGenerateGrafanaToken:
 
         service = MetricsService(mock_config_service)
 
-        with patch("application.services.metrics_service.service.httpx.AsyncClient") as mock_client_class:
+        with patch(
+            "application.services.metrics_service.service.httpx.AsyncClient"
+        ) as mock_client_class:
             mock_client = AsyncMock()
             mock_client_class.return_value.__aenter__.return_value = mock_client
 
@@ -161,8 +179,12 @@ class TestGenerateGrafanaToken:
 
         service = MetricsService(mock_config_service)
 
-        with patch.object(service.grafana_ops, 'create_basic_auth_header', return_value="auth-header"):
-            with patch("application.services.metrics_service.service.httpx.AsyncClient") as mock_client_class:
+        with patch.object(
+            service.grafana_ops, "create_basic_auth_header", return_value="auth-header"
+        ):
+            with patch(
+                "application.services.metrics_service.service.httpx.AsyncClient"
+            ) as mock_client_class:
                 mock_client = AsyncMock()
                 mock_client_class.return_value.__aenter__.return_value = mock_client
 
@@ -179,9 +201,10 @@ class TestGenerateGrafanaToken:
                 token_response.json = MagicMock(return_value={"key": "token"})
 
                 mock_client.get = AsyncMock(return_value=sa_list_response)
-                mock_client.post = AsyncMock(side_effect=[sa_create_response, token_response])
+                mock_client.post = AsyncMock(
+                    side_effect=[sa_create_response, token_response]
+                )
 
                 result = await service.generate_grafana_token("myorg")
                 # Verify auth header was used
                 assert mock_client.get.called
-

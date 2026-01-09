@@ -33,7 +33,9 @@ async def _extract_guest_token() -> str | None:
     return data.get("guest_token")
 
 
-def _validate_transfer_request(current_user_id: str, guest_token: str | None) -> str | None:
+def _validate_transfer_request(
+    current_user_id: str, guest_token: str | None
+) -> str | None:
     """Validate transfer request. Returns error message if invalid."""
     if current_user_id.startswith("guest."):
         return "Cannot transfer chats to guest user"
@@ -146,7 +148,10 @@ async def transfer_chats():
             )
 
             return APIResponse.success(
-                {"message": "Chats transferred successfully", "transferred_count": transferred_count}
+                {
+                    "message": "Chats transferred successfully",
+                    "transferred_count": transferred_count,
+                }
             )
 
         except ValueError as e:

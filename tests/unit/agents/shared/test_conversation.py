@@ -1,9 +1,12 @@
 """Tests for conversation.py module."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from application.agents.shared.repository_tools.conversation import _update_conversation_with_lock
+import pytest
+
+from application.agents.shared.repository_tools.conversation import (
+    _update_conversation_with_lock,
+)
 
 
 class TestUpdateConversationWithLock:
@@ -20,7 +23,9 @@ class TestUpdateConversationWithLock:
             update_called = True
             conversation.workflow_cache = {"test": "value"}
 
-        with patch("application.agents.shared.repository_tools.conversation.get_entity_service") as mock_entity_service:
+        with patch(
+            "application.agents.shared.repository_tools.conversation.get_entity_service"
+        ) as mock_entity_service:
             mock_service = AsyncMock()
             mock_conversation = MagicMock()
             mock_conversation.locked = False
@@ -29,15 +34,17 @@ class TestUpdateConversationWithLock:
             mock_conversation.repository_branch = "main"
             mock_conversation.workflow_cache = {}
             mock_conversation.user_id = "user-123"
-            mock_conversation.model_dump = MagicMock(return_value={
-                "id": conversation_id,
-                "user_id": "user-123",
-                "repository_name": "test-repo",
-                "repository_owner": "test-owner",
-                "repository_branch": "main",
-                "locked": False,
-                "workflow_cache": {}
-            })
+            mock_conversation.model_dump = MagicMock(
+                return_value={
+                    "id": conversation_id,
+                    "user_id": "user-123",
+                    "repository_name": "test-repo",
+                    "repository_owner": "test-owner",
+                    "repository_branch": "main",
+                    "locked": False,
+                    "workflow_cache": {},
+                }
+            )
 
             mock_response = MagicMock()
             mock_response.data = mock_conversation
@@ -49,7 +56,7 @@ class TestUpdateConversationWithLock:
             result = await _update_conversation_with_lock(
                 conversation_id=conversation_id,
                 update_fn=update_fn,
-                description="test_update"
+                description="test_update",
             )
 
             # Verify function completed and either succeeded or returned a result
@@ -65,7 +72,9 @@ class TestUpdateConversationWithLock:
         def update_fn(conversation):
             pass
 
-        with patch("application.agents.shared.repository_tools.conversation.get_entity_service") as mock_entity_service:
+        with patch(
+            "application.agents.shared.repository_tools.conversation.get_entity_service"
+        ) as mock_entity_service:
             mock_service = AsyncMock()
             mock_response = MagicMock()
             mock_response.data = None
@@ -75,7 +84,7 @@ class TestUpdateConversationWithLock:
             result = await _update_conversation_with_lock(
                 conversation_id=conversation_id,
                 update_fn=update_fn,
-                description="test_update"
+                description="test_update",
             )
 
             assert result is False
@@ -88,7 +97,9 @@ class TestUpdateConversationWithLock:
         def update_fn(conversation):
             pass
 
-        with patch("application.agents.shared.repository_tools.conversation.get_entity_service") as mock_entity_service:
+        with patch(
+            "application.agents.shared.repository_tools.conversation.get_entity_service"
+        ) as mock_entity_service:
             mock_service = AsyncMock()
             mock_conversation = MagicMock()
             mock_conversation.locked = True
@@ -107,7 +118,7 @@ class TestUpdateConversationWithLock:
                 result = await _update_conversation_with_lock(
                     conversation_id=conversation_id,
                     update_fn=update_fn,
-                    description="test_update"
+                    description="test_update",
                 )
 
                 # Should fail after max retries due to locked conversation
@@ -121,7 +132,9 @@ class TestUpdateConversationWithLock:
         def update_fn(conversation):
             pass
 
-        with patch("application.agents.shared.repository_tools.conversation.get_entity_service") as mock_entity_service:
+        with patch(
+            "application.agents.shared.repository_tools.conversation.get_entity_service"
+        ) as mock_entity_service:
             mock_service = AsyncMock()
             mock_conversation = MagicMock()
             mock_conversation.locked = False
@@ -129,14 +142,16 @@ class TestUpdateConversationWithLock:
             mock_conversation.repository_owner = "test-owner"
             mock_conversation.repository_branch = "main"
             mock_conversation.user_id = "user-123"
-            mock_conversation.model_dump = MagicMock(return_value={
-                "id": conversation_id,
-                "user_id": "user-123",
-                "repository_name": "test-repo",
-                "repository_owner": "test-owner",
-                "repository_branch": "main",
-                "locked": False
-            })
+            mock_conversation.model_dump = MagicMock(
+                return_value={
+                    "id": conversation_id,
+                    "user_id": "user-123",
+                    "repository_name": "test-repo",
+                    "repository_owner": "test-owner",
+                    "repository_branch": "main",
+                    "locked": False,
+                }
+            )
 
             mock_response = MagicMock()
             mock_response.data = mock_conversation
@@ -148,7 +163,7 @@ class TestUpdateConversationWithLock:
             result = await _update_conversation_with_lock(
                 conversation_id=conversation_id,
                 update_fn=update_fn,
-                description="custom_operation"
+                description="custom_operation",
             )
 
             # Verify function completed and returned a boolean
@@ -164,7 +179,9 @@ class TestUpdateConversationWithLock:
             nonlocal update_fn_called
             update_fn_called = True
 
-        with patch("application.agents.shared.repository_tools.conversation.get_entity_service") as mock_entity_service:
+        with patch(
+            "application.agents.shared.repository_tools.conversation.get_entity_service"
+        ) as mock_entity_service:
             mock_service = AsyncMock()
             mock_conversation = MagicMock()
             mock_conversation.locked = False
@@ -173,15 +190,17 @@ class TestUpdateConversationWithLock:
             mock_conversation.repository_branch = "main"
             mock_conversation.user_id = "user-123"
             mock_conversation.workflow_cache = {}
-            mock_conversation.model_dump = MagicMock(return_value={
-                "id": conversation_id,
-                "user_id": "user-123",
-                "repository_name": "test-repo",
-                "repository_owner": "test-owner",
-                "repository_branch": "main",
-                "locked": False,
-                "workflow_cache": {}
-            })
+            mock_conversation.model_dump = MagicMock(
+                return_value={
+                    "id": conversation_id,
+                    "user_id": "user-123",
+                    "repository_name": "test-repo",
+                    "repository_owner": "test-owner",
+                    "repository_branch": "main",
+                    "locked": False,
+                    "workflow_cache": {},
+                }
+            )
 
             mock_response = MagicMock()
             mock_response.data = mock_conversation
@@ -193,9 +212,8 @@ class TestUpdateConversationWithLock:
             result = await _update_conversation_with_lock(
                 conversation_id=conversation_id,
                 update_fn=update_fn,
-                description="test_update"
+                description="test_update",
             )
 
             # Verify function completed and returned a boolean result
             assert isinstance(result, bool)
-

@@ -64,12 +64,3 @@ async def test_qa_agent_all_evals():
         eval_dataset_file_path_or_dir="application/agents/qa/evals",
         num_runs=2,
     )
-
-
-
-
-
-
-
-
-

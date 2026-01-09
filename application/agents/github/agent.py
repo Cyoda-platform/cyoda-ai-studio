@@ -9,25 +9,23 @@ from google.adk.agents import LlmAgent
 from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
 
-from application.agents.github.prompts import create_instruction_provider
-from application.agents.shared import get_model_config
-from application.services.github.auth.installation_token_manager import (
-    InstallationTokenManager,
-)
-
-from application.agents.shared.repository_tools import (
-    clone_repository,
-    set_repository_config,
-    ask_user_to_select_option,
-    generate_branch_uuid,
-    check_existing_branch_configuration,
-    retrieve_and_save_conversation_files,
-    save_files_to_branch,
-    check_user_environment_status,
-)
-
 from application.agents.environment.tools import (
     deploy_cyoda_environment,
+)
+from application.agents.github.prompts import create_instruction_provider
+from application.agents.shared import get_model_config
+from application.agents.shared.repository_tools import (
+    check_existing_branch_configuration,
+    check_user_environment_status,
+    clone_repository,
+    generate_branch_uuid,
+    retrieve_and_save_conversation_files,
+    save_files_to_branch,
+    set_repository_config,
+)
+from application.agents.shared.streaming_callback import accumulate_streaming_response
+from application.services.github.auth.installation_token_manager import (
+    InstallationTokenManager,
 )
 
 from .tools import (
@@ -49,8 +47,6 @@ from .tools import (
     validate_workflow_against_schema,
 )
 
-from application.agents.shared.streaming_callback import accumulate_streaming_response
-
 logger = logging.getLogger(__name__)
 
 # Check if we should mock all tools for evaluation (same as coordinator)
@@ -58,6 +54,7 @@ _MOCK_ALL_TOOLS = os.getenv("MOCK_ALL_TOOLS", "").lower() in ("true", "1", "yes"
 _before_tool_callback = None
 if _MOCK_ALL_TOOLS:
     from application.agents.eval_mocking import mock_all_tools_callback
+
     _before_tool_callback = mock_all_tools_callback
     logger.info("🎭 Evaluation mode: All tools will be mocked (github_agent)")
 
@@ -95,14 +92,18 @@ def _get_github_token_for_mcp() -> str:
             loop = asyncio.get_running_loop()
             # If we get here, we're in a running loop, so we can't use run_until_complete
             # Instead, we'll return empty token and let the MCP toolset handle auth later
-            logger.warning("Event loop already running, MCP token will be obtained later")
+            logger.warning(
+                "Event loop already running, MCP token will be obtained later"
+            )
             return ""
         except RuntimeError:
             # No running loop, safe to create one
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    logger.warning("Event loop is running, MCP token will be obtained later")
+                    logger.warning(
+                        "Event loop is running, MCP token will be obtained later"
+                    )
                     return ""
             except RuntimeError:
                 loop = asyncio.new_event_loop()
@@ -133,8 +134,12 @@ def _create_github_mcp_toolset():
         return None
 
     if not _GITHUB_TOKEN:
-        logger.warning("No GitHub token available for MCP toolset, MCP tools will be disabled")
-        logger.info("GitHub agent will use custom tools only, which provide full functionality")
+        logger.warning(
+            "No GitHub token available for MCP toolset, MCP tools will be disabled"
+        )
+        logger.info(
+            "GitHub agent will use custom tools only, which provide full functionality"
+        )
         return None
 
     try:
@@ -177,7 +182,6 @@ github_mcp_toolset = _create_github_mcp_toolset()
 # Prepare tools list
 tools = [
     # Interactive UI tools
-    ask_user_to_select_option,
     # Repository configuration and setup
     set_repository_config,
     generate_branch_uuid,
@@ -193,8 +197,6 @@ tools = [
     retrieve_and_save_conversation_files,
     save_files_to_branch,
     # Environment status and deployment
-    check_user_environment_status,
-    deploy_cyoda_environment,
     # Path helper functions
     get_entity_path,
     get_workflow_path,
@@ -245,7 +247,9 @@ if github_mcp_toolset is not None:
     logger.info("✓ GitHub Agent created with custom tools and GitHub MCP integration")
     logger.info("✓ MCP Toolsets enabled: repos, issues, pull_requests, code_security")
 else:
-    logger.info("✓ GitHub Agent created with custom tools only (MCP integration disabled)")
+    logger.info(
+        "✓ GitHub Agent created with custom tools only (MCP integration disabled)"
+    )
 
 # Export as 'agent' for ADK evaluator compatibility
 agent = root_agent

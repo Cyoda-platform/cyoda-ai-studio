@@ -14,22 +14,20 @@ from __future__ import annotations
 # Re-export all public APIs from submodules
 from .diff_operations import (
     DiffResult,
-    _parse_diff_line,
     _categorize_diff_changes,
     _get_staged_diff,
+    _parse_diff_line,
 )
-
 from .git_commands import (
-    _stage_all_changes,
-    _configure_git_user,
     _commit_changes,
+    _configure_git_user,
     _get_current_remote_url,
     _push_changes,
+    _stage_all_changes,
 )
-
 from .workflow import (
-    _execute_commit_push_workflow,
     _commit_and_push_changes,
+    _execute_commit_push_workflow,
 )
 
 __all__ = [

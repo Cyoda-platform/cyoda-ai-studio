@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import httpx
 import logging
 import os
 
+import httpx
 from google.adk.tools.tool_context import ToolContext
 
 from application.services.cloud_manager_service import get_cloud_manager_service
@@ -37,8 +37,13 @@ def _is_deployment_complete(state: str, status: str) -> bool:
     Returns:
         True if deployment is complete or failed.
     """
-    is_complete = state.upper() in ["COMPLETE", "SUCCESS", "FINISHED"] and status.upper() != "UNKNOWN"
-    is_failed = state.upper() in ["FAILED", "ERROR", "UNKNOWN"] or status.upper() == "UNKNOWN"
+    is_complete = (
+        state.upper() in ["COMPLETE", "SUCCESS", "FINISHED"]
+        and status.upper() != "UNKNOWN"
+    )
+    is_failed = (
+        state.upper() in ["FAILED", "ERROR", "UNKNOWN"] or status.upper() == "UNKNOWN"
+    )
     return is_complete or is_failed
 
 
@@ -103,17 +108,23 @@ def _build_status_message(state: str, status: str, message: str, build_id: str) 
     if status.upper() == "UNKNOWN":
         result += "\n\n⚠️ Deployment failed: status is UNKNOWN. You can check the build logs for more details."
     elif state.upper() in ["COMPLETE", "SUCCESS", "FINISHED"]:
-        result += "\n\n✓ Deployment completed successfully! Your environment is ready to use."
+        result += (
+            "\n\n✓ Deployment completed successfully! Your environment is ready to use."
+        )
     elif state.upper() in ["FAILED", "ERROR", "UNKNOWN"]:
-        result += "\n\n⚠️ Deployment failed. You can check the build logs for more details."
+        result += (
+            "\n\n⚠️ Deployment failed. You can check the build logs for more details."
+        )
     elif state.upper() in ["PENDING", "RUNNING"]:
-        result += "\n\n⏳ Deployment is still in progress. I'll keep monitoring for you."
+        result += (
+            "\n\n⏳ Deployment is still in progress. I'll keep monitoring for you."
+        )
 
     return result
 
 
 async def get_deployment_status(
-        tool_context: ToolContext, build_id: str, for_monitoring: bool = False
+    tool_context: ToolContext, build_id: str, for_monitoring: bool = False
 ) -> str:
     """Check the deployment status for a specific build.
 

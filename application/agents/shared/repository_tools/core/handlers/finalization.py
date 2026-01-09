@@ -9,7 +9,11 @@ from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
 
-from ..context import _store_in_tool_context, _update_conversation_entity, _update_conversation_build_context_wrapper
+from ..context import (
+    _store_in_tool_context,
+    _update_conversation_build_context_wrapper,
+    _update_conversation_entity,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +46,25 @@ async def _finalize_clone(
     """
     if tool_context:
         _store_in_tool_context(
-            tool_context, target_directory, branch_name, language,
-            repository_name, repository_owner, user_repo_url,
-            installation_id, repo_type
+            tool_context,
+            target_directory,
+            branch_name,
+            language,
+            repository_name,
+            repository_owner,
+            user_repo_url,
+            installation_id,
+            repo_type,
         )
 
     if conversation_id:
         await _update_conversation_entity(
-            conversation_id, repository_name, repository_owner,
-            branch_name, user_repo_url, installation_id
+            conversation_id,
+            repository_name,
+            repository_owner,
+            branch_name,
+            user_repo_url,
+            installation_id,
         )
         await _update_conversation_build_context_wrapper(
             conversation_id, language, branch_name, repository_name, repository_owner

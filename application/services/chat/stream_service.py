@@ -18,8 +18,8 @@ from application.services.chat.service import ChatService
 from application.services.edge_message_persistence_service import (
     EdgeMessagePersistenceService,
 )
-from application.services.streaming_service import StreamingService
 from application.services.sdk_factory import is_using_openai_sdk
+from application.services.streaming_service import StreamingService
 from common.config.config import (
     CYODA_ENTITY_TYPE_EDGE_MESSAGE,
     ENTITY_VERSION,
@@ -102,7 +102,12 @@ class ChatStreamService:
         return updated_conversation, message_to_process, assistant
 
     def _select_stream_generator(
-        self, assistant: Any, message: str, conversation: Conversation, technical_id: str, user_id: str
+        self,
+        assistant: Any,
+        message: str,
+        conversation: Conversation,
+        technical_id: str,
+        user_id: str,
     ) -> AsyncGenerator[str, None]:
         """Select appropriate stream generator based on SDK.
 
@@ -133,9 +138,7 @@ class ChatStreamService:
             user_id=user_id,
         )
 
-    async def _process_stream_event(
-        self, event: str
-    ) -> tuple[str, str, dict]:
+    async def _process_stream_event(self, event: str) -> tuple[str, str, dict]:
         """Process single stream event and extract data.
 
         Args:
@@ -216,7 +219,7 @@ class ChatStreamService:
                 conversation_id=technical_id,
                 user_id=user_id,
                 response_content=response_text,
-                streaming_events=[], # We don't track full history here for now to simplify
+                streaming_events=[],  # We don't track full history here for now to simplify
                 metadata={"hook": meta.get("hook")} if meta.get("hook") else None,
             )
 
@@ -225,13 +228,17 @@ class ChatStreamService:
             if fresh_conv:
                 if response_text:
                     fresh_conv.add_message(
-                        "ai", resp_id, metadata={"hook": meta.get("hook")} if meta.get("hook") else None
+                        "ai",
+                        resp_id,
+                        metadata=(
+                            {"hook": meta.get("hook")} if meta.get("hook") else None
+                        ),
                     )
-                
+
                 # Update session ID if new
                 if not fresh_conv.adk_session_id and meta.get("adk_session_id"):
                     fresh_conv.adk_session_id = meta.get("adk_session_id")
-                
+
                 # Update repository info if present
                 repo_info = meta.get("repository_info")
                 if repo_info:
@@ -243,7 +250,10 @@ class ChatStreamService:
 
                 # Update background tasks
                 build_task_id = meta.get("build_task_id")
-                if build_task_id and build_task_id not in fresh_conv.background_task_ids:
+                if (
+                    build_task_id
+                    and build_task_id not in fresh_conv.background_task_ids
+                ):
                     fresh_conv.background_task_ids.append(build_task_id)
 
                 await self.chat_service.update_conversation(fresh_conv)
@@ -283,7 +293,7 @@ class ChatStreamService:
         if not request_files:
             return blob_ids
 
-        file_list = request_files.getlist('files') if 'files' in request_files else []
+        file_list = request_files.getlist("files") if "files" in request_files else []
         repo = get_repository()
         import base64
 
@@ -295,10 +305,10 @@ class ChatStreamService:
                 "entity_version": ENTITY_VERSION,
             }
             eid = await repo.save(
-                meta=meta, 
-                entity={"message": content, "metadata": {"filename": file.filename}}
+                meta=meta,
+                entity={"message": content, "metadata": {"filename": file.filename}},
             )
             if eid:
                 blob_ids.append(eid)
-        
+
         return blob_ids

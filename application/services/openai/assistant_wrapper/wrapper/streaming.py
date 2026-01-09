@@ -7,12 +7,12 @@ from typing import Any, AsyncGenerator
 
 from application.config.streaming_config import streaming_config
 
-from ..event_handlers import EventHandlers
 from ..constants import (
+    EVENT_TYPE_AGENT_UPDATED,
     EVENT_TYPE_RAW_RESPONSE,
     EVENT_TYPE_RUN_ITEM,
-    EVENT_TYPE_AGENT_UPDATED,
 )
+from ..event_handlers import EventHandlers
 from .message_processing import extract_hooks_from_result
 
 logger = logging.getLogger(__name__)

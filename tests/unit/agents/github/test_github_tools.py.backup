@@ -2547,14 +2547,14 @@ class TestSearchRepositoryFilesExtended:
         mock_tool_context.state["repository_path"] = str(tmp_path)
         (tmp_path / "file1.txt").write_text("Hello World")
         (tmp_path / "file2.txt").write_text("Goodbye")
-        
+
         result = await search_repository_files(
             search_pattern="Hello",
             file_pattern="*.txt",
             search_type="content",
             tool_context=mock_tool_context
         )
-        
+
         assert "Hello" in result or "file1.txt" in result
 
     @pytest.mark.asyncio
@@ -2563,14 +2563,14 @@ class TestSearchRepositoryFilesExtended:
         mock_tool_context.state["repository_path"] = str(tmp_path)
         (tmp_path / "subdir").mkdir()
         (tmp_path / "subdir" / "test.py").touch()
-        
+
         result = await search_repository_files(
             search_pattern="*.py",
             file_pattern="*.py",
             search_type="filename",
             tool_context=mock_tool_context
         )
-        
+
         assert isinstance(result, str)
 
 
@@ -2581,7 +2581,7 @@ class TestDetectProjectTypeExtended:
         """Test Python detection with setup.py."""
         (tmp_path / "setup.py").touch()
         (tmp_path / "application").mkdir()
-        
+
         result = _detect_project_type(str(tmp_path))
         assert result["type"] == "python"
 
@@ -2589,7 +2589,7 @@ class TestDetectProjectTypeExtended:
         """Test Java detection with build.gradle."""
         (tmp_path / "build.gradle").touch()
         (tmp_path / "src" / "main" / "java").mkdir(parents=True)
-        
+
         result = _detect_project_type(str(tmp_path))
         assert result["type"] == "java"
 
@@ -2597,7 +2597,7 @@ class TestDetectProjectTypeExtended:
         """Test Java detection with mvnw."""
         (tmp_path / "mvnw").touch()
         (tmp_path / "src" / "main" / "java").mkdir(parents=True)
-        
+
         result = _detect_project_type(str(tmp_path))
         assert result["type"] == "java"
 
@@ -2611,10 +2611,10 @@ class TestScanVersionedResourcesExtended:
         resources_dir.mkdir(parents=True)
         (resources_dir / "customer.json").write_text('{"name": "Customer"}')
         (resources_dir / "extra.json").write_text('{"extra": true}')
-        
+
         parent_dir = tmp_path / "resources" / "entity"
         results = _scan_versioned_resources(parent_dir, "entity", tmp_path)
-        
+
         assert isinstance(results, list)
 
     def test_scan_with_nested_structure(self, tmp_path):
@@ -2623,10 +2623,10 @@ class TestScanVersionedResourcesExtended:
             entity_dir = tmp_path / "resources" / "entity" / f"entity{i}" / f"version_{i+1}"
             entity_dir.mkdir(parents=True)
             (entity_dir / f"entity{i}.json").write_text(f'{{"name": "Entity{i}"}}')
-        
+
         resources_dir = tmp_path / "resources" / "entity"
         results = _scan_versioned_resources(resources_dir, "entity", tmp_path)
-        
+
         assert isinstance(results, list)
 
 
@@ -3260,7 +3260,7 @@ class TestExecuteUnixCommandExtended:
     async def test_execute_simple_command(self, mock_tool_context, tmp_path):
         """Test executing simple unix command."""
         mock_tool_context.state["repository_path"] = str(tmp_path)
-        
+
         (tmp_path / "test.txt").write_text("Hello")
 
         result = await execute_unix_command(
@@ -3493,8 +3493,3 @@ class TestScanVersionedResourcesMultiple:
         results = _scan_versioned_resources(resources_dir, "processor", tmp_path)
 
         assert isinstance(results, list)
-
-
-
-
-

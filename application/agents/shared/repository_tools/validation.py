@@ -20,8 +20,6 @@ def _validate_clone_parameters(language: str, branch_name: str) -> None:
         raise ValueError("branch_name parameter is required and cannot be empty")
 
 
-
-
 async def _is_protected_branch(branch_name: str) -> bool:
     """
     Check if a branch name is protected.
@@ -35,7 +33,3 @@ async def _is_protected_branch(branch_name: str) -> bool:
         True if branch is protected, False otherwise
     """
     return branch_name.lower().strip() in PROTECTED_BRANCHES
-
-
-
-

@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_list_all_the_applications_deployed_in_a_specific_c",
+  "name": "environment_scenario_list_all_the_applications_deployed_in_a_specific_c",
+  "description": "Test case for: As a user, I want to list all the applications deployed in a specific Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_list_apps",
+      "conversation": [
+        {
+          "invocation_id": "e-7adb91c7-c653-4729-92c4-aa39280ffc56",
+          "user_content": {
+            "parts": [
+              {
+                "text": "list all the applications deployed in a specific Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Which environment would you like to list applications for? Please provide the env name (e.g., dev, staging, prod). I will check that environment exists and then list its apps.\n\n[options-single-choice: Provide environment name, List my environments]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8045914
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.804592
+    }
+  ],
+  "creation_timestamp": 1767903917.804592
+}

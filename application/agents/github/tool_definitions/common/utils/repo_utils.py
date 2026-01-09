@@ -33,7 +33,9 @@ def _check_repository_exists(repository_path: str, require_git: bool) -> bool:
     return repo_path_obj.exists()
 
 
-def _extract_clone_parameters(tool_context: ToolContext) -> tuple[str, str, str | None, str | None, str | None]:
+def _extract_clone_parameters(
+    tool_context: ToolContext,
+) -> tuple[str, str, str | None, str | None, str | None]:
     """Extract clone parameters from tool context.
 
     Args:
@@ -42,13 +44,21 @@ def _extract_clone_parameters(tool_context: ToolContext) -> tuple[str, str, str 
     Returns:
         Tuple of (repository_url, branch_name, installation_id, repository_name, repository_owner)
     """
-    repository_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+    repository_url = tool_context.state.get(
+        "user_repository_url"
+    ) or tool_context.state.get("repository_url")
     installation_id = tool_context.state.get("installation_id")
     branch_name = tool_context.state.get("branch_name")
     repository_name = tool_context.state.get("repository_name")
     repository_owner = tool_context.state.get("repository_owner")
 
-    return repository_url, branch_name, installation_id, repository_name, repository_owner
+    return (
+        repository_url,
+        branch_name,
+        installation_id,
+        repository_name,
+        repository_owner,
+    )
 
 
 async def _clone_repository(
@@ -131,7 +141,11 @@ async def ensure_repository_available(
 
     try:
         success, message, cloned_path = await _clone_repository(
-            repository_url, branch_name, installation_id, repository_name, repository_owner
+            repository_url,
+            branch_name,
+            installation_id,
+            repository_name,
+            repository_owner,
         )
 
         if not success:

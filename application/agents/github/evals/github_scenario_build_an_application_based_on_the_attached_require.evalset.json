@@ -1,0 +1,65 @@
+{
+  "eval_set_id": "github_scenario_build_an_application_based_on_the_attached_require",
+  "name": "github_scenario_build_an_application_based_on_the_attached_require",
+  "description": "Test case for: As a user, I want to build an application based on the attached requirements.",
+  "eval_cases": [
+    {
+      "eval_id": "gh_build_app_from_requirements",
+      "conversation": [
+        {
+          "invocation_id": "e-d4597ca4-64c1-4cc4-be66-60a897cace2d",
+          "user_content": {
+            "parts": [
+              {
+                "text": "build an application based on the attached requirements."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI retrieved and saved the 3 attached requirement files to the repository's functional requirements directory so they\u2019re ready for the build step.\n\nNext, tell me how you want to initialize the repository and branch so I can proceed:\n- Choose the programming language (Python or Java).\n- Choose whether this will use a Cyoda public template or your private repository.\n- Choose whether to create a new branch or use an existing branch.\n\nIf you pick a Private repo option, I\u2019ll ask you for the Repo URL and the GitHub App Installation ID so I can connect and initialize using the standard Cyoda template. If you pick a Public repo option, I\u2019ll clone the appropriate Cyoda template and create (or checkout) the branch you choose.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "retrieve_and_save_conversation_files",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767901727.3310332
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767901727.3310344
+    }
+  ],
+  "creation_timestamp": 1767901727.3310351
+}

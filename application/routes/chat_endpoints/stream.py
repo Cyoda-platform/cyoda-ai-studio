@@ -25,10 +25,10 @@ from application.routes.chat_endpoints.helpers import (
 )
 from application.routes.common.auth import get_authenticated_user
 from application.routes.common.rate_limiting import default_rate_limit_key
-from application.services.streaming_service import StreamingService
 from application.services.streaming.conversation_sanitizer import (
     sanitize_conversation_history,
 )
+from application.services.streaming_service import StreamingService
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Enable debug logging for stream endpoint
@@ -43,7 +43,11 @@ async def _get_conversation(technical_id: str):
 
 
 async def _save_user_message_to_conversation(
-    technical_id: str, user_id: str, user_message: str, file_blob_ids: List[str], conversation: Conversation
+    technical_id: str,
+    user_id: str,
+    user_message: str,
+    file_blob_ids: List[str],
+    conversation: Conversation,
 ) -> tuple[str, Conversation]:
     """Save user message to conversation and return edge message ID."""
     persistence_service = get_edge_message_persistence_service()
@@ -56,7 +60,9 @@ async def _save_user_message_to_conversation(
     )
     logger.info(f"✅ User message saved as edge message: {user_message_edge_id}")
 
-    conversation.add_message("user", user_message_edge_id, file_blob_ids if file_blob_ids else None)
+    conversation.add_message(
+        "user", user_message_edge_id, file_blob_ids if file_blob_ids else None
+    )
 
     if file_blob_ids:
         if conversation.file_blob_ids is None:
@@ -70,11 +76,7 @@ async def _save_user_message_to_conversation(
 
 
 async def _save_file_as_edge_message(
-    file_storage,
-    filename: str,
-    file_content: bytes,
-    conversation_id: str,
-    user_id: str
+    file_storage, filename: str, file_content: bytes, conversation_id: str, user_id: str
 ) -> Optional[str]:
     """Save uploaded file as an edge message.
 
@@ -88,17 +90,19 @@ async def _save_file_as_edge_message(
     Returns:
         Edge message ID (blob_id) if successful, None otherwise
     """
-    from application.routes.chat_endpoints.helpers import get_edge_message_persistence_service
+    from application.routes.chat_endpoints.helpers import (
+        get_edge_message_persistence_service,
+    )
 
     try:
         # Encode file content as base64
-        base64_content = base64.b64encode(file_content).decode('utf-8')
+        base64_content = base64.b64encode(file_content).decode("utf-8")
 
         # Prepare metadata with filename and encoding
         metadata = {
             "filename": filename,
             "encoding": "base64",
-            "content_type": file_storage.content_type or "application/octet-stream"
+            "content_type": file_storage.content_type or "application/octet-stream",
         }
 
         # Save as edge message
@@ -109,7 +113,7 @@ async def _save_file_as_edge_message(
             conversation_id=conversation_id,
             user_id=user_id,
             metadata=metadata,
-            file_blob_ids=None
+            file_blob_ids=None,
         )
 
         if blob_id:
@@ -125,8 +129,7 @@ async def _save_file_as_edge_message(
 
 
 async def _parse_stream_request(
-    technical_id: str,
-    user_id: str
+    technical_id: str, user_id: str
 ) -> tuple[str, List[str], Optional[str]]:
     """Parse stream request for message, file blob IDs, and adk_session_id.
 
@@ -144,14 +147,14 @@ async def _parse_stream_request(
 
     # Check if request contains files (FormData)
     files = await request.files
-    if files and 'files' in files:
+    if files and "files" in files:
         # FormData request - parse form fields
         form = await request.form
         user_message = form.get("message", "").strip()
         adk_session_id = form.get("adk_session_id")
 
         # Process uploaded files
-        uploaded_files = files.getlist('files')
+        uploaded_files = files.getlist("files")
         logger.info(f"📎 Received {len(uploaded_files)} file(s) via FormData")
 
         # Save each file as an edge message
@@ -161,11 +164,7 @@ async def _parse_stream_request(
 
             # Save file and get blob ID
             blob_id = await _save_file_as_edge_message(
-                file_storage,
-                filename,
-                file_content,
-                technical_id,
-                user_id
+                file_storage, filename, file_content, technical_id, user_id
             )
 
             if blob_id:
@@ -186,7 +185,9 @@ async def _parse_stream_request(
     if not isinstance(file_blob_ids, list):
         raise ValueError("file_blob_ids must be a list")
 
-    logger.info(f"📋 Parsed request: message='{user_message[:50]}...', files={len(file_blob_ids)}, session={adk_session_id}")
+    logger.info(
+        f"📋 Parsed request: message='{user_message[:50]}...', files={len(file_blob_ids)}, session={adk_session_id}"
+    )
 
     return user_message, file_blob_ids, adk_session_id
 
@@ -196,7 +197,7 @@ def _create_streaming_generator(
     user_id: str,
     conversation: Conversation,
     assistant: Any,
-    message_to_process: str
+    message_to_process: str,
 ):
     """Create streaming generator from service.
 
@@ -227,7 +228,7 @@ async def _process_streaming_event(
     sse_event: str,
     accumulated_response: str,
     streaming_events: List[Dict],
-    done_event_sent: bool
+    done_event_sent: bool,
 ) -> tuple[str, List[Dict], bool, Optional[str], Optional[str], Optional[Dict]]:
     """Process individual streaming event.
 
@@ -265,26 +266,41 @@ async def _process_streaming_event(
             if data_start > 6:
                 json_str = sse_event[data_start:].strip()
                 event_data = json.loads(json_str)
-                streaming_events.append({
-                    "type": event_type,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "data": event_data
-                })
+                streaming_events.append(
+                    {
+                        "type": event_type,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "data": event_data,
+                    }
+                )
             else:
-                streaming_events.append({
-                    "type": event_type,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                })
+                streaming_events.append(
+                    {
+                        "type": event_type,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
         except (json.JSONDecodeError, ValueError):
-            streaming_events.append({
-                "type": "other",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
+            streaming_events.append(
+                {
+                    "type": "other",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
-    return accumulated_response, streaming_events, done_event_sent, done_event_to_send, adk_session_id_result, hook_result
+    return (
+        accumulated_response,
+        streaming_events,
+        done_event_sent,
+        done_event_to_send,
+        adk_session_id_result,
+        hook_result,
+    )
 
 
-def _build_fallback_done_event(accumulated_response: str, stream_error: Optional[str]) -> str:
+def _build_fallback_done_event(
+    accumulated_response: str, stream_error: Optional[str]
+) -> str:
     """Build fallback done event if not sent by service.
 
     Args:
@@ -329,15 +345,26 @@ def _create_stream_event_generator(
                 if "event: done" in sse_event:
                     logger.info(f"📤 [route] Received done event from upstream")
                 if "event: content" in sse_event:
-                    logger.debug(f"📝 [route] Received content event, current accumulated length: {len(accumulated_response)}")
+                    logger.debug(
+                        f"📝 [route] Received content event, current accumulated length: {len(accumulated_response)}"
+                    )
 
                 result = await _process_streaming_event(
                     sse_event, accumulated_response, streaming_events, done_event_sent
                 )
-                accumulated_response, streaming_events, done_event_sent, done_event_to_send, adk_session_id_result, hook_result = result
+                (
+                    accumulated_response,
+                    streaming_events,
+                    done_event_sent,
+                    done_event_to_send,
+                    adk_session_id_result,
+                    hook_result,
+                ) = result
 
                 if "event: content" in sse_event:
-                    logger.debug(f"📝 [route] After processing, accumulated length: {len(accumulated_response)}")
+                    logger.debug(
+                        f"📝 [route] After processing, accumulated length: {len(accumulated_response)}"
+                    )
                 if "event: done" in sse_event:
                     logger.info(f"📤 [route] Yielding done event to client")
                 yield sse_event
@@ -350,19 +377,31 @@ def _create_stream_event_generator(
         finally:
             # Finalize stream
             await _finalize_stream(
-                technical_id, user_id, accumulated_response, streaming_events,
-                hook_result, adk_session_id_result, done_event_to_send,
-                done_event_sent, stream_error
+                technical_id,
+                user_id,
+                accumulated_response,
+                streaming_events,
+                hook_result,
+                adk_session_id_result,
+                done_event_to_send,
+                done_event_sent,
+                stream_error,
             )
 
             # Send done event only if it wasn't already sent
             if not done_event_sent:
-                logger.warning("Done event was not sent by streaming service, sending fallback now")
-                fallback = _build_fallback_done_event(accumulated_response, stream_error)
+                logger.warning(
+                    "Done event was not sent by streaming service, sending fallback now"
+                )
+                fallback = _build_fallback_done_event(
+                    accumulated_response, stream_error
+                )
                 logger.info(f"📤 [route finalize] Yielding fallback done event")
                 yield fallback
             else:
-                logger.info(f"📤 [route finalize] Done event already sent, not yielding again")
+                logger.info(
+                    f"📤 [route finalize] Done event already sent, not yielding again"
+                )
 
     return event_generator()
 
@@ -379,23 +418,31 @@ async def _finalize_stream(
     stream_error: Optional[str],
 ) -> None:
     """Finalize the stream by saving response and updating conversation."""
-    logger.info(f"🔄 FINALLY BLOCK - accumulated_response length: {len(accumulated_response)}")
+    logger.info(
+        f"🔄 FINALLY BLOCK - accumulated_response length: {len(accumulated_response)}"
+    )
     try:
         if accumulated_response and accumulated_response.strip():
             persistence_service = get_edge_message_persistence_service()
-            response_edge_message_id = await persistence_service.save_response_with_history(
-                conversation_id=technical_id,
-                user_id=user_id,
-                response_content=accumulated_response,
-                streaming_events=streaming_events,
-                metadata={"hook": hook_result} if hook_result else None,
+            response_edge_message_id = (
+                await persistence_service.save_response_with_history(
+                    conversation_id=technical_id,
+                    user_id=user_id,
+                    response_content=accumulated_response,
+                    streaming_events=streaming_events,
+                    metadata={"hook": hook_result} if hook_result else None,
+                )
             )
-            logger.info(f"✅ Response saved as edge message: {response_edge_message_id}")
+            logger.info(
+                f"✅ Response saved as edge message: {response_edge_message_id}"
+            )
 
             fresh_conversation = await _get_conversation(technical_id)
             if fresh_conversation:
                 message_metadata = {"hook": hook_result} if hook_result else None
-                fresh_conversation.add_message("ai", response_edge_message_id, metadata=message_metadata)
+                fresh_conversation.add_message(
+                    "ai", response_edge_message_id, metadata=message_metadata
+                )
 
                 if not fresh_conversation.adk_session_id and adk_session_id_result:
                     fresh_conversation.adk_session_id = adk_session_id_result
@@ -412,7 +459,9 @@ async def stream_chat_message(technical_id: str) -> Response:
     """Stream AI response in real-time using Server-Sent Events (SSE)."""
     try:
         user_id, is_superuser = await get_authenticated_user()
-        logger.info(f"Stream chat message - user_id: {user_id}, conversation_id: {technical_id}")
+        logger.info(
+            f"Stream chat message - user_id: {user_id}, conversation_id: {technical_id}"
+        )
 
         conversation = await _get_conversation(technical_id)
         if not conversation:
@@ -422,7 +471,9 @@ async def stream_chat_message(technical_id: str) -> Response:
             return error_response("Access denied")
 
         try:
-            user_message, file_blob_ids, adk_session_id = await _parse_stream_request(technical_id, user_id)
+            user_message, file_blob_ids, adk_session_id = await _parse_stream_request(
+                technical_id, user_id
+            )
         except ValueError as e:
             return error_response(str(e))
 
@@ -441,7 +492,9 @@ async def stream_chat_message(technical_id: str) -> Response:
 
         assistant = get_cyoda_assistant_instance()
         message_to_process = build_message_to_process(user_message, file_blob_ids)
-        event_gen = _create_stream_event_generator(technical_id, user_id, conversation, assistant, message_to_process)
+        event_gen = _create_stream_event_generator(
+            technical_id, user_id, conversation, assistant, message_to_process
+        )
 
         return build_stream_response(event_gen)
 

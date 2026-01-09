@@ -475,7 +475,8 @@ async def send_request(
             # Handle NDJSON responses (newline-delimited JSON)
             if "application/x-ndjson" in content_type:
                 import json as json_module
-                lines = response.text.strip().split('\n')
+
+                lines = response.text.strip().split("\n")
                 content = [json_module.loads(line) for line in lines if line.strip()]
             elif "application/json" in content_type:
                 content = response.json()
@@ -678,7 +679,8 @@ def custom_serializer(obj: Any) -> Any:
     if isinstance(obj, bytes):
         # Convert bytes to base64 string for JSON serialization
         import base64
-        return base64.b64encode(obj).decode('utf-8')
+
+        return base64.b64encode(obj).decode("utf-8")
     if not isinstance(obj, dict):
         # Convert the object to a dictionary. Customize as needed.
         return obj.__dict__

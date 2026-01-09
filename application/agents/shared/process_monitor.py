@@ -4,7 +4,7 @@ Provides status checks and control functions for the process manager.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 from application.agents.shared.process_manager import get_process_manager
 
@@ -27,7 +27,9 @@ async def get_process_status() -> Dict[str, Any]:
         "max_allowed": process_manager.max_concurrent_processes,
         "active_pids": sorted(list(active_pids)),
         "can_start_new": active_count < process_manager.max_concurrent_processes,
-        "utilization_percent": int((active_count / process_manager.max_concurrent_processes) * 100),
+        "utilization_percent": int(
+            (active_count / process_manager.max_concurrent_processes) * 100
+        ),
     }
 
 
@@ -41,8 +43,10 @@ async def kill_all_cli_processes() -> Dict[str, Any]:
     """
     process_manager = get_process_manager()
     active_pids = await process_manager.get_active_pids()
-    
-    logger.warning(f"Killing all {len(active_pids)} active CLI processes: {active_pids}")
+
+    logger.warning(
+        f"Killing all {len(active_pids)} active CLI processes: {active_pids}"
+    )
     await process_manager.kill_all_processes()
 
     return {
@@ -85,4 +89,3 @@ async def set_process_limit(max_concurrent: int) -> Dict[str, Any]:
         "old_limit": old_limit,
         "new_limit": max_concurrent,
     }
-

@@ -67,4 +67,3 @@ Combine multiple conditions with AND/OR logic:
 - Point-in-time queries allow searching entities as they existed at a specific moment
 - Results are streamed for better performance with large result sets
 - Empty request body returns all entities (subject to limit)
-

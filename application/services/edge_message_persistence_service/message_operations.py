@@ -67,7 +67,9 @@ async def save_message_as_edge_message(
         meta = build_edge_message_meta()
 
         # Save to repository
-        edge_message_id = await save_to_repository(repository, meta, edge_message_content)
+        edge_message_id = await save_to_repository(
+            repository, meta, edge_message_content
+        )
 
         if edge_message_id:
             logger.info(

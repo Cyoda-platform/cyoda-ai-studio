@@ -11,21 +11,21 @@ from google.adk.tools.tool_context import ToolContext
 from .status_checks import (
     DeploymentStatus,
     StatusCheckContext,
-    _parse_status_result,
-    _calculate_progress,
     _build_deployment_status,
+    _calculate_progress,
+    _parse_status_result,
 )
 from .task_updates import (
-    _update_task_failed,
-    _update_task_completed,
-    _update_task_progress,
-    _get_task_info,
-    FAILURE_MESSAGE_TEMPLATE,
     FAILURE_ERROR_TEMPLATE,
-    SUCCESS_MESSAGE_TEMPLATE,
     FAILURE_LOG_TEMPLATE,
-    SUCCESS_LOG_TEMPLATE,
+    FAILURE_MESSAGE_TEMPLATE,
     PROGRESS_LOG_TEMPLATE,
+    SUCCESS_LOG_TEMPLATE,
+    SUCCESS_MESSAGE_TEMPLATE,
+    _get_task_info,
+    _update_task_completed,
+    _update_task_failed,
+    _update_task_progress,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,12 +44,16 @@ async def _handle_failure(
         task_id=context.task_id,
         build_id=context.build_id,
         message=FAILURE_MESSAGE_TEMPLATE.format(status=dep_status.status),
-        error=FAILURE_ERROR_TEMPLATE.format(status=dep_status.status, state=dep_status.state),
+        error=FAILURE_ERROR_TEMPLATE.format(
+            status=dep_status.status, state=dep_status.state
+        ),
         namespace=context.namespace,
         env_url=context.env_url,
         state=dep_status.state,
     )
-    logger.error(FAILURE_LOG_TEMPLATE.format(build_id=context.build_id, error=dep_status.status))
+    logger.error(
+        FAILURE_LOG_TEMPLATE.format(build_id=context.build_id, error=dep_status.status)
+    )
 
 
 async def _handle_success(
@@ -91,7 +95,11 @@ async def _handle_progress(
         namespace=context.namespace,
         env_url=context.env_url,
     )
-    logger.info(PROGRESS_LOG_TEMPLATE.format(build_id=context.build_id, progress=progress, state=dep_status.state))
+    logger.info(
+        PROGRESS_LOG_TEMPLATE.format(
+            build_id=context.build_id, progress=progress, state=dep_status.state
+        )
+    )
 
 
 async def _handle_status_check(
@@ -218,16 +226,18 @@ async def _check_deployment_status_once(
         return should_continue
 
     except Exception as e:
-        logger.warning(f"Failed to check deployment status (attempt {check_num + 1}): {e}")
+        logger.warning(
+            f"Failed to check deployment status (attempt {check_num + 1}): {e}"
+        )
         return True
 
 
 async def monitor_deployment_progress(
-        build_id: str,
-        task_id: str,
-        tool_context: ToolContext,
-        check_interval: int = 30,
-        max_checks: int = 40,
+    build_id: str,
+    task_id: str,
+    tool_context: ToolContext,
+    check_interval: int = 30,
+    max_checks: int = 40,
 ) -> None:
     """Monitor deployment progress and update BackgroundTask.
 
@@ -240,7 +250,9 @@ async def monitor_deployment_progress(
         check_interval: Seconds between checks (default: 30)
         max_checks: Maximum checks before timeout (default: 40)
     """
-    logger.info(f"Starting deployment monitoring: build_id={build_id}, task_id={task_id}")
+    logger.info(
+        f"Starting deployment monitoring: build_id={build_id}, task_id={task_id}"
+    )
 
     try:
         env_url, namespace = await _get_task_info(task_id)

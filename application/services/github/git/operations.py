@@ -10,7 +10,7 @@ All imports remain the same - this is a transparent refactoring.
 """
 
 # Re-export all classes from the operations subpackage
-from .operations import GitOperationState, GitOperations
+from .operations import GitOperations, GitOperationState
 
 __all__ = [
     "GitOperationState",

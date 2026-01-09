@@ -22,17 +22,17 @@ from application.agents.shared.repository_tools import _terminate_process
 from .._temp_file_cleanup import log_temp_file_preserved
 from .commit_operations import (
     AuthInfo,
-    _extract_auth_info,
-    _send_initial_commit,
-    _send_final_commit,
     _commit_progress,
+    _extract_auth_info,
     _get_diff_summary,
+    _send_final_commit,
+    _send_initial_commit,
 )
 from .task_updates import (
+    _handle_process_timeout_task_update,
     _update_task_on_completion,
     _update_task_progress,
     _update_task_with_commit_info,
-    _handle_process_timeout_task_update,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,9 +67,7 @@ async def _unregister_process(pid: int) -> None:
         logger.warning(f"⚠️ Failed to unregister process: {e}")
 
 
-async def _handle_normal_completion(
-    config: MonitorConfig, auth_info: AuthInfo
-) -> None:
+async def _handle_normal_completion(config: MonitorConfig, auth_info: AuthInfo) -> None:
     """Handle normal process completion.
 
     Args:
@@ -179,7 +177,7 @@ async def _handle_process_failure(config: MonitorConfig, returncode: int) -> Non
             log_snippet = ""
             if config.output_file:
                 try:
-                    with open(config.output_file, 'r') as f:
+                    with open(config.output_file, "r") as f:
                         # Get last 500 chars of log
                         f.seek(0, 2)  # Go to end
                         size = f.tell()
@@ -193,7 +191,11 @@ async def _handle_process_failure(config: MonitorConfig, returncode: int) -> Non
                 status="failed",
                 message=error_message,
                 progress=0,
-                error=f"Process failed with exit code {returncode}\n\nLast log output:\n{log_snippet}" if log_snippet else error_message,
+                error=(
+                    f"Process failed with exit code {returncode}\n\nLast log output:\n{log_snippet}"
+                    if log_snippet
+                    else error_message
+                ),
             )
             logger.info(f"❌ Updated BackgroundTask {task_id} to failed")
         except Exception as e:
@@ -280,7 +282,9 @@ async def monitor_cli_process(
     auth_info = _extract_auth_info(tool_context)
     start_time = asyncio.get_event_loop().time()
     last_push_time = (
-        await _send_initial_commit(repository_path, branch_name, tool_context, auth_info)
+        await _send_initial_commit(
+            repository_path, branch_name, tool_context, auth_info
+        )
         or start_time
     )
 
@@ -289,9 +293,7 @@ async def monitor_cli_process(
     while elapsed_time < timeout_seconds:
         try:
             # Wait for process completion
-            remaining_time = min(
-                PROCESS_CHECK_INTERVAL, timeout_seconds - elapsed_time
-            )
+            remaining_time = min(PROCESS_CHECK_INTERVAL, timeout_seconds - elapsed_time)
             await asyncio.wait_for(process.wait(), timeout=remaining_time)
 
             # Process completed normally

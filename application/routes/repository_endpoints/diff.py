@@ -65,7 +65,7 @@ async def handle_get_repository_diff() -> ResponseReturnValue:
             return APIResponse.error(
                 "Missing required field",
                 400,
-                details={"message": "repository_path is required"}
+                details={"message": "repository_path is required"},
             )
 
         logger.info(f"Getting diff for repository: {repository_path}")
@@ -91,8 +91,5 @@ async def handle_get_repository_diff() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error getting repository diff: {e}", exc_info=True)
         return APIResponse.error(
-            "Failed to get repository diff",
-            500,
-            details={"message": str(e)}
+            "Failed to get repository diff", 500, details={"message": str(e)}
         )
-

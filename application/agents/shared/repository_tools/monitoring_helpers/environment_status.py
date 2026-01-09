@@ -22,11 +22,13 @@ DEFAULT_CLIENT_HOST = "cyoda.cloud"
 GUEST_USER_PREFIX = "guest."
 MOCK_MODE_ENV_VAR = "MOCK_ENVIRONMENT_CHECK"
 NO_TOOL_CONTEXT_ERROR = "ERROR: tool_context not available"
-NEEDS_LOGIN_STATUS = "NEEDS_LOGIN: User is not logged in. Please log in to deploy a Cyoda environment."
-DEPLOYED_STATUS_TEMPLATE = (
-    "DEPLOYED: Your Cyoda environment is already deployed at {url}. Ready to build your application."
+NEEDS_LOGIN_STATUS = (
+    "NEEDS_LOGIN: User is not logged in. Please log in to deploy a Cyoda environment."
 )
-NOT_DEPLOYED_STATUS_TEMPLATE = "NOT_DEPLOYED: Your Cyoda environment is not yet deployed. URL will be: {url}"
+DEPLOYED_STATUS_TEMPLATE = "DEPLOYED: Your Cyoda environment is already deployed at {url}. Ready to build your application."
+NOT_DEPLOYED_STATUS_TEMPLATE = (
+    "NOT_DEPLOYED: Your Cyoda environment is not yet deployed. URL will be: {url}"
+)
 DEPLOYING_STATUS_TEMPLATE = (
     "DEPLOYING: Your Cyoda environment deployment is in progress "
     "(Build ID: {build_id}, Namespace: {namespace}). "
@@ -122,7 +124,7 @@ async def _check_environment_deployed(url: str, user_id: str) -> bool:
 
 
 async def check_user_environment_status(
-    tool_context: Optional[ToolContext] = None
+    tool_context: Optional[ToolContext] = None,
 ) -> str:
     """Check if the user's Cyoda environment is deployed and ready.
 
@@ -149,7 +151,9 @@ async def check_user_environment_status(
 
         # Step 3: Handle mock mode
         if context.is_mock_mode:
-            logger.info(f"Mock mode enabled - returning DEPLOYED for user {context.user_id}")
+            logger.info(
+                f"Mock mode enabled - returning DEPLOYED for user {context.user_id}"
+            )
             url = _construct_environment_url(context.user_id)
             _store_environment_info(tool_context, url, True)
             return DEPLOYED_STATUS_TEMPLATE.format(url=url)

@@ -223,7 +223,9 @@ class CyodaResponsePlugin(BasePlugin):
             Content with appropriate fallback message
         """
         if not self.provide_tool_summary:
-            logger.info(f"⚠️ [{self.name}] No text response found - providing default message")
+            logger.info(
+                f"⚠️ [{self.name}] No text response found - providing default message"
+            )
             return create_response_content(self.default_message)
 
         # Try to generate tool summary
@@ -231,11 +233,15 @@ class CyodaResponsePlugin(BasePlugin):
 
         if tool_calls:
             message = generate_tool_summary(tool_calls)
-            logger.info(f"⚠️ [{self.name}] No text response found - providing tool summary: {message}")
+            logger.info(
+                f"⚠️ [{self.name}] No text response found - providing tool summary: {message}"
+            )
             return create_response_content(message)
 
         # No tools found either - use default message
-        logger.info(f"⚠️ [{self.name}] No text response found - providing default message")
+        logger.info(
+            f"⚠️ [{self.name}] No text response found - providing default message"
+        )
         return create_response_content(self.default_message)
 
 
@@ -281,5 +287,7 @@ class CyodaResponseValidationPlugin(BasePlugin):
             return None
 
         # No text response - provide default message
-        logger.info(f"⚠️ [{self.name}] No text response found - providing default message")
+        logger.info(
+            f"⚠️ [{self.name}] No text response found - providing default message"
+        )
         return create_response_content(self.default_message)

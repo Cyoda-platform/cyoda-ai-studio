@@ -25,8 +25,9 @@ async def _execute_agent_and_extract_response(
     Returns:
         Combined response text from all events
     """
-    from google.genai import types
     from google.adk.runners import RunConfig
+    from google.genai import types
+
     from application.config.streaming_config import streaming_config
 
     response_text = ""

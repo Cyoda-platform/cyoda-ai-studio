@@ -1,60 +1,48 @@
 """Internal helpers for code generation operations."""
 
-from ._cli_monitor import monitor_cli_process
-from ._prompt_loader import load_informational_prompt_template
-from ._temp_file_cleanup import cleanup_temp_files, log_temp_file_preserved
+# Application build helpers
+from ._application_build_helpers import (
+    _build_full_prompt,
+    _check_functional_requirements_exist,
+    _create_missing_requirements_message,
+    _load_build_prompt_template,
+    _load_pattern_catalog,
+)
 
 # Deprecated - use monitor_cli_process directly with appropriate parameters
 from ._build_monitor import monitor_build_process
-from ._process_monitor import monitor_code_generation_process
 
 # Shared CLI helpers
 from ._cli_common import (
     CLIContext,
     CLIProcessInfo,
-    _extract_cli_context,
+    _build_repository_url,
     _check_build_already_started,
+    _create_background_task,
+    _create_output_log_file,
+    _extract_cli_context,
+    _rename_output_file_with_pid,
+    _start_cli_process,
+    _start_monitoring_task,
     _validate_branch_not_protected,
     _validate_cli_invocation_limit,
     _write_prompt_to_tempfile,
-    _create_output_log_file,
-    _rename_output_file_with_pid,
-    _start_cli_process,
-    _build_repository_url,
-    _create_background_task,
-    _start_monitoring_task,
 )
-
-# Application build helpers
-from ._application_build_helpers import (
-    _check_functional_requirements_exist,
-    _create_missing_requirements_message,
-    _load_build_prompt_template,
-    _load_pattern_catalog,
-    _build_full_prompt,
-)
-
-# Build hooks helpers
-from ._build_hooks_helpers import (
-    _create_build_hooks,
-    _create_deployment_hook,
-    _format_build_response,
-)
-
-# Code generation hooks helpers
-from ._codegen_hooks_helpers import (
-    _create_codegen_hook,
-    _format_codegen_response,
-    _format_codegen_response_without_task,
-)
+from ._cli_monitor import monitor_cli_process
 
 # Core code generation logic
 from ._code_generation_core import (
-    _generate_code_core,
     APPLICATION_BUILD_CONFIG,
     CODE_GENERATION_CONFIG,
     CodeGenerationConfig,
+    _generate_code_core,
 )
+from ._process_monitor import monitor_code_generation_process
+from ._prompt_loader import load_informational_prompt_template
+from ._temp_file_cleanup import cleanup_temp_files, log_temp_file_preserved
+
+# Hooks removed - UI auto-detects build/deployment operations
+
 
 __all__ = [
     "load_informational_prompt_template",
@@ -83,14 +71,6 @@ __all__ = [
     "_load_build_prompt_template",
     "_load_pattern_catalog",
     "_build_full_prompt",
-    # Build hooks helpers
-    "_create_build_hooks",
-    "_create_deployment_hook",
-    "_format_build_response",
-    # Code generation hooks helpers
-    "_create_codegen_hook",
-    "_format_codegen_response",
-    "_format_codegen_response_without_task",
     # Core code generation logic
     "_generate_code_core",
     "APPLICATION_BUILD_CONFIG",

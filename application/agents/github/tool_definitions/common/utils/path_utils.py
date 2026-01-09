@@ -6,7 +6,7 @@ for entities, workflows, and functional requirements.
 
 from __future__ import annotations
 
-from .project_utils import PYTHON_RESOURCES_PATH, JAVA_RESOURCES_PATH
+from .project_utils import JAVA_RESOURCES_PATH, PYTHON_RESOURCES_PATH
 
 
 def get_entity_path(entity_name: str, version: int, project_type: str) -> str:

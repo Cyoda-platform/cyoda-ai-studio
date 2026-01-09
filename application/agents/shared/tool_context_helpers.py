@@ -43,9 +43,11 @@ def get_conversation_id(tool_context: Optional[ToolContext]) -> str:
     # Fallback to session.id only in ADK test mode (for standalone ADK web testing)
     if _ADK_TEST_MODE:
         try:
-            if hasattr(tool_context, 'session') and tool_context.session:
+            if hasattr(tool_context, "session") and tool_context.session:
                 session_id = tool_context.session.id
-                logger.debug(f"🧪 Test mode: Using session.id as conversation_id: {session_id}")
+                logger.debug(
+                    f"🧪 Test mode: Using session.id as conversation_id: {session_id}"
+                )
                 return session_id
         except Exception as e:
             logger.warning(f"Failed to get session.id from tool_context: {e}")
@@ -68,7 +70,7 @@ def get_session_id(tool_context: Optional[ToolContext]) -> str:
         return ""
 
     try:
-        if hasattr(tool_context, 'session') and tool_context.session:
+        if hasattr(tool_context, "session") and tool_context.session:
             return tool_context.session.id
     except Exception as e:
         logger.warning(f"Failed to get session.id from tool_context: {e}")
@@ -96,7 +98,7 @@ def get_user_id(tool_context: Optional[ToolContext]) -> str:
 
     # Try session
     try:
-        if hasattr(tool_context, 'session') and tool_context.session:
+        if hasattr(tool_context, "session") and tool_context.session:
             return tool_context.session.user_id
     except Exception as e:
         logger.warning(f"Failed to get user_id from tool_context: {e}")

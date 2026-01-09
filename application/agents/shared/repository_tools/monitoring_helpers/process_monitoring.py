@@ -24,7 +24,9 @@ from .output_streaming import _stream_process_output
 logger = logging.getLogger(__name__)
 
 
-def _extract_auth_info(tool_context: Optional[ToolContext]) -> tuple[Optional[str], Optional[str], Optional[str]]:
+def _extract_auth_info(
+    tool_context: Optional[ToolContext],
+) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """Extract authentication info from tool context.
 
     Args:
@@ -37,10 +39,14 @@ def _extract_auth_info(tool_context: Optional[ToolContext]) -> tuple[Optional[st
         return None, None, None
 
     repo_type = tool_context.state.get("repository_type")
-    repo_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+    repo_url = tool_context.state.get("user_repository_url") or tool_context.state.get(
+        "repository_url"
+    )
     inst_id = tool_context.state.get("installation_id")
 
-    logger.info(f"🔐 Extracted auth info - type: {repo_type}, url: {repo_url}, inst_id: {inst_id}")
+    logger.info(
+        f"🔐 Extracted auth info - type: {repo_type}, url: {repo_url}, inst_id: {inst_id}"
+    )
     return repo_url, inst_id, repo_type
 
 
@@ -79,7 +85,9 @@ async def _send_initial_commit(
         )
         logger.info(f"✅ [{branch_name}] Initial commit completed")
     except Exception as e:
-        logger.error(f"❌ [{branch_name}] Failed to send initial commit: {e}", exc_info=True)
+        logger.error(
+            f"❌ [{branch_name}] Failed to send initial commit: {e}", exc_info=True
+        )
 
 
 async def _handle_process_completion(
@@ -106,6 +114,7 @@ async def _handle_process_completion(
     )
 
     from application.agents.shared.process_manager import get_process_manager
+
     process_manager = get_process_manager()
     await process_manager.unregister_process(pid)
 
@@ -185,7 +194,7 @@ async def _update_task_with_commit_info(task_id: str, commit_result: dict) -> No
         updated_metadata = {
             **existing_metadata,
             "changed_files": commit_result.get("changed_files", [])[:20],
-            "diff": commit_result.get("diff", {})
+            "diff": commit_result.get("diff", {}),
         }
 
         await task_service.add_progress_update(
@@ -212,9 +221,12 @@ async def _handle_timeout_exceeded(
         timeout_seconds: Timeout in seconds
         process: The subprocess
     """
-    logger.error(f"⏰ Process exceeded {timeout_seconds} seconds, terminating... (PID: {pid})")
+    logger.error(
+        f"⏰ Process exceeded {timeout_seconds} seconds, terminating... (PID: {pid})"
+    )
 
     from application.agents.shared.process_manager import get_process_manager
+
     process_manager = get_process_manager()
     await process_manager.unregister_process(pid)
 
@@ -253,14 +265,22 @@ async def _monitor_build_process(
     """
     pid = process.pid
     task_id = tool_context.state.get("background_task_id") if tool_context else None
-    auth_repo_url, auth_installation_id, auth_repository_type = _extract_auth_info(tool_context)
+    auth_repo_url, auth_installation_id, auth_repository_type = _extract_auth_info(
+        tool_context
+    )
 
-    logger.info(f"🔍 [{branch_name}] Monitoring started for PID {pid}, task_id: {task_id}")
+    logger.info(
+        f"🔍 [{branch_name}] Monitoring started for PID {pid}, task_id: {task_id}"
+    )
 
     asyncio.create_task(_stream_process_output(process=process, task_id=task_id))
     await _send_initial_commit(
-        repository_path, branch_name, tool_context,
-        auth_repo_url, auth_installation_id, auth_repository_type
+        repository_path,
+        branch_name,
+        tool_context,
+        auth_repo_url,
+        auth_installation_id,
+        auth_repository_type,
     )
 
     check_interval = PROCESS_CHECK_INTERVAL_SECONDS
@@ -275,8 +295,14 @@ async def _monitor_build_process(
         except asyncio.TimeoutError:
             elapsed_time += remaining_time
             await _handle_periodic_commit(
-                elapsed_time, task_id, repository_path, branch_name,
-                tool_context, auth_repo_url, auth_installation_id, auth_repository_type
+                elapsed_time,
+                task_id,
+                repository_path,
+                branch_name,
+                tool_context,
+                auth_repo_url,
+                auth_installation_id,
+                auth_repository_type,
             )
 
     await _handle_timeout_exceeded(pid, task_id, timeout_seconds, process)

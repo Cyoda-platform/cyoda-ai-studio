@@ -4,8 +4,9 @@ Unit tests for OpenAI Vision Service
 
 import base64
 import os
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 from application.services.openai.vision_service import VisionService
 
@@ -14,7 +15,7 @@ from application.services.openai.vision_service import VisionService
 def sample_image_bytes():
     """Create sample image bytes."""
     # Minimal valid JPEG header
-    return b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00'
+    return b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
 
 
 @pytest.fixture
@@ -88,14 +89,18 @@ class TestDownloadImage:
     @pytest.mark.asyncio
     async def test_download_image_success(self, sample_image_bytes):
         """Test successful image download."""
-        with patch('application.services.openai.vision_service.httpx.AsyncClient') as mock_client:
+        with patch(
+            "application.services.openai.vision_service.httpx.AsyncClient"
+        ) as mock_client:
             mock_response = MagicMock()
             mock_response.content = sample_image_bytes
             mock_response.raise_for_status = MagicMock()
 
             mock_client_instance = AsyncMock()
             mock_client_instance.get = AsyncMock(return_value=mock_response)
-            mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+            mock_client_instance.__aenter__ = AsyncMock(
+                return_value=mock_client_instance
+            )
             mock_client_instance.__aexit__ = AsyncMock(return_value=None)
             mock_client.return_value = mock_client_instance
 
@@ -105,10 +110,16 @@ class TestDownloadImage:
     @pytest.mark.asyncio
     async def test_download_image_failure(self):
         """Test image download failure."""
-        with patch('application.services.openai.vision_service.httpx.AsyncClient') as mock_client:
+        with patch(
+            "application.services.openai.vision_service.httpx.AsyncClient"
+        ) as mock_client:
             mock_client_instance = AsyncMock()
-            mock_client_instance.get = AsyncMock(side_effect=Exception("Connection error"))
-            mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+            mock_client_instance.get = AsyncMock(
+                side_effect=Exception("Connection error")
+            )
+            mock_client_instance.__aenter__ = AsyncMock(
+                return_value=mock_client_instance
+            )
             mock_client_instance.__aexit__ = AsyncMock(return_value=None)
             mock_client.return_value = mock_client_instance
 
@@ -122,8 +133,7 @@ class TestBuildVisionMessage:
     def test_build_vision_message_with_url(self):
         """Test building vision message with URL."""
         message = VisionService.build_vision_message(
-            "Describe this image",
-            image_url="http://example.com/image.jpg"
+            "Describe this image", image_url="http://example.com/image.jpg"
         )
         assert message["role"] == "user"
         assert len(message["content"]) == 2
@@ -133,8 +143,7 @@ class TestBuildVisionMessage:
     def test_build_vision_message_with_file(self, temp_image_file):
         """Test building vision message with file."""
         message = VisionService.build_vision_message(
-            "Describe this image",
-            image_path=temp_image_file
+            "Describe this image", image_path=temp_image_file
         )
         assert message["role"] == "user"
         assert len(message["content"]) == 2
@@ -144,8 +153,7 @@ class TestBuildVisionMessage:
     def test_build_vision_message_with_bytes(self, sample_image_bytes):
         """Test building vision message with bytes."""
         message = VisionService.build_vision_message(
-            "Describe this image",
-            image_bytes=sample_image_bytes
+            "Describe this image", image_bytes=sample_image_bytes
         )
         assert message["role"] == "user"
         assert len(message["content"]) == 2
@@ -163,7 +171,7 @@ class TestBuildVisionMessage:
             VisionService.build_vision_message(
                 "Describe this image",
                 image_url="http://example.com/image.jpg",
-                image_bytes=sample_image_bytes
+                image_bytes=sample_image_bytes,
             )
 
 
@@ -172,10 +180,7 @@ class TestBuildMultiImageMessage:
 
     def test_build_multi_image_message_urls(self):
         """Test building multi-image message with URLs."""
-        urls = [
-            "http://example.com/image1.jpg",
-            "http://example.com/image2.jpg"
-        ]
+        urls = ["http://example.com/image1.jpg", "http://example.com/image2.jpg"]
         message = VisionService.build_multi_image_message("Compare these images", urls)
         assert message["role"] == "user"
         assert len(message["content"]) == 3  # 1 text + 2 images
@@ -186,17 +191,18 @@ class TestBuildMultiImageMessage:
     def test_build_multi_image_message_bytes(self, sample_image_bytes):
         """Test building multi-image message with bytes."""
         images = [sample_image_bytes, sample_image_bytes]
-        message = VisionService.build_multi_image_message("Compare these images", images)
+        message = VisionService.build_multi_image_message(
+            "Compare these images", images
+        )
         assert message["role"] == "user"
         assert len(message["content"]) == 3  # 1 text + 2 images
 
     def test_build_multi_image_message_mixed(self, sample_image_bytes):
         """Test building multi-image message with mixed sources."""
-        images = [
-            "http://example.com/image1.jpg",
-            sample_image_bytes
-        ]
-        message = VisionService.build_multi_image_message("Compare these images", images)
+        images = ["http://example.com/image1.jpg", sample_image_bytes]
+        message = VisionService.build_multi_image_message(
+            "Compare these images", images
+        )
         assert message["role"] == "user"
         assert len(message["content"]) == 3
 
@@ -233,4 +239,3 @@ class TestGetVisionModel:
         """Test unsupported model defaults to gpt-4o."""
         model = VisionService.get_vision_model("unsupported-model")
         assert model == "gpt-4o"
-

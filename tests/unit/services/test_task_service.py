@@ -1,9 +1,11 @@
 """Comprehensive tests for TaskService.create_task with >=70% coverage."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from application.services.task_service import TaskService
+
+import pytest
+
 from application.entity.background_task import BackgroundTask
+from application.services.task_service import TaskService
 
 
 class TestTaskServiceCreateTask:
@@ -32,14 +34,12 @@ class TestTaskServiceCreateTask:
             "status": "pending",
             "progress": 0,
             "workflow_cache": {},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
         result = await task_service.create_task(
-            user_id="user-1",
-            task_type="build_app",
-            name="Build App"
+            user_id="user-1", task_type="build_app", name="Build App"
         )
 
         assert result.technical_id == "task-001"
@@ -50,7 +50,9 @@ class TestTaskServiceCreateTask:
         mock_entity_service.save.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_task_with_description(self, task_service, mock_entity_service):
+    async def test_create_task_with_description(
+        self, task_service, mock_entity_service
+    ):
         """Test with description parameter."""
         mock_response = MagicMock()
         mock_response.data = {
@@ -62,7 +64,7 @@ class TestTaskServiceCreateTask:
             "status": "pending",
             "progress": 0,
             "workflow_cache": {},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
@@ -70,7 +72,7 @@ class TestTaskServiceCreateTask:
             user_id="user-2",
             task_type="build",
             name="Test",
-            description="Test description"
+            description="Test description",
         )
 
         assert result.description == "Test description"
@@ -78,7 +80,9 @@ class TestTaskServiceCreateTask:
         assert call_kwargs["entity"]["description"] == "Test description"
 
     @pytest.mark.asyncio
-    async def test_create_task_all_build_fields(self, task_service, mock_entity_service):
+    async def test_create_task_all_build_fields(
+        self, task_service, mock_entity_service
+    ):
         """Test with all optional fields for build task."""
         mock_response = MagicMock()
         mock_response.data = {
@@ -97,7 +101,7 @@ class TestTaskServiceCreateTask:
             "repository_type": "private",
             "repository_url": "https://github.com/test/repo",
             "workflow_cache": {},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
@@ -112,7 +116,7 @@ class TestTaskServiceCreateTask:
             conversation_id="conv-123",
             repository_path="/tmp/repo",
             repository_type="private",
-            repository_url="https://github.com/test/repo"
+            repository_url="https://github.com/test/repo",
         )
 
         assert result.branch_name == "feature-123"
@@ -124,7 +128,9 @@ class TestTaskServiceCreateTask:
         assert result.repository_url == "https://github.com/test/repo"
 
     @pytest.mark.asyncio
-    async def test_create_task_all_deployment_fields(self, task_service, mock_entity_service):
+    async def test_create_task_all_deployment_fields(
+        self, task_service, mock_entity_service
+    ):
         """Test with all optional fields for deployment task."""
         mock_response = MagicMock()
         mock_response.data = {
@@ -140,7 +146,7 @@ class TestTaskServiceCreateTask:
             "namespace": "prod",
             "env_url": "https://app.prod.com",
             "workflow_cache": {},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
@@ -152,7 +158,7 @@ class TestTaskServiceCreateTask:
             conversation_id="conv-456",
             build_id="build-123",
             namespace="prod",
-            env_url="https://app.prod.com"
+            env_url="https://app.prod.com",
         )
 
         assert result.build_id == "build-123"
@@ -172,7 +178,7 @@ class TestTaskServiceCreateTask:
             "status": "pending",
             "progress": 0,
             "workflow_cache": {"param1": "val1", "param2": "val2"},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
@@ -181,14 +187,16 @@ class TestTaskServiceCreateTask:
             task_type="custom",
             name="Custom Task",
             param1="val1",
-            param2="val2"
+            param2="val2",
         )
 
         assert result.workflow_cache["param1"] == "val1"
         assert result.workflow_cache["param2"] == "val2"
 
     @pytest.mark.asyncio
-    async def test_create_task_response_with_data_attr(self, task_service, mock_entity_service):
+    async def test_create_task_response_with_data_attr(
+        self, task_service, mock_entity_service
+    ):
         """Test response with .data attribute."""
         mock_response = MagicMock()
         mock_response.data = {
@@ -199,14 +207,12 @@ class TestTaskServiceCreateTask:
             "status": "pending",
             "progress": 0,
             "workflow_cache": {},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
         result = await task_service.create_task(
-            user_id="user-6",
-            task_type="build",
-            name="Build"
+            user_id="user-6", task_type="build", name="Build"
         )
 
         assert result.technical_id == "task-006"
@@ -222,14 +228,12 @@ class TestTaskServiceCreateTask:
             "status": "pending",
             "progress": 0,
             "workflow_cache": {},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
         result = await task_service.create_task(
-            user_id="user-7",
-            task_type="build",
-            name="Build"
+            user_id="user-7", task_type="build", name="Build"
         )
 
         assert result.technical_id == "task-007"
@@ -246,14 +250,12 @@ class TestTaskServiceCreateTask:
             "status": "pending",
             "progress": 0,
             "workflow_cache": {},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
         await task_service.create_task(
-            user_id="user-8",
-            task_type="build",
-            name="Build"
+            user_id="user-8", task_type="build", name="Build"
         )
 
         call_kwargs = mock_entity_service.save.call_args[1]
@@ -272,15 +274,15 @@ class TestTaskServiceCreateTask:
             "status": "pending",
             "progress": 0,
             "workflow_cache": {},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
-        with patch('application.services.task_service.task_operations.logger') as mock_logger:
+        with patch(
+            "application.services.task_service.task_operations.logger"
+        ) as mock_logger:
             await task_service.create_task(
-                user_id="user-9",
-                task_type="build",
-                name="Build"
+                user_id="user-9", task_type="build", name="Build"
             )
 
             mock_logger.info.assert_called_once()
@@ -289,7 +291,9 @@ class TestTaskServiceCreateTask:
             assert "build" in log_msg
 
     @pytest.mark.asyncio
-    async def test_create_task_returns_background_task(self, task_service, mock_entity_service):
+    async def test_create_task_returns_background_task(
+        self, task_service, mock_entity_service
+    ):
         """Test returns BackgroundTask instance."""
         mock_response = MagicMock()
         mock_response.data = {
@@ -300,27 +304,24 @@ class TestTaskServiceCreateTask:
             "status": "pending",
             "progress": 0,
             "workflow_cache": {},
-            "progress_messages": []
+            "progress_messages": [],
         }
         mock_entity_service.save.return_value = mock_response
 
         result = await task_service.create_task(
-            user_id="user-10",
-            task_type="build",
-            name="Build"
+            user_id="user-10", task_type="build", name="Build"
         )
 
         assert isinstance(result, BackgroundTask)
 
     @pytest.mark.asyncio
-    async def test_create_task_exception_propagates(self, task_service, mock_entity_service):
+    async def test_create_task_exception_propagates(
+        self, task_service, mock_entity_service
+    ):
         """Test exceptions propagate."""
         mock_entity_service.save.side_effect = Exception("Service error")
 
         with pytest.raises(Exception, match="Service error"):
             await task_service.create_task(
-                user_id="user-11",
-                task_type="build",
-                name="Build"
+                user_id="user-11", task_type="build", name="Build"
             )
-

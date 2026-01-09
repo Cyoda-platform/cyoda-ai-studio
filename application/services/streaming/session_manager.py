@@ -3,13 +3,13 @@
 import logging
 from typing import Any, Dict, Optional
 
+from application.services.session_service.utilities import (
+    deserialize_event,
+    to_adk_session,
+)
 from application.services.streaming.constants import (
     APP_NAME,
     CYODA_TECHNICAL_ID_KEY,
-)
-from application.services.session_service.utilities import (
-    to_adk_session,
-    deserialize_event,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,9 @@ async def load_or_create_session(
         if adk_session_entity:
             session = to_adk_session(adk_session_entity, deserialize_event)
             session_technical_id = adk_session_id
-            logger.info(f"✅ Loaded existing session via technical_id: {adk_session_id}")
+            logger.info(
+                f"✅ Loaded existing session via technical_id: {adk_session_id}"
+            )
 
     # Try to load by conversation ID
     if not session:
@@ -67,13 +69,11 @@ async def load_or_create_session(
 
     # Create new session if not found
     if not session:
-        created_session = (
-            await agent_wrapper.runner.session_service.create_session(
-                app_name=APP_NAME,
-                user_id=user_id,
-                session_id=conversation_id,
-                state=session_state,
-            )
+        created_session = await agent_wrapper.runner.session_service.create_session(
+            app_name=APP_NAME,
+            user_id=user_id,
+            session_id=conversation_id,
+            state=session_state,
         )
         session_technical_id = created_session.state.get(CYODA_TECHNICAL_ID_KEY)
         session = created_session
@@ -104,4 +104,3 @@ async def save_session_state(
     """
     if conversation_id and session_state:
         await agent_wrapper._save_session_state(conversation_id, session_state)
-

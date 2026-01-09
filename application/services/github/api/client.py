@@ -4,11 +4,14 @@ Supports both personal access tokens and GitHub App installation tokens.
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 import httpx
 
+from application.services.github.auth.installation_token_manager import (
+    InstallationTokenManager,
+)
 from common.config.config import GH_DEFAULT_OWNER
-from application.services.github.auth.installation_token_manager import InstallationTokenManager
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +26,7 @@ class GitHubAPIClient:
         self,
         token: Optional[str] = None,
         owner: Optional[str] = None,
-        installation_id: Optional[int] = None
+        installation_id: Optional[int] = None,
     ):
         """Initialize GitHub API client.
 
@@ -39,10 +42,14 @@ class GitHubAPIClient:
 
         if installation_id:
             self._installation_token_manager = InstallationTokenManager()
-            logger.info(f"GitHub API client initialized with installation ID: {installation_id}")
+            logger.info(
+                f"GitHub API client initialized with installation ID: {installation_id}"
+            )
         else:
-            logger.warning("GitHub API client initialized without installation ID - authentication may fail")
-    
+            logger.warning(
+                "GitHub API client initialized without installation ID - authentication may fail"
+            )
+
     async def _get_token(self) -> str:
         """Get authentication token (installation token or personal access token).
 
@@ -50,7 +57,9 @@ class GitHubAPIClient:
             Authentication token
         """
         if self.installation_id and self._installation_token_manager:
-            return await self._installation_token_manager.get_installation_token(self.installation_id)
+            return await self._installation_token_manager.get_installation_token(
+                self.installation_id
+            )
         return self.token
 
     async def _get_headers(self) -> Dict[str, str]:
@@ -64,16 +73,16 @@ class GitHubAPIClient:
             "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": self.API_VERSION,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-    
+
     async def request(
         self,
         method: str,
         path: str,
         data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
-        timeout: float = 150.0
+        timeout: float = 150.0,
     ) -> Optional[Dict[str, Any]]:
         """Make a GitHub API request.
 
@@ -146,7 +155,9 @@ class GitHubAPIClient:
             elif method_upper == "DELETE":
                 return await client.delete(url, headers=headers, params=params)
             elif method_upper == "PATCH":
-                return await client.patch(url, json=data, headers=headers, params=params)
+                return await client.patch(
+                    url, json=data, headers=headers, params=params
+                )
             else:
                 raise ValueError(f"Unsupported HTTP method: {method}")
 
@@ -181,66 +192,74 @@ class GitHubAPIClient:
         error_msg = f"GitHub API request failed (status {response.status_code}): {response.text}"
         logger.error(error_msg)
         raise Exception(error_msg)
-    
-    async def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+
+    async def get(
+        self, path: str, params: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
         """Make a GET request.
-        
+
         Args:
             path: API path
             params: Query parameters
-            
+
         Returns:
             Response data
         """
         return await self.request("GET", path, params=params)
-    
-    async def post(self, path: str, data: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+
+    async def post(
+        self, path: str, data: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
         """Make a POST request.
-        
+
         Args:
             path: API path
             data: Request body
-            
+
         Returns:
             Response data
         """
         return await self.request("POST", path, data=data)
-    
-    async def put(self, path: str, data: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+
+    async def put(
+        self, path: str, data: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
         """Make a PUT request.
-        
+
         Args:
             path: API path
             data: Request body
-            
+
         Returns:
             Response data
         """
         return await self.request("PUT", path, data=data)
-    
+
     async def delete(self, path: str) -> Optional[Dict[str, Any]]:
         """Make a DELETE request.
-        
+
         Args:
             path: API path
-            
+
         Returns:
             Response data
         """
         return await self.request("DELETE", path)
-    
-    async def patch(self, path: str, data: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+
+    async def patch(
+        self, path: str, data: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
         """Make a PATCH request.
-        
+
         Args:
             path: API path
             data: Request body
-            
+
         Returns:
             Response data
         """
         return await self.request("PATCH", path, data=data)
-    
+
     async def download_file(self, url: str) -> bytes:
         """Download a file from URL.
 
@@ -251,21 +270,22 @@ class GitHubAPIClient:
             File content as bytes
         """
         headers = await self._get_headers()
-        
+
         try:
             timeout_config = httpx.Timeout(150.0, connect=60.0)
-            async with httpx.AsyncClient(timeout=timeout_config, trust_env=False) as client:
+            async with httpx.AsyncClient(
+                timeout=timeout_config, trust_env=False
+            ) as client:
                 response = await client.get(url, headers=headers)
-                
+
                 if response.status_code == 200:
                     return response.content
                 else:
                     error_msg = f"File download failed (status {response.status_code})"
                     logger.error(error_msg)
                     raise Exception(error_msg)
-        
+
         except httpx.RequestError as e:
             error_msg = f"File download error: {e}"
             logger.error(error_msg)
             raise Exception(error_msg)
-

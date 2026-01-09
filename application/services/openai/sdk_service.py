@@ -16,12 +16,12 @@ import logging
 import os
 from typing import Any, AsyncIterator, Dict, List, Optional, Type, TypeVar
 
-from openai import AsyncOpenAI, RateLimitError, APIError, APIConnectionError
+from openai import APIConnectionError, APIError, AsyncOpenAI, RateLimitError
 from pydantic import BaseModel, ValidationError
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T', bound=BaseModel)
+T = TypeVar("T", bound=BaseModel)
 
 
 class OpenAISDKService:
@@ -50,7 +50,9 @@ class OpenAISDKService:
         """
         self.api_key = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
-            logger.warning("OPENAI_API_KEY not set - OpenAISDKService will not function")
+            logger.warning(
+                "OPENAI_API_KEY not set - OpenAISDKService will not function"
+            )
 
         self.model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
         self.temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
@@ -59,10 +61,11 @@ class OpenAISDKService:
         self.max_retries = int(os.getenv("OPENAI_MAX_RETRIES", "3"))
 
         # Initialize client
-        self.client = AsyncOpenAI(
-            api_key=self.api_key,
-            timeout=self.timeout
-        ) if self.api_key else None
+        self.client = (
+            AsyncOpenAI(api_key=self.api_key, timeout=self.timeout)
+            if self.api_key
+            else None
+        )
 
         logger.info(
             f"OpenAISDKService initialized: model={self.model_name}, "
@@ -111,7 +114,7 @@ class OpenAISDKService:
             Exception: If max retries exceeded or error is not retryable
         """
         if attempt < self.max_retries - 1:
-            wait_time = 2 ** attempt
+            wait_time = 2**attempt
             logger.warning(f"{error_type} error, retrying in {wait_time}s: {error}")
             await asyncio.sleep(wait_time)
         else:
@@ -303,4 +306,3 @@ class OpenAISDKService:
             True if API key is set and client is initialized
         """
         return self.client is not None
-

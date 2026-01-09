@@ -64,4 +64,3 @@ def reset_cli_invocation_count(session_id: str) -> None:
 def get_cli_invocation_count(session_id: str) -> int:
     """Get current CLI invocation count for a session."""
     return _cli_tracker.get_count(session_id)
-

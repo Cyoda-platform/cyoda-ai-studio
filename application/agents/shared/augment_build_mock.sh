@@ -58,4 +58,3 @@ log "Mock build completed successfully"
 echo "Mock Build Completed at $(date)" >> "$TEST_FILE"
 
 exit 0
-

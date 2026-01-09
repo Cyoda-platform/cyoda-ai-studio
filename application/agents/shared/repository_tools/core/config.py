@@ -2,9 +2,9 @@
 
 import logging
 from typing import Optional
-from pydantic import BaseModel
 
 from google.adk.tools.tool_context import ToolContext
+from pydantic import BaseModel
 
 from application.agents.shared.repository_tools.constants import (
     GITHUB_PUBLIC_REPO_INSTALLATION_ID,
@@ -38,7 +38,9 @@ class BranchConfiguration(BaseModel):
     message: Optional[str] = None
 
 
-def _validate_tool_context(tool_context: Optional[ToolContext]) -> tuple[bool, Optional[str], Optional[str]]:
+def _validate_tool_context(
+    tool_context: Optional[ToolContext],
+) -> tuple[bool, Optional[str], Optional[str]]:
     """Validate tool context and extract conversation ID.
 
     Args:
@@ -97,6 +99,7 @@ async def _extract_config_from_conversation(
         )
 
         if not conversation_response:
+            logger.warning(f"❌ Conversation {conversation_id} not found in database")
             return False, f"Conversation {conversation_id} not found", existing_config
 
         # Handle conversation data (can be dict or object)
@@ -104,42 +107,58 @@ async def _extract_config_from_conversation(
         merged_config = existing_config.copy()
 
         if isinstance(conversation_data, dict):
-            merged_config["repository_name"] = (
-                merged_config["repository_name"] or conversation_data.get("repository_name")
-            )
-            merged_config["repository_owner"] = (
-                merged_config["repository_owner"] or conversation_data.get("repository_owner")
-            )
-            merged_config["repository_branch"] = (
-                merged_config["repository_branch"] or conversation_data.get("repository_branch")
-            )
-            merged_config["repository_url"] = (
-                merged_config["repository_url"] or conversation_data.get("repository_url")
-            )
-            merged_config["installation_id"] = (
-                merged_config["installation_id"] or conversation_data.get("installation_id")
+            merged_config["repository_name"] = merged_config[
+                "repository_name"
+            ] or conversation_data.get("repository_name")
+            merged_config["repository_owner"] = merged_config[
+                "repository_owner"
+            ] or conversation_data.get("repository_owner")
+            merged_config["repository_branch"] = merged_config[
+                "repository_branch"
+            ] or conversation_data.get("repository_branch")
+            merged_config["repository_url"] = merged_config[
+                "repository_url"
+            ] or conversation_data.get("repository_url")
+            merged_config["installation_id"] = merged_config[
+                "installation_id"
+            ] or conversation_data.get("installation_id")
+
+            logger.info(
+                f"📦 Extracted from Conversation entity (dict): "
+                f"repo={conversation_data.get('repository_name')}, "
+                f"branch={conversation_data.get('repository_branch')}, "
+                f"owner={conversation_data.get('repository_owner')}"
             )
         else:
-            merged_config["repository_name"] = (
-                merged_config["repository_name"] or getattr(conversation_data, "repository_name", None)
-            )
-            merged_config["repository_owner"] = (
-                merged_config["repository_owner"] or getattr(conversation_data, "repository_owner", None)
-            )
-            merged_config["repository_branch"] = (
-                merged_config["repository_branch"] or getattr(conversation_data, "repository_branch", None)
-            )
-            merged_config["repository_url"] = (
-                merged_config["repository_url"] or getattr(conversation_data, "repository_url", None)
-            )
-            merged_config["installation_id"] = (
-                merged_config["installation_id"] or getattr(conversation_data, "installation_id", None)
+            merged_config["repository_name"] = merged_config[
+                "repository_name"
+            ] or getattr(conversation_data, "repository_name", None)
+            merged_config["repository_owner"] = merged_config[
+                "repository_owner"
+            ] or getattr(conversation_data, "repository_owner", None)
+            merged_config["repository_branch"] = merged_config[
+                "repository_branch"
+            ] or getattr(conversation_data, "repository_branch", None)
+            merged_config["repository_url"] = merged_config[
+                "repository_url"
+            ] or getattr(conversation_data, "repository_url", None)
+            merged_config["installation_id"] = merged_config[
+                "installation_id"
+            ] or getattr(conversation_data, "installation_id", None)
+
+            logger.info(
+                f"📦 Extracted from Conversation entity (object): "
+                f"repo={getattr(conversation_data, 'repository_name', None)}, "
+                f"branch={getattr(conversation_data, 'repository_branch', None)}, "
+                f"owner={getattr(conversation_data, 'repository_owner', None)}"
             )
 
         return True, None, merged_config
 
     except Exception as e:
-        logger.error(f"Error extracting configuration from conversation: {e}", exc_info=True)
+        logger.error(
+            f"Error extracting configuration from conversation: {e}", exc_info=True
+        )
         return False, str(e), existing_config
 
 
@@ -164,7 +183,9 @@ def _detect_language(repository_name: str) -> Optional[str]:
     return None
 
 
-def _determine_repository_type(repository_url: Optional[str], installation_id: Optional[str]) -> str:
+def _determine_repository_type(
+    repository_url: Optional[str], installation_id: Optional[str]
+) -> str:
     """Determine repository type based on configuration.
 
     Args:
@@ -233,7 +254,9 @@ def _build_invalid_repo_type_error(repo_type: str) -> str:
     return f"Invalid repository_type '{repo_type}'. Must be 'public' or 'private'."
 
 
-def _get_public_repo_config(language: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
+def _get_public_repo_config(
+    language: str,
+) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """Get public repository configuration based on language.
 
     Args:
@@ -250,15 +273,12 @@ def _get_public_repo_config(language: str) -> tuple[Optional[str], Optional[str]
         return None, None, f"Unsupported language '{language}'"
 
     installation_id = GITHUB_PUBLIC_REPO_INSTALLATION_ID
-    logger.info(
-        f"📦 Public repo mode: {repo_url}, installation_id={installation_id}"
-    )
+    logger.info(f"📦 Public repo mode: {repo_url}, installation_id={installation_id}")
     return repo_url, installation_id, None
 
 
 def _get_repository_config_from_context(
-    tool_context: Optional[ToolContext],
-    language: str
+    tool_context: Optional[ToolContext], language: str
 ) -> tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
     """Extract repository configuration from tool context.
 

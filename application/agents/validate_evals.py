@@ -58,7 +58,9 @@ def _validate_eval_cases_structure(eval_cases: any) -> tuple[bool, str]:
     return True, ""
 
 
-def _validate_tool_uses(intermediate: dict, case_idx: int, inv_idx: int) -> tuple[bool, str]:
+def _validate_tool_uses(
+    intermediate: dict, case_idx: int, inv_idx: int
+) -> tuple[bool, str]:
     """Validate tool_uses in intermediate data.
 
     Args:
@@ -77,15 +79,23 @@ def _validate_tool_uses(intermediate: dict, case_idx: int, inv_idx: int) -> tupl
 
     for k, tool_use in enumerate(intermediate["tool_uses"]):
         if "name" not in tool_use:
-            return False, f"Case {case_idx}, invocation {inv_idx}, tool {k}: missing tool name"
+            return (
+                False,
+                f"Case {case_idx}, invocation {inv_idx}, tool {k}: missing tool name",
+            )
 
         if "args" not in tool_use:
-            return False, f"Case {case_idx}, invocation {inv_idx}, tool {k}: missing tool args"
+            return (
+                False,
+                f"Case {case_idx}, invocation {inv_idx}, tool {k}: missing tool args",
+            )
 
     return True, ""
 
 
-def _validate_invocation(invocation: dict, case_idx: int, inv_idx: int) -> tuple[bool, str]:
+def _validate_invocation(
+    invocation: dict, case_idx: int, inv_idx: int
+) -> tuple[bool, str]:
     """Validate single invocation.
 
     Args:

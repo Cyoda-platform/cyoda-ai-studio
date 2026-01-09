@@ -6,16 +6,21 @@ import json
 import logging
 
 from google.adk.tools.tool_context import ToolContext
-from application.services.environment_management_service import get_environment_management_service
 
-from ..common.utils.utils import require_authenticated_user, handle_tool_errors
+from application.services.environment_management_service import (
+    get_environment_management_service,
+)
+
+from ..common.utils.utils import handle_tool_errors, require_authenticated_user
 
 logger = logging.getLogger(__name__)
 
 
 @require_authenticated_user
 @handle_tool_errors
-async def get_application_status(tool_context: ToolContext, env_name: str, app_name: str) -> str:
+async def get_application_status(
+    tool_context: ToolContext, env_name: str, app_name: str
+) -> str:
     """Get the deployment status of an application.
 
     Args:
@@ -28,7 +33,9 @@ async def get_application_status(tool_context: ToolContext, env_name: str, app_n
     """
     # Validate inputs
     if not env_name or not app_name:
-        return json.dumps({"error": "Both env_name and app_name parameters are required."})
+        return json.dumps(
+            {"error": "Both env_name and app_name parameters are required."}
+        )
 
     # Call environment management service
     user_id = tool_context.state.get("user_id", "guest")

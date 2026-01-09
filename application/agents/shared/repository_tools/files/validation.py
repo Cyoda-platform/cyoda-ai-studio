@@ -18,7 +18,9 @@ def _validate_files_input(files: list[dict[str, str]]) -> None:
         ValueError: If files list is invalid or missing required fields.
     """
     if not files or len(files) == 0:
-        raise ValueError("files parameter is required and must contain at least one file")
+        raise ValueError(
+            "files parameter is required and must contain at least one file"
+        )
 
     for i, file_dict in enumerate(files):
         if "filename" not in file_dict:
@@ -63,11 +65,17 @@ def _validate_tool_context_state(tool_context: ToolContext) -> dict[str, str]:
         raise ValueError(error_msg)
 
     if not repository_path:
-        raise ValueError("Repository path not found in context. Please call clone_repository first.")
+        raise ValueError(
+            "Repository path not found in context. Please call clone_repository first."
+        )
     if not branch_name:
-        raise ValueError("Branch name not found in context. Please call clone_repository first.")
+        raise ValueError(
+            "Branch name not found in context. Please call clone_repository first."
+        )
     if not language:
-        raise ValueError("Language not found in context. Please call clone_repository first.")
+        raise ValueError(
+            "Language not found in context. Please call clone_repository first."
+        )
 
     return {
         "repository_path": repository_path,

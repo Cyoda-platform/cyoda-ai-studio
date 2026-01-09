@@ -14,7 +14,6 @@ from typing import Any, Dict
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -39,17 +38,19 @@ class ValidateCustomerProcessor(CyodaProcessor):
             The validated entity
         """
         try:
-            logger.info(f"Validating customer {getattr(entity, 'technical_id', '<unknown>')}")
+            logger.info(
+                f"Validating customer {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             # Validate required fields
-            if not hasattr(entity, 'email') or not entity.email:
+            if not hasattr(entity, "email") or not entity.email:
                 raise ValueError("Email is required")
 
-            if not hasattr(entity, 'name') or not entity.name:
+            if not hasattr(entity, "name") or not entity.name:
                 raise ValueError("Customer name is required")
 
             # Validate email format
-            if '@' not in entity.email or '.' not in entity.email.split('@')[1]:
+            if "@" not in entity.email or "." not in entity.email.split("@")[1]:
                 raise ValueError("Invalid email format")
 
             # Validate name length
@@ -85,16 +86,20 @@ class ApplyCustomerUpdateProcessor(CyodaProcessor):
             The updated entity with audit information
         """
         try:
-            logger.info(f"Applying updates to customer {getattr(entity, 'technical_id', '<unknown>')}")
+            logger.info(
+                f"Applying updates to customer {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             # Add update timestamp
-            current_timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-            if hasattr(entity, 'updated_at'):
+            current_timestamp = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
+            if hasattr(entity, "updated_at"):
                 entity.updated_at = current_timestamp
 
             # Add audit trail if available
-            if hasattr(entity, 'last_modified_by'):
-                entity.last_modified_by = kwargs.get('user_id', 'system')
+            if hasattr(entity, "last_modified_by"):
+                entity.last_modified_by = kwargs.get("user_id", "system")
 
             logger.info(f"Customer {entity.technical_id} updated successfully")
             return entity
@@ -125,17 +130,21 @@ class ArchiveCustomerProcessor(CyodaProcessor):
             The archived entity
         """
         try:
-            logger.info(f"Archiving customer {getattr(entity, 'technical_id', '<unknown>')}")
+            logger.info(
+                f"Archiving customer {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             # Mark as archived
-            if hasattr(entity, 'is_active'):
+            if hasattr(entity, "is_active"):
                 entity.is_active = False
 
-            if hasattr(entity, 'archived_at'):
-                entity.archived_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            if hasattr(entity, "archived_at"):
+                entity.archived_at = (
+                    datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                )
 
-            if hasattr(entity, 'archived_by'):
-                entity.archived_by = kwargs.get('user_id', 'system')
+            if hasattr(entity, "archived_by"):
+                entity.archived_by = kwargs.get("user_id", "system")
 
             logger.info(f"Customer {entity.technical_id} archived successfully")
             return entity
@@ -143,4 +152,3 @@ class ArchiveCustomerProcessor(CyodaProcessor):
         except Exception as e:
             logger.error(f"Error archiving customer: {str(e)}")
             raise
-

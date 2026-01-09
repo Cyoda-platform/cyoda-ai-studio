@@ -1,23 +1,27 @@
 """BackgroundTask entity - Re-exports for backward compatibility."""
 
+from .formatters import to_api_response
+from .statistics import (
+    calculate_statistics,
+    format_duration,
+    get_status_message,
+)
 from .task_model import (
     BackgroundTask,
     add_progress_message,
     update_status,
 )
-from .statistics import (
-    format_duration,
-    get_status_message,
-    calculate_statistics,
-)
-from .formatters import to_api_response
 
 # Monkey-patch methods onto BackgroundTask class for backward compatibility
-BackgroundTask.add_progress_message = lambda self, message, progress=None, metadata=None: add_progress_message(
-    self, message, progress, metadata
+BackgroundTask.add_progress_message = (
+    lambda self, message, progress=None, metadata=None: add_progress_message(
+        self, message, progress, metadata
+    )
 )
-BackgroundTask.update_status = lambda self, status, message=None, progress=None, error=None: update_status(
-    self, status, message, progress, error
+BackgroundTask.update_status = (
+    lambda self, status, message=None, progress=None, error=None: update_status(
+        self, status, message, progress, error
+    )
 )
 BackgroundTask._calculate_statistics = lambda self: calculate_statistics(
     self.status, self.progress, self.error, self.started_at, self.completed_at

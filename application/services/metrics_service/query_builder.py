@@ -76,7 +76,7 @@ class PrometheusQueryBuilder:
             "http_requests_rate": f'sum(rate(http_requests_total{{namespace="{namespace}"}}[5m]))',
             "http_errors_rate": f'sum(rate(http_requests_total{{namespace="{namespace}", status=~"5.."}}[5m]))',
             "http_request_latency_p95": (
-                f'histogram_quantile(0.95, sum by (le, handler) '
+                f"histogram_quantile(0.95, sum by (le, handler) "
                 f'(rate(http_request_duration_seconds_bucket{{namespace="{namespace}"}}[5m])))'
             ),
             "pod_restarts": f'sum(kube_pod_container_status_restarts_total{{namespace="{namespace}"}})',

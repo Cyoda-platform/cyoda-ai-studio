@@ -75,7 +75,9 @@ class TestLoadInformationalPromptTemplate:
     @pytest.mark.asyncio
     async def test_load_template_success(self, cli_service):
         """Test successfully loading a prompt template."""
-        with patch("application.services.github.cli_service.load_template") as mock_load:
+        with patch(
+            "application.services.github.cli_service.load_template"
+        ) as mock_load:
             mock_load.return_value = "Test template content"
             result = await cli_service._load_informational_prompt_template("python")
             assert result == "Test template content"
@@ -84,12 +86,15 @@ class TestLoadInformationalPromptTemplate:
     @pytest.mark.asyncio
     async def test_load_template_fallback(self, cli_service):
         """Test template loading with fallback."""
+
         def load_template_side_effect(name):
             if "github_cli" in name:
                 raise FileNotFoundError()
             return "Fallback template"
 
-        with patch("application.services.github.cli_service.load_template") as mock_load:
+        with patch(
+            "application.services.github.cli_service.load_template"
+        ) as mock_load:
             mock_load.side_effect = load_template_side_effect
             result = await cli_service._load_informational_prompt_template("python")
             assert result == "Fallback template"
@@ -98,7 +103,9 @@ class TestLoadInformationalPromptTemplate:
     @pytest.mark.asyncio
     async def test_load_template_error(self, cli_service):
         """Test template loading error handling."""
-        with patch("application.services.github.cli_service.load_template") as mock_load:
+        with patch(
+            "application.services.github.cli_service.load_template"
+        ) as mock_load:
             mock_load.side_effect = Exception("Template error")
             with pytest.raises(Exception, match="Template error"):
                 await cli_service._load_informational_prompt_template("python")
@@ -129,6 +136,7 @@ class TestTrackBackgroundTask:
     @pytest.mark.asyncio
     async def test_track_background_task(self, cli_service):
         """Test tracking a background task."""
+
         async def dummy_task():
             await asyncio.sleep(0.01)
 
@@ -136,7 +144,7 @@ class TestTrackBackgroundTask:
         cli_service._track_background_task(task)
 
         # Verify task is tracked
-        background_tasks = getattr(asyncio, '_background_tasks', set())
+        background_tasks = getattr(asyncio, "_background_tasks", set())
         assert task in background_tasks
 
         # Cleanup
@@ -157,7 +165,7 @@ class TestStartCodeGeneration:
                 language="python",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
     @pytest.mark.asyncio
@@ -171,7 +179,7 @@ class TestStartCodeGeneration:
                 language="python",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
     @pytest.mark.asyncio
@@ -185,7 +193,7 @@ class TestStartCodeGeneration:
                 language="python",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
     @pytest.mark.asyncio
@@ -199,8 +207,9 @@ class TestStartCodeGeneration:
                 language="",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
+
 
 class TestStartCodeGenerationValidation:
     """Test input validation for code generation."""
@@ -216,7 +225,7 @@ class TestStartCodeGenerationValidation:
                 language="python",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
     @pytest.mark.asyncio
@@ -230,7 +239,7 @@ class TestStartCodeGenerationValidation:
                 language="python",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
     @pytest.mark.asyncio
@@ -244,7 +253,7 @@ class TestStartCodeGenerationValidation:
                 language="python",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
     @pytest.mark.asyncio
@@ -258,7 +267,7 @@ class TestStartCodeGenerationValidation:
                 language="",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
 
@@ -276,7 +285,7 @@ class TestStartApplicationBuild:
                 language="python",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
     @pytest.mark.asyncio
@@ -290,7 +299,7 @@ class TestStartApplicationBuild:
                 language="python",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
     @pytest.mark.asyncio
@@ -304,7 +313,7 @@ class TestStartApplicationBuild:
                 language="python",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
     @pytest.mark.asyncio
@@ -318,7 +327,7 @@ class TestStartApplicationBuild:
                 language="",
                 user_id="user123",
                 conversation_id="conv123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
 
@@ -326,13 +335,15 @@ class TestHandleSuccessCompletion:
     """Test _handle_success_completion method."""
 
     @pytest.mark.asyncio
-    async def test_handle_success_completion_with_changes(self, cli_service, mock_git_service):
+    async def test_handle_success_completion_with_changes(
+        self, cli_service, mock_git_service
+    ):
         """Test successful completion with file changes."""
         mock_task_service = AsyncMock()
         mock_git_service.commit_and_push.return_value = {
             "success": True,
             "changed_files": ["file1.py", "file2.py"],
-            "canvas_resources": {"entities": ["Entity1"]}
+            "canvas_resources": {"entities": ["Entity1"]},
         }
 
         await cli_service._handle_success_completion(
@@ -343,7 +354,7 @@ class TestHandleSuccessCompletion:
             task_service=mock_task_service,
             conversation_id="conv123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
 
         # Verify final commit was called
@@ -356,7 +367,9 @@ class TestHandleSuccessCompletion:
         assert call_args[1]["progress"] == 100
 
     @pytest.mark.asyncio
-    async def test_handle_success_completion_commit_timeout(self, cli_service, mock_git_service):
+    async def test_handle_success_completion_commit_timeout(
+        self, cli_service, mock_git_service
+    ):
         """Test successful completion when final commit times out."""
         mock_task_service = AsyncMock()
         mock_git_service.commit_and_push.side_effect = asyncio.TimeoutError()
@@ -369,7 +382,7 @@ class TestHandleSuccessCompletion:
             task_service=mock_task_service,
             conversation_id="conv123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
 
         # Verify task was still marked as completed
@@ -379,7 +392,9 @@ class TestHandleSuccessCompletion:
         assert "timed out" in call_args[1]["message"]
 
     @pytest.mark.asyncio
-    async def test_handle_success_completion_commit_error(self, cli_service, mock_git_service):
+    async def test_handle_success_completion_commit_error(
+        self, cli_service, mock_git_service
+    ):
         """Test successful completion when final commit fails."""
         mock_task_service = AsyncMock()
         mock_git_service.commit_and_push.side_effect = Exception("Commit failed")
@@ -392,7 +407,7 @@ class TestHandleSuccessCompletion:
             task_service=mock_task_service,
             conversation_id="conv123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
 
         # Verify task was still marked as completed
@@ -415,7 +430,7 @@ class TestHandleFailureCompletion:
             return_code=None,
             elapsed_time=3700,
             timeout_seconds=3600,
-            task_service=mock_task_service
+            task_service=mock_task_service,
         )
 
         mock_task_service.update_task_status.assert_called_once()
@@ -433,7 +448,7 @@ class TestHandleFailureCompletion:
             return_code=1,
             elapsed_time=100,
             timeout_seconds=3600,
-            task_service=mock_task_service
+            task_service=mock_task_service,
         )
 
         mock_task_service.update_task_status.assert_called_once()
@@ -446,7 +461,9 @@ class TestMonitorCliProcess:
     """Test _monitor_cli_process method."""
 
     @pytest.mark.asyncio
-    async def test_monitor_cli_process_initial_commit(self, cli_service, mock_git_service):
+    async def test_monitor_cli_process_initial_commit(
+        self, cli_service, mock_git_service
+    ):
         """Test monitoring process with initial commit."""
         mock_task_service = AsyncMock()
         mock_process = AsyncMock()
@@ -457,14 +474,20 @@ class TestMonitorCliProcess:
         mock_git_service.commit_and_push.return_value = {
             "success": True,
             "changed_files": ["file1.py"],
-            "canvas_resources": {}
+            "canvas_resources": {},
         }
 
-        with patch("application.services.github.cli_service.get_task_service") as mock_ts:
+        with patch(
+            "application.services.github.cli_service.get_task_service"
+        ) as mock_ts:
             mock_ts.return_value = mock_task_service
-            with patch("application.agents.shared.process_manager.get_process_manager") as mock_pm:
+            with patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm:
                 mock_pm.return_value = AsyncMock()
-                with patch.object(cli_service, "_handle_success_completion") as mock_success:
+                with patch.object(
+                    cli_service, "_handle_success_completion"
+                ) as mock_success:
                     await cli_service._monitor_cli_process(
                         process=mock_process,
                         repository_path="/tmp/repo",
@@ -474,14 +497,16 @@ class TestMonitorCliProcess:
                         prompt_file="/tmp/prompt.txt",
                         output_file="/tmp/output.log",
                         repo_auth_config={},
-                        commit_interval=30
+                        commit_interval=30,
                     )
 
                     # Verify initial commit was called
                     assert mock_git_service.commit_and_push.called
 
     @pytest.mark.asyncio
-    async def test_monitor_cli_process_initial_commit_timeout(self, cli_service, mock_git_service):
+    async def test_monitor_cli_process_initial_commit_timeout(
+        self, cli_service, mock_git_service
+    ):
         """Test monitoring when initial commit times out."""
         mock_task_service = AsyncMock()
         mock_process = AsyncMock()
@@ -495,11 +520,17 @@ class TestMonitorCliProcess:
         mock_process.wait = AsyncMock(side_effect=wait_side_effect)
         mock_git_service.commit_and_push.side_effect = asyncio.TimeoutError()
 
-        with patch("application.services.github.cli_service.get_task_service") as mock_ts:
+        with patch(
+            "application.services.github.cli_service.get_task_service"
+        ) as mock_ts:
             mock_ts.return_value = mock_task_service
-            with patch("application.agents.shared.process_manager.get_process_manager") as mock_pm:
+            with patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm:
                 mock_pm.return_value = AsyncMock()
-                with patch("application.agents.shared.process_utils._is_process_running") as mock_running:
+                with patch(
+                    "application.agents.shared.process_utils._is_process_running"
+                ) as mock_running:
                     mock_running.return_value = False
                     with patch.object(cli_service, "_handle_success_completion"):
                         await cli_service._monitor_cli_process(
@@ -511,7 +542,7 @@ class TestMonitorCliProcess:
                             prompt_file="/tmp/prompt.txt",
                             output_file="/tmp/output.log",
                             repo_auth_config={},
-                            commit_interval=30
+                            commit_interval=30,
                         )
 
                         # Should have logged the timeout warning
@@ -529,14 +560,20 @@ class TestMonitorCliProcess:
         mock_git_service.commit_and_push.return_value = {
             "success": True,
             "changed_files": [],
-            "canvas_resources": {}
+            "canvas_resources": {},
         }
 
-        with patch("application.services.github.cli_service.get_task_service") as mock_ts:
+        with patch(
+            "application.services.github.cli_service.get_task_service"
+        ) as mock_ts:
             mock_ts.return_value = mock_task_service
-            with patch("application.agents.shared.process_manager.get_process_manager") as mock_pm:
+            with patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm:
                 mock_pm.return_value = AsyncMock()
-                with patch("application.services.github.cli.monitor._handle_failure_completion") as mock_failure:
+                with patch(
+                    "application.services.github.cli.monitor._handle_failure_completion"
+                ) as mock_failure:
                     await cli_service._monitor_cli_process(
                         process=mock_process,
                         repository_path="/tmp/repo",
@@ -546,7 +583,7 @@ class TestMonitorCliProcess:
                         prompt_file="/tmp/prompt.txt",
                         output_file="/tmp/output.log",
                         repo_auth_config={},
-                        commit_interval=30
+                        commit_interval=30,
                     )
 
                     # Verify failure handler was called
@@ -590,7 +627,10 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_load_template_with_fallback(self, cli_service):
         """Test template loading with fallback mechanism."""
-        with patch("application.services.github.cli_service.load_template") as mock_load:
+        with patch(
+            "application.services.github.cli_service.load_template"
+        ) as mock_load:
+
             def side_effect(name):
                 if "github_cli" in name:
                     raise FileNotFoundError()
@@ -604,20 +644,24 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_load_template_error_handling(self, cli_service):
         """Test template loading error handling."""
-        with patch("application.services.github.cli_service.load_template") as mock_load:
+        with patch(
+            "application.services.github.cli_service.load_template"
+        ) as mock_load:
             mock_load.side_effect = Exception("Template load failed")
 
             with pytest.raises(Exception, match="Template load failed"):
                 await cli_service._load_informational_prompt_template("python")
 
     @pytest.mark.asyncio
-    async def test_handle_success_completion_with_hook_data(self, cli_service, mock_git_service):
+    async def test_handle_success_completion_with_hook_data(
+        self, cli_service, mock_git_service
+    ):
         """Test success completion with hook data generation."""
         mock_task_service = AsyncMock()
         mock_git_service.commit_and_push.return_value = {
             "success": True,
             "changed_files": ["file1.py", "file2.py"],
-            "canvas_resources": {"entities": ["Entity1"], "workflows": ["Workflow1"]}
+            "canvas_resources": {"entities": ["Entity1"], "workflows": ["Workflow1"]},
         }
 
         await cli_service._handle_success_completion(
@@ -628,7 +672,7 @@ class TestEdgeCases:
             task_service=mock_task_service,
             conversation_id="conv123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
 
         # Verify hook data was included
@@ -637,13 +681,15 @@ class TestEdgeCases:
         assert call_args[1]["metadata"]["hook_data"]["conversation_id"] == "conv123"
 
     @pytest.mark.asyncio
-    async def test_handle_success_completion_without_hook_data(self, cli_service, mock_git_service):
+    async def test_handle_success_completion_without_hook_data(
+        self, cli_service, mock_git_service
+    ):
         """Test success completion without hook data (missing canvas resources)."""
         mock_task_service = AsyncMock()
         mock_git_service.commit_and_push.return_value = {
             "success": True,
             "changed_files": ["file1.py"],
-            "canvas_resources": {}
+            "canvas_resources": {},
         }
 
         await cli_service._handle_success_completion(
@@ -654,7 +700,7 @@ class TestEdgeCases:
             task_service=mock_task_service,
             conversation_id="conv123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
 
         # Verify hook data was NOT included
@@ -662,7 +708,9 @@ class TestEdgeCases:
         assert "hook_data" not in call_args[1]["metadata"]
 
     @pytest.mark.asyncio
-    async def test_handle_success_completion_commit_timeout(self, cli_service, mock_git_service):
+    async def test_handle_success_completion_commit_timeout(
+        self, cli_service, mock_git_service
+    ):
         """Test success completion when final commit times out."""
         mock_task_service = AsyncMock()
 
@@ -679,7 +727,7 @@ class TestEdgeCases:
             task_service=mock_task_service,
             conversation_id="conv123",
             repository_name="test-repo",
-            repository_owner="test-owner"
+            repository_owner="test-owner",
         )
 
         # Verify task was marked as completed with timeout message
@@ -692,17 +740,36 @@ class TestStartApplicationBuildExtended:
     """Extended tests for start_application_build covering all code paths."""
 
     @pytest.mark.asyncio
-    async def test_start_application_build_success_with_template(self, cli_service, mock_git_service):
+    async def test_start_application_build_success_with_template(
+        self, cli_service, mock_git_service
+    ):
         """Test successful start_application_build with template loading."""
-        with patch("application.services.github.cli_service.load_template") as mock_load, \
-             patch("application.agents.shared.process_manager.get_process_manager") as mock_pm, \
-             patch("application.services.github.cli_service.get_task_service") as mock_ts, \
-             patch("application.services.github.cli.utils.get_task_service") as mock_ts_utils, \
-             patch("application.services.github.cli_service.asyncio.create_subprocess_exec") as mock_exec, \
-             patch("application.services.github.cli_service.os.path.join", side_effect=os.path.join), \
-             patch("application.services.github.cli_service.Path.exists", return_value=True):
+        with (
+            patch("application.services.github.cli_service.load_template") as mock_load,
+            patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm,
+            patch(
+                "application.services.github.cli_service.get_task_service"
+            ) as mock_ts,
+            patch(
+                "application.services.github.cli.utils.get_task_service"
+            ) as mock_ts_utils,
+            patch(
+                "application.services.github.cli_service.asyncio.create_subprocess_exec"
+            ) as mock_exec,
+            patch(
+                "application.services.github.cli_service.os.path.join",
+                side_effect=os.path.join,
+            ),
+            patch(
+                "application.services.github.cli_service.Path.exists", return_value=True
+            ),
+        ):
 
-            mock_load.side_effect = lambda x: "Template for " + x if "instructions" in x else "Patterns"
+            mock_load.side_effect = lambda x: (
+                "Template for " + x if "instructions" in x else "Patterns"
+            )
 
             mock_pm_instance = AsyncMock()
             mock_pm_instance.can_start_process = AsyncMock(return_value=True)
@@ -728,7 +795,10 @@ class TestStartApplicationBuildExtended:
                 language="python",
                 user_id="user-123",
                 conversation_id="conv-123",
-                repo_auth_config={"type": "public", "url": "https://github.com/test/repo"}
+                repo_auth_config={
+                    "type": "public",
+                    "url": "https://github.com/test/repo",
+                },
             )
 
             assert result["task_id"] == "task-123"
@@ -739,7 +809,9 @@ class TestStartApplicationBuildExtended:
     @pytest.mark.asyncio
     async def test_start_application_build_script_not_found(self, cli_service):
         """Test start_application_build when script is not found."""
-        with patch("application.services.github.cli_service.Path.exists", return_value=False):
+        with patch(
+            "application.services.github.cli_service.Path.exists", return_value=False
+        ):
             with pytest.raises(FileNotFoundError) as exc_info:
                 await cli_service.start_application_build(
                     repository_path="/test/repo",
@@ -748,16 +820,22 @@ class TestStartApplicationBuildExtended:
                     language="python",
                     user_id="user-123",
                     conversation_id="conv-123",
-                    repo_auth_config={}
+                    repo_auth_config={},
                 )
             assert "CLI script not found" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_start_application_build_process_limit_exceeded(self, cli_service):
         """Test start_application_build when process limit is exceeded."""
-        with patch("application.services.github.cli_service.load_template") as mock_load, \
-             patch("application.agents.shared.process_manager.get_process_manager") as mock_pm, \
-             patch("application.services.github.cli_service.Path.exists", return_value=True):
+        with (
+            patch("application.services.github.cli_service.load_template") as mock_load,
+            patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm,
+            patch(
+                "application.services.github.cli_service.Path.exists", return_value=True
+            ),
+        ):
 
             mock_load.return_value = "Template"
             mock_pm_instance = AsyncMock()
@@ -772,18 +850,30 @@ class TestStartApplicationBuildExtended:
                     language="python",
                     user_id="user-123",
                     conversation_id="conv-123",
-                    repo_auth_config={}
+                    repo_auth_config={},
                 )
             assert "Maximum concurrent" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_start_application_build_register_failure(self, cli_service, mock_git_service):
+    async def test_start_application_build_register_failure(
+        self, cli_service, mock_git_service
+    ):
         """Test start_application_build when process registration fails."""
-        with patch("application.services.github.cli_service.load_template") as mock_load, \
-             patch("application.agents.shared.process_manager.get_process_manager") as mock_pm, \
-             patch("application.services.github.cli_service.asyncio.create_subprocess_exec") as mock_exec, \
-             patch("application.services.github.cli_service.Path.exists", return_value=True), \
-             patch("application.services.github.cli_service.get_task_service") as mock_task_service:
+        with (
+            patch("application.services.github.cli_service.load_template") as mock_load,
+            patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm,
+            patch(
+                "application.services.github.cli_service.asyncio.create_subprocess_exec"
+            ) as mock_exec,
+            patch(
+                "application.services.github.cli_service.Path.exists", return_value=True
+            ),
+            patch(
+                "application.services.github.cli_service.get_task_service"
+            ) as mock_task_service,
+        ):
 
             mock_load.return_value = "Template"
             mock_pm_instance = AsyncMock()
@@ -806,7 +896,7 @@ class TestStartApplicationBuildExtended:
                     language="python",
                     user_id="user-123",
                     conversation_id="conv-123",
-                    repo_auth_config={}
+                    repo_auth_config={},
                 )
             assert "Process limit exceeded" in str(exc_info.value)
             mock_process.terminate.assert_called_once()
@@ -814,17 +904,30 @@ class TestStartApplicationBuildExtended:
     @pytest.mark.asyncio
     async def test_start_application_build_template_fallback(self, cli_service):
         """Test start_application_build with template fallback."""
+
         def load_template_side_effect(name):
             if "optimized" in name:
                 raise FileNotFoundError()
             return f"Template for {name}"
 
-        with patch("application.services.github.cli_service.load_template") as mock_load, \
-             patch("application.agents.shared.process_manager.get_process_manager") as mock_pm, \
-             patch("application.services.github.cli_service.get_task_service") as mock_ts, \
-             patch("application.services.github.cli.utils.get_task_service") as mock_ts_utils, \
-             patch("application.services.github.cli_service.asyncio.create_subprocess_exec") as mock_exec, \
-             patch("application.services.github.cli_service.Path.exists", return_value=True):
+        with (
+            patch("application.services.github.cli_service.load_template") as mock_load,
+            patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm,
+            patch(
+                "application.services.github.cli_service.get_task_service"
+            ) as mock_ts,
+            patch(
+                "application.services.github.cli.utils.get_task_service"
+            ) as mock_ts_utils,
+            patch(
+                "application.services.github.cli_service.asyncio.create_subprocess_exec"
+            ) as mock_exec,
+            patch(
+                "application.services.github.cli_service.Path.exists", return_value=True
+            ),
+        ):
 
             mock_load.side_effect = load_template_side_effect
 
@@ -852,7 +955,7 @@ class TestStartApplicationBuildExtended:
                 language="python",
                 user_id="user-123",
                 conversation_id="conv-123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
             assert result["task_id"] == "task-123"
@@ -874,7 +977,7 @@ class TestStartCodeGenerationExtended:
                 language="python",
                 user_id="user-123",
                 conversation_id="conv-123",
-                repo_auth_config={}
+                repo_auth_config={},
             )
         assert "user_request is required" in str(exc_info.value)
 
@@ -890,13 +993,19 @@ class TestMonitorCliProcessExtended:
         mock_process.wait = AsyncMock(side_effect=asyncio.TimeoutError())
         mock_process.returncode = 0
 
-        mock_git_service.commit_and_push = AsyncMock(
-            side_effect=asyncio.TimeoutError()
-        )
+        mock_git_service.commit_and_push = AsyncMock(side_effect=asyncio.TimeoutError())
 
-        with patch("application.services.github.cli_service.get_task_service") as mock_ts, \
-             patch("application.agents.shared.process_manager.get_process_manager") as mock_pm, \
-             patch("application.services.github.cli_service.asyncio.get_event_loop") as mock_loop:
+        with (
+            patch(
+                "application.services.github.cli_service.get_task_service"
+            ) as mock_ts,
+            patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm,
+            patch(
+                "application.services.github.cli_service.asyncio.get_event_loop"
+            ) as mock_loop,
+        ):
 
             mock_loop_instance = MagicMock()
             mock_loop_instance.time = MagicMock(return_value=1000)
@@ -919,12 +1028,11 @@ class TestMonitorCliProcessExtended:
                 task_id="task-1",
                 prompt_file="/tmp/prompt.txt",
                 output_file="/tmp/output.log",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
             # Initial commit should have been attempted
             mock_git_service.commit_and_push.assert_called()
-
 
     @pytest.mark.asyncio
     async def test_monitor_process_exit_early(self, cli_service, mock_git_service):
@@ -936,9 +1044,17 @@ class TestMonitorCliProcessExtended:
 
         mock_git_service.commit_and_push = AsyncMock(return_value={})
 
-        with patch("application.services.github.cli_service.get_task_service") as mock_ts, \
-             patch("application.agents.shared.process_manager.get_process_manager") as mock_pm, \
-             patch("application.services.github.cli_service.asyncio.get_event_loop") as mock_loop:
+        with (
+            patch(
+                "application.services.github.cli_service.get_task_service"
+            ) as mock_ts,
+            patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm,
+            patch(
+                "application.services.github.cli_service.asyncio.get_event_loop"
+            ) as mock_loop,
+        ):
 
             mock_loop_instance = MagicMock()
             mock_loop_instance.time = MagicMock(return_value=1000)
@@ -960,12 +1076,15 @@ class TestMonitorCliProcessExtended:
                 task_id="task-3",
                 prompt_file="/tmp/prompt.txt",
                 output_file="/tmp/output.log",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
             # Task should be marked as completed
-            completed_calls = [call for call in mock_ts_instance.update_task_status.call_args_list
-                             if call[1].get("status") == "completed"]
+            completed_calls = [
+                call
+                for call in mock_ts_instance.update_task_status.call_args_list
+                if call[1].get("status") == "completed"
+            ]
             assert len(completed_calls) > 0
 
     @pytest.mark.asyncio
@@ -978,10 +1097,20 @@ class TestMonitorCliProcessExtended:
 
         mock_git_service.commit_and_push = AsyncMock(return_value={})
 
-        with patch("application.services.github.cli_service.get_task_service") as mock_ts, \
-             patch("application.agents.shared.process_manager.get_process_manager") as mock_pm, \
-             patch("application.agents.shared.process_utils._is_process_running") as mock_running, \
-             patch("application.services.github.cli_service.asyncio.get_event_loop") as mock_loop:
+        with (
+            patch(
+                "application.services.github.cli_service.get_task_service"
+            ) as mock_ts,
+            patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm,
+            patch(
+                "application.agents.shared.process_utils._is_process_running"
+            ) as mock_running,
+            patch(
+                "application.services.github.cli_service.asyncio.get_event_loop"
+            ) as mock_loop,
+        ):
 
             mock_loop_instance = MagicMock()
             # Time progresses beyond timeout
@@ -1006,12 +1135,15 @@ class TestMonitorCliProcessExtended:
                 task_id="task-4",
                 prompt_file="/tmp/prompt.txt",
                 output_file="/tmp/output.log",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
             # Task should be marked as failed/timed out
-            failed_calls = [call for call in mock_ts_instance.update_task_status.call_args_list
-                          if call[1].get("status") == "failed"]
+            failed_calls = [
+                call
+                for call in mock_ts_instance.update_task_status.call_args_list
+                if call[1].get("status") == "failed"
+            ]
             assert len(failed_calls) > 0
 
     @pytest.mark.asyncio
@@ -1027,10 +1159,20 @@ class TestMonitorCliProcessExtended:
             side_effect=Exception("Commit failed")
         )
 
-        with patch("application.services.github.cli_service.get_task_service") as mock_ts, \
-             patch("application.agents.shared.process_manager.get_process_manager") as mock_pm, \
-             patch("application.agents.shared.process_utils._is_process_running") as mock_running, \
-             patch("application.services.github.cli_service.asyncio.get_event_loop") as mock_loop:
+        with (
+            patch(
+                "application.services.github.cli_service.get_task_service"
+            ) as mock_ts,
+            patch(
+                "application.agents.shared.process_manager.get_process_manager"
+            ) as mock_pm,
+            patch(
+                "application.agents.shared.process_utils._is_process_running"
+            ) as mock_running,
+            patch(
+                "application.services.github.cli_service.asyncio.get_event_loop"
+            ) as mock_loop,
+        ):
 
             mock_loop_instance = MagicMock()
             mock_loop_instance.time = MagicMock(side_effect=[1000, 1000, 1010, 1010])
@@ -1055,9 +1197,8 @@ class TestMonitorCliProcessExtended:
                 task_id="task-5",
                 prompt_file="/tmp/prompt.txt",
                 output_file="/tmp/output.log",
-                repo_auth_config={}
+                repo_auth_config={},
             )
 
             # Task should still be updated despite error
             assert mock_ts_instance.update_task_status.called
-

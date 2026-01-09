@@ -1,0 +1,438 @@
+{
+  "eval_set_id": "coordinator_routing_comprehensive",
+  "eval_cases": [
+    {
+      "eval_id": "coord_routing_1",
+      "conversation": [
+        {
+          "invocation_id": "inv-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Develop an institutional trading platform with real-time market data feeds, advanced order management systems, comprehensive portfolio tracking, risk controls, regulatory compliance for equities and derivatives, and real-time P&L calculations"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI've popped up the options below for you to choose the repository strategy that best fits this institutional trading platform (real-time market data, advanced OMS, risk controls, derivatives, compliance, real-time P&L). Once you pick one, I'll initialize the repository using the appropriate Cyoda template and proceed with the next steps.\n\nOptions:\n- Python \u2014 Public repo \u2014 New Branch\n- Python \u2014 Public repo \u2014 My Existing Branch\n- Python \u2014 Private repo \u2014 New Branch\n- Python \u2014 Private repo \u2014 My Existing Branch\n- Java \u2014 Public repo \u2014 New Branch\n- Java \u2014 Public repo \u2014 My Existing Branch\n- Java \u2014 Private repo \u2014 New Branch\n- Java \u2014 Private repo \u2014 My Existing Branch\n\nWhich option would you like?",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "coord_routing_2",
+      "conversation": [
+        {
+          "invocation_id": "inv-002",
+          "user_content": {
+            "parts": [
+              {
+                "text": "I want to build a trading platform"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "\"Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\"\n\nSince we're building a trading platform, this GitOps approach gives us reproducibility, auditability, and a single source of truth for designs, requirements, and deployments \u2014 which is important for compliance and fast iteration.\n\nI've popped up the repository strategy options below for you. Please choose the combination of language, repo privacy, and branch strategy you'd like to use (Python or Java; Public or Private; New branch or an existing branch). Once you pick one, I\u2019ll proceed with the appropriate initialization steps.",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "coord_routing_3",
+      "conversation": [
+        {
+          "invocation_id": "inv-003",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Generate a new app for inventory management"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI've popped up the repository strategy options for the inventory management app \u2014 please choose the language and repo/branch strategy you want to use so I can initialize the project and create the branch.",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "coord_routing_4",
+      "conversation": [
+        {
+          "invocation_id": "inv-004",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What is a technical ID in Cyoda?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "A technical ID in Cyoda is the system-assigned unique identifier (typically a UUID) that permanently identifies an entity across the platform. It\u2019s used by Cyoda services and APIs for lookups, relationships, events, and state transitions. Technical IDs are immutable and preferred for programmatic operations because they\u2019re stable and unambiguous; business IDs (external or human-readable keys) can be duplicated, changed, or non-unique and are better for display or integration mapping.\n\nQuick points:\n- Format: usually a UUID.  \n- Usage: entity retrieval, transitions, event payloads, linking entities across services.  \n- Best practice: use technical IDs in API calls and internal logic; map to business IDs only for UI or external integrations.\n\nDocs:\n- Entity schemas: https://docs.cyoda.net/schemas/entity/  \n- Entity metadata (fields & identifiers): https://docs.cyoda.net/schemas/common/entity-metadata/  \n- API reference (entity endpoints): https://docs.cyoda.net/api-reference/\n\n[options-multiple-choice: Show API examples using technical ID, Convert business ID to technical ID, Explain when to use business ID vs technical ID]",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": [],
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "qa_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "filename": "cyoda-docs-llms.txt"
+                },
+                "name": "read_documentation",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "query": "technical id"
+                },
+                "name": "search_cyoda_concepts",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "coord_routing_5",
+      "conversation": [
+        {
+          "invocation_id": "inv-005",
+          "user_content": {
+            "parts": [
+              {
+                "text": "How does event sourcing work?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Event sourcing stores every change to application state as an immutable sequence of events instead of persisting only the current state. Key points:\n\n- Core idea: commands produce events (facts). Events are appended to an event store. Current state = replay of events (or replay + snapshots).\n- Components: event store (append-only log), aggregates/entities (emit events), command handlers, event publishers/brokers, projections/read-models (materialized views), snapshots (for fast rebuild).\n- Typical flow: client issues command \u2192 validate \u2192 persist event to store \u2192 publish event to subscribers \u2192 update projections asynchronously.\n- Benefits: full audit log, temporal queries (replay history), easy debugging, flexible read models, good for CQRS and distributed systems.\n- Trade-offs: added complexity, eventual consistency between write and read models, event schema evolution (use versioning/upcasters), need for idempotent handlers and careful ordering.\n- Best practices: design clear, small events; include metadata (timestamps, causation/trace ids); use snapshots for long event streams; plan event versioning and migration; ensure idempotency.\n\nSee Cyoda docs for platform-specific guidance:\n- Event Driven Architecture: https://docs.cyoda.net/concepts/event-driven-architecture/\n- Base Event schema: https://docs.cyoda.net/schemas/common/base-event/\n- API reference: https://docs.cyoda.net/api-reference/\n\nWant a short example (JSON events + replay) or how Cyoda implements projections? I can provide that.",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "coord_routing_6",
+      "conversation": [
+        {
+          "invocation_id": "inv-006",
+          "user_content": {
+            "parts": [
+              {
+                "text": "What are best practices for entity design?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Short checklist of best practices for designing entities in Cyoda:\n\n- Start with clear domain boundaries: one entity type = one bounded context/responsibility.\n- Use stable, opaque identifiers (UUIDs) and keep natural keys only for lookup/indexing.\n- Model minimal, queryable attributes; avoid embedding large blobs\u2014store references to external objects.\n- Normalize relationships where you need consistency; denormalize for read performance with explicit sync patterns.\n- Include standard metadata (createdBy, createdAt, updatedBy, updatedAt, version) for auditing and optimistic concurrency.\n- Design explicit lifecycle states and transitions; represent them in statemachine/workflow configs instead of ad-hoc flags.\n- Keep events small and include entity metadata in change events (use common/base-event patterns).\n- Plan for schema evolution: add nullable fields, use versioned converters, and avoid breaking removals.\n- Index fields used for search/filtering and keep searchable snapshots in sync with writes.\n- Validate business rules at the entity boundary; prefer server-side validation and idempotent operations.\n- Multi-tenant: include tenancy scope in entity keys/filters and enforce access controls.\n- Document the entity: semantics, invariants, allowed transitions, and important indexes.\n\nSee detailed guidance:\n- Cyoda Design Principles: https://docs.cyoda.net/guides/cyoda-design-principles/\n- Entity schemas & metadata: https://docs.cyoda.net/schemas/entity/\n- Workflow / state machine guidance: https://docs.cyoda.net/guides/workflow-config-guide/\n- API patterns for saving/reading entities: https://docs.cyoda.net/guides/api-saving-and-getting-data/\n\nIf you want, tell me one entity you\u2019re designing and I\u2019ll give tailored recommendations.",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "coord_routing_7",
+      "conversation": [
+        {
+          "invocation_id": "inv-007",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Deploy my Cyoda environment to the cloud"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "I can deploy your Cyoda environment \u2014 which environment should I deploy? (dev / staging / prod / other)\n\nI will first run check_environment_exists() for the environment you pick, then proceed with deployment.\n\n[options-single-choice: Deploy to dev, Deploy to staging, Deploy to prod, Specify a custom environment]",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": [],
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "coord_routing_8",
+      "conversation": [
+        {
+          "invocation_id": "inv-008",
+          "user_content": {
+            "parts": [
+              {
+                "text": "I've built my app, how do I run it locally?"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Great \u2014 I can help with that. Is your app a Python app or a Java app?\n\nIf you're not sure, tell me whether your repo has a requirements.txt (Python) or build.gradle / pom.xml (Java), and I\u2019ll show the exact local run commands for that path.",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "coord_routing_9",
+      "conversation": [
+        {
+          "invocation_id": "inv-009",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Generate a workflow for order processing"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nSince we're building an order-processing workflow, we'll initialize the appropriate project template and create a branch so all artifacts (entities, workflows, requirements) are committed into the repo from the start. I've popped up the repository + language strategy options below \u2014 please select one so I can initialize the project and create the branch.",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "coord_routing_10",
+      "conversation": [
+        {
+          "invocation_id": "inv-010",
+          "user_content": {
+            "parts": [
+              {
+                "text": "I need to track customer orders, manage inventory levels, send notifications when stock is low, and generate daily reports"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nYou're building an order & inventory system with notifications and daily reports \u2014 a great fit for Cyoda. Selecting a repository strategy (language, public vs private, and whether to create a new branch or use an existing one) is the first step. Once you choose, I'll initialize the repository using the standard Cyoda template and continue the build flow so we can move into design.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": [],
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "initial_session": {
+    "state": {},
+    "app_name": "cyoda_assistant",
+    "user_id": "test_user_id"
+  }
+}

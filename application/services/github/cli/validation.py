@@ -15,7 +15,7 @@ def _validate_cli_inputs(
     branch_name: str,
     language: str,
     user_request: Optional[str] = None,
-    requirements: Optional[str] = None
+    requirements: Optional[str] = None,
 ) -> None:
     """Validate required CLI inputs.
 
@@ -58,9 +58,17 @@ def _validate_script_path(script_path: Path) -> None:
     """
     if not script_path.exists():
         project_root = Path(os.getcwd())
-        script_path = project_root / "application" / "agents" / "shared" / f"{CLI_PROVIDER}_build.sh"
+        script_path = (
+            project_root
+            / "application"
+            / "agents"
+            / "shared"
+            / f"{CLI_PROVIDER}_build.sh"
+        )
         if CLI_PROVIDER == "augment":
-            script_path = project_root / "application" / "agents" / "shared" / "augment_build.sh"
+            script_path = (
+                project_root / "application" / "agents" / "shared" / "augment_build.sh"
+            )
 
         if not script_path.exists():
             raise FileNotFoundError(

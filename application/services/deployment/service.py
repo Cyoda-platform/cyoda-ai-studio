@@ -84,7 +84,9 @@ class DeploymentService:
         namespace = f"client-{self._normalize_for_namespace(user_id)}-{self._normalize_for_namespace(env_name)}"
         keyspace = f"c_{self._normalize_for_keyspace(user_id)}_{self._normalize_for_keyspace(env_name)}"
 
-        logger.info(f"Deploying Cyoda environment: user={user_id}, env={env_name}, namespace={namespace}")
+        logger.info(
+            f"Deploying Cyoda environment: user={user_id}, env={env_name}, namespace={namespace}"
+        )
 
         # Prepare deployment payload
         payload = {
@@ -109,9 +111,13 @@ class DeploymentService:
         deployment_namespace = data.get("build_namespace")
 
         if not deployment_build_id or not deployment_namespace:
-            raise ValueError("Deployment succeeded but missing build information from API response")
+            raise ValueError(
+                "Deployment succeeded but missing build information from API response"
+            )
 
-        logger.info(f"Deployment started: build_id={deployment_build_id}, namespace={deployment_namespace}")
+        logger.info(
+            f"Deployment started: build_id={deployment_build_id}, namespace={deployment_namespace}"
+        )
 
         # Construct environment URL
         env_url = f"https://{deployment_namespace}.{self.client_host}"
@@ -193,6 +199,7 @@ class DeploymentService:
             payload["installation_id"] = installation_id
         elif is_public:
             import os
+
             env_installation_id = os.getenv("GITHUB_PUBLIC_REPO_INSTALLATION_ID")
             if env_installation_id:
                 payload["installation_id"] = env_installation_id
@@ -267,7 +274,9 @@ class DeploymentService:
         deployment_namespace = data.get("build_namespace") or data.get("namespace")
 
         if not deployment_build_id:
-            raise ValueError("Deployment succeeded but missing build_id from API response")
+            raise ValueError(
+                "Deployment succeeded but missing build_id from API response"
+            )
 
         logger.info(
             f"User app deployment started: build_id={deployment_build_id}, "

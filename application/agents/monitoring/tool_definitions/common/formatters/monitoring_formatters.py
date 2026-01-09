@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 
-def format_continue_monitoring(state: str, status: str, message: str | None = None) -> str:
+def format_continue_monitoring(
+    state: str, status: str, message: str | None = None
+) -> str:
     """Format continue monitoring response.
 
     Args:

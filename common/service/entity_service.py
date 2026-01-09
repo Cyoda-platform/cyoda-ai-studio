@@ -42,9 +42,6 @@ from common.search import (
 )
 
 
-
-
-
 @dataclass
 class EntityMetadata:
     """Entity metadata containing technical information."""

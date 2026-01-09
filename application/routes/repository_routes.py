@@ -18,10 +18,11 @@ from application.routes.repository_endpoints import (
     handle_health_check,
     handle_pull_repository,
 )
-from application.routes.repository_endpoints.helpers import ensure_repository_cloned as _ensure_repository_cloned
+from application.routes.repository_endpoints.helpers import (
+    ensure_repository_cloned as _ensure_repository_cloned,
+)
 
 repository_bp = Blueprint("repository", __name__, url_prefix="/api/v1/repository")
-
 
 
 @repository_bp.route("/analyze", methods=["POST"])

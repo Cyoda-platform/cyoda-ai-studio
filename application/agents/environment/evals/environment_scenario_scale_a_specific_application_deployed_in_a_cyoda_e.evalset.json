@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_scale_a_specific_application_deployed_in_a_cyoda_e",
+  "name": "environment_scenario_scale_a_specific_application_deployed_in_a_cyoda_e",
+  "description": "Test case for: As a user, I want to scale a specific application deployed in a Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_scale_app",
+      "conversation": [
+        {
+          "invocation_id": "e-26bf5ad8-0968-43c6-b317-a06d6e167582",
+          "user_content": {
+            "parts": [
+              {
+                "text": "scale a specific application deployed in a Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I can scale an app \u2014 I just need a few details first.\n\nPlease provide:\n- env_name (e.g., dev, staging, prod)\n- app_name (your application name)\n- deployment_name (the deployment within the app to scale)\n- replicas (integer >= 0)\n\nOnce you provide those I'll run check_environment_exists() and proceed to scale the deployment.\n\n[options-single-choice: Provide Environment & App Details, List Environments, Cancel]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8051894
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8051896
+    }
+  ],
+  "creation_timestamp": 1767903917.8051896
+}

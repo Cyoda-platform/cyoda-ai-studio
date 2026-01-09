@@ -24,8 +24,9 @@ Note: Test file location changed to tests/unit/agents/environment/test_environme
 
 import json
 import os
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, Mock
 
 from application.agents.environment import tools
 
@@ -37,7 +38,7 @@ def mock_tool_context():
     context.state = {
         "user_id": "test-user",
         "conversation_id": "test-conversation-123",
-        "auth_token": "test-auth-token"
+        "auth_token": "test-auth-token",
     }
     return context
 
@@ -52,11 +53,24 @@ def mock_httpx_client():
 @pytest.fixture
 def mock_env_vars():
     """Mock environment variables."""
-    with patch.dict(os.environ, {
-        "CLOUD_MANAGER_HOST": "cloud-manager.example.com",
-        "CLOUD_MANAGER_API_KEY": "dGVzdC1hcGkta2V5",  # base64 encoded "test-api-key"
-        "CLOUD_MANAGER_API_SECRET": "dGVzdC1hcGktc2VjcmV0",  # base64 encoded "test-api-secret"
-    }):
+    with patch.dict(
+        os.environ,
+        {
+            "CLOUD_MANAGER_HOST": "cloud-manager.example.com",
+            "CLOUD_MANAGER_API_KEY": "dGVzdC1hcGkta2V5",  # gitleaks:allow
+            "CLOUD_MANAGER_API_SECRET": "dGVzdC1hcGktc2VjcmV0",  # gitleaks:allow
+        },
+    ):
+        yield
+
+
+@pytest.fixture
+def disable_adk_test_mode():
+    """Disable ADK_TEST_MODE for guest user authentication tests."""
+    with patch(
+        "application.agents.environment.tool_definitions.common.utils.utils.ADK_TEST_MODE",
+        False,
+    ):
         yield
 
 
@@ -79,20 +93,30 @@ def mock_cloud_manager_base():
     # Patch at ALL locations where get_cloud_manager_service is imported
     patches = [
         # Patch at source
-        patch("application.services.cloud_manager_service.get_cloud_manager_service",
-              new=AsyncMock(return_value=default_mock_client)),
+        patch(
+            "application.services.cloud_manager_service.get_cloud_manager_service",
+            new=AsyncMock(return_value=default_mock_client),
+        ),
         # Patch where it's used in environment operations
-        patch("application.services.environment_management.environment_operations.get_cloud_manager_service",
-              new=AsyncMock(return_value=default_mock_client)),
+        patch(
+            "application.services.environment_management.environment_operations.get_cloud_manager_service",
+            new=AsyncMock(return_value=default_mock_client),
+        ),
         # Patch where it's used in application operations
-        patch("application.services.environment_management.application_operations.get_cloud_manager_service",
-              new=AsyncMock(return_value=default_mock_client)),
+        patch(
+            "application.services.environment_management.application_operations.get_cloud_manager_service",
+            new=AsyncMock(return_value=default_mock_client),
+        ),
         # Patch in deployment tools
-        patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
-              new=AsyncMock(return_value=default_mock_client)),
+        patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            new=AsyncMock(return_value=default_mock_client),
+        ),
         # Patch in deployment service
-        patch("application.services.deployment.service.get_cloud_manager_service",
-              new=AsyncMock(return_value=default_mock_client)),
+        patch(
+            "application.services.deployment.service.get_cloud_manager_service",
+            new=AsyncMock(return_value=default_mock_client),
+        ),
     ]
 
     for p in patches:
@@ -107,56 +131,16 @@ def mock_cloud_manager_base():
 class TestHelperFunctions:
     """Test private helper functions."""
 
-    def test_show_deployment_options(self):
-        """Test show_deployment_options."""
-        mock_context = MagicMock()
-        mock_context.state = {"conversation_id": "test-123"}
-
-        options = [
-            {"value": "opt1", "label": "Option 1"},
-            {"value": "opt2", "label": "Option 2", "description": "Second option"}
-        ]
-        result = tools.show_deployment_options(
-            "Choose an option",
-            options,
-            mock_context
-        )
-        assert "Choose an option" in result
-        assert "select your choice" in result.lower()
-
-    def test_show_deployment_options_no_context(self):
-        """Test show_deployment_options without context."""
-        options = [{"value": "opt1", "label": "Option 1"}]
-        result = tools.show_deployment_options("Test", options, None)
-        # Function catches ValueError and returns JSON error
-        result_data = json.loads(result)
-        assert "error" in result_data
-        assert "Tool context is required" in result_data["error"]
-
-    def test_show_deployment_options_invalid_options(self):
-        """Test show_deployment_options with invalid options."""
-        mock_context = MagicMock()
-        mock_context.state = {"conversation_id": "test-123"}
-
-        # No options
-        result = tools.show_deployment_options("Test", [], mock_context)
-        result_data = json.loads(result)
-        assert "error" in result_data
-        assert "options" in result_data["error"]
-        assert "required" in result_data["error"]
-
-        # Missing required fields
-        result = tools.show_deployment_options("Test", [{"value": "opt1"}], mock_context)
-        result_data = json.loads(result)
-        assert "error" in result_data
-        assert "label" in result_data["error"]
+    pass  # show_deployment_options tests removed - function no longer exists
 
 
 class TestCheckEnvironmentExists:
     """Test check_environment_exists function."""
 
     @pytest.mark.asyncio
-    async def test_check_environment_exists_success(self, mock_tool_context, mock_env_vars):
+    async def test_check_environment_exists_success(
+        self, mock_tool_context, mock_env_vars
+    ):
         """Test successful environment existence check."""
         from common.exception.exceptions import InvalidTokenException
 
@@ -166,17 +150,14 @@ class TestCheckEnvironmentExists:
 
             result = await tools.check_environment_exists(mock_tool_context, "test-env")
 
-            # When conversation_id exists, response is wrapped with hook
-            if mock_tool_context.state.get("conversation_id"):
-                result_data = json.loads(result)
-                assert "hook" in result_data or "message" in result_data
-            else:
-                result_data = json.loads(result)
-                assert "exists" in result_data
-                assert result_data["exists"] == True
+            # After hooks removal, function returns plain text message
+            assert isinstance(result, str)
+            assert "deployed" in result.lower() or "accessible" in result.lower()
 
     @pytest.mark.asyncio
-    async def test_check_environment_exists_guest_user(self, mock_tool_context):
+    async def test_check_environment_exists_guest_user(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test environment check as guest user."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.check_environment_exists(mock_tool_context, "test-env")
@@ -197,19 +178,27 @@ class TestCheckEnvironmentExists:
     @pytest.mark.asyncio
     async def test_check_environment_exists_not_deployed(self, mock_tool_context):
         """Test environment check when not deployed."""
-        with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_request:
+        with patch(
+            "common.utils.utils.send_get_request", new_callable=AsyncMock
+        ) as mock_request:
             mock_request.side_effect = Exception("Connection refused")
 
             result = await tools.check_environment_exists(mock_tool_context, "test-env")
             # Result is wrapped with hook
-            assert "not deployed" in result.lower() or "not found" in result.lower() or "No Cyoda environment found" in result
+            assert (
+                "not deployed" in result.lower()
+                or "not found" in result.lower()
+                or "No Cyoda environment found" in result
+            )
 
 
 class TestListEnvironments:
     """Test list_environments function."""
 
     @pytest.mark.asyncio
-    async def test_list_environments_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_list_environments_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful environment listing."""
         mock_response = MagicMock()
         # Return namespaces matching the expected format: client-{user}-{env}
@@ -217,7 +206,10 @@ class TestListEnvironments:
             "namespaces": [
                 {"name": "client-test-user-dev", "status": "Active"},
                 {"name": "client-test-user-prod", "status": "Active"},
-                {"name": "client-other-user-dev", "status": "Active"},  # Should be filtered out
+                {
+                    "name": "client-other-user-dev",
+                    "status": "Active",
+                },  # Should be filtered out
             ]
         }
         mock_response.raise_for_status = MagicMock()
@@ -231,7 +223,9 @@ class TestListEnvironments:
         assert result_data["count"] == 2  # Only matches for test-user
 
     @pytest.mark.asyncio
-    async def test_list_environments_guest_user(self, mock_tool_context):
+    async def test_list_environments_guest_user(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test environment listing as guest user."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.list_environments(mock_tool_context)
@@ -250,38 +244,47 @@ class TestDescribeEnvironment:
         mock_response.json.return_value = {
             "environment": "dev",
             "applications": [{"name": "api"}],
-            "count": 1
+            "count": 1,
         }
         mock_response.raise_for_status = MagicMock()
 
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.services.environment_management.environment_operations.get_cloud_manager_service", new=AsyncMock(return_value=mock_client)):
+        with patch(
+            "application.services.environment_management.environment_operations.get_cloud_manager_service",
+            new=AsyncMock(return_value=mock_client),
+        ):
             result = await tools.describe_environment(mock_tool_context, "dev")
             result_data = json.loads(result)
             # Service returns the raw API response
-            assert result_data.get("environment") == "dev" or "applications" in result_data
+            assert (
+                result_data.get("environment") == "dev" or "applications" in result_data
+            )
 
 
 class TestGetApplicationDetails:
     """Test get_application_details function."""
 
     @pytest.mark.asyncio
-    async def test_get_application_details_success(self, mock_tool_context, mock_env_vars):
+    async def test_get_application_details_success(
+        self, mock_tool_context, mock_env_vars
+    ):
         """Test successful application details retrieval."""
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "app_name": "api",
-            "status": "Running"
-        }
+        mock_response.json.return_value = {"app_name": "api", "status": "Running"}
         mock_response.raise_for_status = MagicMock()
 
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.services.environment_management.environment_operations.get_cloud_manager_service", new=AsyncMock(return_value=mock_client)):
-            result = await tools.get_application_details(mock_tool_context, "dev", "api")
+        with patch(
+            "application.services.environment_management.environment_operations.get_cloud_manager_service",
+            new=AsyncMock(return_value=mock_client),
+        ):
+            result = await tools.get_application_details(
+                mock_tool_context, "dev", "api"
+            )
             result_data = json.loads(result)
             assert "app_name" in result_data
 
@@ -290,7 +293,9 @@ class TestScaleApplication:
     """Test scale_application function."""
 
     @pytest.mark.asyncio
-    async def test_scale_application_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_scale_application_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful application scaling."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"replicas": 3, "status": "scaled"}
@@ -307,7 +312,9 @@ class TestRestartApplication:
     """Test restart_application function."""
 
     @pytest.mark.asyncio
-    async def test_restart_application_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_restart_application_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful application restart."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"status": "restarted"}
@@ -324,7 +331,9 @@ class TestUpdateApplicationImage:
     """Test update_application_image function."""
 
     @pytest.mark.asyncio
-    async def test_update_application_image_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_update_application_image_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful image update."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"image": "myapp:v2", "status": "updated"}
@@ -332,7 +341,9 @@ class TestUpdateApplicationImage:
 
         mock_cloud_manager_base.patch.return_value = mock_response
 
-        result = await tools.update_application_image(mock_tool_context, "dev", "api", "myapp:v2")
+        result = await tools.update_application_image(
+            mock_tool_context, "dev", "api", "myapp:v2"
+        )
         result_data = json.loads(result)
         assert result_data["image"] == "myapp:v2"
 
@@ -341,7 +352,9 @@ class TestGetApplicationStatus:
     """Test get_application_status function."""
 
     @pytest.mark.asyncio
-    async def test_get_application_status_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_get_application_status_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful status retrieval."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"status": "healthy", "replicas": 3}
@@ -358,7 +371,9 @@ class TestGetEnvironmentMetrics:
     """Test get_environment_metrics function."""
 
     @pytest.mark.asyncio
-    async def test_get_environment_metrics_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_get_environment_metrics_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful metrics retrieval."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"cpu": "50%", "memory": "512Mi"}
@@ -375,13 +390,15 @@ class TestGetEnvironmentPods:
     """Test get_environment_pods function."""
 
     @pytest.mark.asyncio
-    async def test_get_environment_pods_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_get_environment_pods_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful pods retrieval."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "pods": [
                 {"name": "pod-1", "status": "Running"},
-                {"name": "pod-2", "status": "Running"}
+                {"name": "pod-2", "status": "Running"},
             ]
         }
         mock_response.raise_for_status = MagicMock()
@@ -397,7 +414,9 @@ class TestDeleteEnvironment:
     """Test delete_environment function."""
 
     @pytest.mark.asyncio
-    async def test_delete_environment_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_delete_environment_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful environment deletion."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"status": "deleted"}
@@ -420,7 +439,7 @@ class TestUserAppTools:
         mock_response.json.return_value = {
             "namespaces": [
                 {"name": "client-1-test-user-dev-app1"},
-                {"name": "client-1-test-user-dev-app2"}
+                {"name": "client-1-test-user-dev-app2"},
             ]
         }
         mock_response.raise_for_status = MagicMock()
@@ -428,8 +447,14 @@ class TestUserAppTools:
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.services.environment_management_service.get_cloud_manager_service", return_value=mock_client):
-            with patch("application.services.environment_management_service.EnvironmentManagementService.check_user_app_status", new_callable=AsyncMock) as mock_status:
+        with patch(
+            "application.services.environment_management_service.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
+            with patch(
+                "application.services.environment_management_service.EnvironmentManagementService.check_user_app_status",
+                new_callable=AsyncMock,
+            ) as mock_status:
                 mock_status.return_value = "Active"
 
                 result = await tools.list_user_apps(mock_tool_context, "dev")
@@ -441,22 +466,25 @@ class TestUserAppTools:
         """Test getting user app details."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "deployments": [
-                {"name": "deployment-1", "replicas": 2}
-            ]
+            "deployments": [{"name": "deployment-1", "replicas": 2}]
         }
         mock_response.raise_for_status = MagicMock()
 
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.services.environment_management_service.get_cloud_manager_service", return_value=mock_client):
+        with patch(
+            "application.services.environment_management_service.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
             result = await tools.get_user_app_details(mock_tool_context, "dev", "app1")
             result_data = json.loads(result)
             assert "deployments" in result_data
 
     @pytest.mark.asyncio
-    async def test_scale_user_app_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_scale_user_app_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful user app scaling."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"replicas": 3, "status": "scaled"}
@@ -464,10 +492,14 @@ class TestUserAppTools:
 
         mock_cloud_manager_base.patch.return_value = mock_response
 
-        with patch("application.services.core.resource_limit_service.get_resource_limit_service") as mock_limit_service:
+        with patch(
+            "application.services.core.resource_limit_service.get_resource_limit_service"
+        ) as mock_limit_service:
             limit_check = MagicMock()
             limit_check.allowed = True
-            mock_limit_service.return_value.check_replica_limit.return_value = limit_check
+            mock_limit_service.return_value.check_replica_limit.return_value = (
+                limit_check
+            )
 
             result = await tools.scale_user_app(
                 mock_tool_context, "dev", "app1", "deployment-1", 3
@@ -478,14 +510,20 @@ class TestUserAppTools:
     @pytest.mark.asyncio
     async def test_scale_user_app_limit_exceeded(self, mock_tool_context):
         """Test scaling when resource limit is exceeded."""
-        with patch("application.agents.environment.tool_definitions.user_apps.scale_tool.get_resource_limit_service") as mock_limit_service:
+        with patch(
+            "application.agents.environment.tool_definitions.user_apps.scale_tool.get_resource_limit_service"
+        ) as mock_limit_service:
             limit_check = MagicMock()
             limit_check.allowed = False
             limit_check.reason = "Replica limit exceeded"
             limit_check.limit_value = 5
             limit_check.current_value = 10
-            mock_limit_service.return_value.check_replica_limit.return_value = limit_check
-            mock_limit_service.return_value.format_limit_error.return_value = "Limit exceeded"
+            mock_limit_service.return_value.check_replica_limit.return_value = (
+                limit_check
+            )
+            mock_limit_service.return_value.format_limit_error.return_value = (
+                "Limit exceeded"
+            )
 
             result = await tools.scale_user_app(
                 mock_tool_context, "dev", "app1", "deployment-1", 10
@@ -495,7 +533,9 @@ class TestUserAppTools:
             assert result_data["limit"] == 5
 
     @pytest.mark.asyncio
-    async def test_scale_user_app_guest_user(self, mock_tool_context):
+    async def test_scale_user_app_guest_user(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test scaling as guest user."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.scale_user_app(
@@ -515,7 +555,9 @@ class TestUserAppTools:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_restart_user_app_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_restart_user_app_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful user app restart."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"status": "restarted"}
@@ -530,7 +572,9 @@ class TestUserAppTools:
         assert result_data["status"] == "restarted"
 
     @pytest.mark.asyncio
-    async def test_update_user_app_image_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_update_user_app_image_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test successful image update."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"image": "myapp:v2", "status": "updated"}
@@ -545,7 +589,9 @@ class TestUserAppTools:
         assert result_data["image"] == "myapp:v2"
 
     @pytest.mark.asyncio
-    async def test_update_user_app_image_with_container(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_update_user_app_image_with_container(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test image update with specific container."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"image": "myapp:v2", "container": "api"}
@@ -560,7 +606,9 @@ class TestUserAppTools:
         assert result_data["container"] == "api"
 
     @pytest.mark.asyncio
-    async def test_get_user_app_status_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_get_user_app_status_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test getting user app status."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"status": "healthy", "replicas": 3}
@@ -575,7 +623,9 @@ class TestUserAppTools:
         assert result_data["status"] == "healthy"
 
     @pytest.mark.asyncio
-    async def test_get_user_app_metrics_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_get_user_app_metrics_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test getting user app metrics."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"cpu": "50%", "memory": "256Mi"}
@@ -588,13 +638,15 @@ class TestUserAppTools:
         assert "cpu" in result_data
 
     @pytest.mark.asyncio
-    async def test_get_user_app_pods_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_get_user_app_pods_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test getting user app pods."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "pods": [
                 {"name": "pod-1", "status": "Running"},
-                {"name": "pod-2", "status": "Running"}
+                {"name": "pod-2", "status": "Running"},
             ]
         }
         mock_response.raise_for_status = MagicMock()
@@ -606,7 +658,9 @@ class TestUserAppTools:
         assert len(result_data["pods"]) == 2
 
     @pytest.mark.asyncio
-    async def test_delete_user_app_success(self, mock_tool_context, mock_env_vars, mock_cloud_manager_base):
+    async def test_delete_user_app_success(
+        self, mock_tool_context, mock_env_vars, mock_cloud_manager_base
+    ):
         """Test deleting user app."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"status": "deleted"}
@@ -619,7 +673,9 @@ class TestUserAppTools:
         assert result_data["status"] == "deleted"
 
     @pytest.mark.asyncio
-    async def test_delete_user_app_guest_user(self, mock_tool_context):
+    async def test_delete_user_app_guest_user(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test delete as guest user."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.delete_user_app(mock_tool_context, "dev", "app1")
@@ -637,14 +693,16 @@ class TestHandleDeploymentSuccess:
         mock_context = MagicMock()
         mock_context.state = {
             "conversation_id": "test-conv-123",
-            "user_id": "test-user"
+            "user_id": "test-user",
         }
 
         with patch("services.services.get_task_service") as mock_task_service:
             mock_service = MagicMock()
             mock_task_service.return_value = mock_service
 
-            with patch("application.agents.environment.tools._monitor_deployment_progress") as mock_monitor:
+            with patch(
+                "application.agents.environment.tools._monitor_deployment_progress"
+            ) as mock_monitor:
                 with patch("asyncio.create_task") as mock_create_task:
                     result = await tools._handle_deployment_success(
                         tool_context=mock_context,
@@ -652,7 +710,7 @@ class TestHandleDeploymentSuccess:
                         namespace="test-namespace",
                         deployment_type="environment_deployment",
                         task_name="Deploy Test",
-                        task_description="Testing deployment"
+                        task_description="Testing deployment",
                     )
                     # Should return task_id and hook
                     assert result is not None
@@ -668,7 +726,7 @@ class TestGetBuildLogs:
         mock_response.json.return_value = {
             "logs": [
                 {"message": "Log line 1", "timestamp": "2024-01-01T00:00:00Z"},
-                {"message": "Log line 2", "timestamp": "2024-01-01T00:00:01Z"}
+                {"message": "Log line 2", "timestamp": "2024-01-01T00:00:01Z"},
             ]
         }
         mock_response.raise_for_status = MagicMock()
@@ -676,7 +734,10 @@ class TestGetBuildLogs:
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service", return_value=mock_client):
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
             result = await tools.get_build_logs("build-123", 100)
             # Check that result contains log information
             assert result is not None
@@ -699,7 +760,9 @@ class TestGetBuildLogsEnhanced:
             assert "Error" in result
             assert "CLOUD_MANAGER_HOST" in result
 
-    @pytest.mark.skip(reason="Sync context manager exception handling needs investigation - function returns None instead of error message")
+    @pytest.mark.skip(
+        reason="Sync context manager exception handling needs investigation - function returns None instead of error message"
+    )
     @pytest.mark.asyncio
     async def test_get_build_logs_http_404_error(self):
         """Test get_build_logs with 404 error (build not found)."""
@@ -715,7 +778,9 @@ class TestGetBuildLogsEnhanced:
                 mock_client.__enter__ = MagicMock(return_value=mock_client)
                 mock_client.__exit__ = MagicMock()
                 mock_client.get = MagicMock(
-                    side_effect=httpx.HTTPStatusError("404", request=MagicMock(), response=mock_response)
+                    side_effect=httpx.HTTPStatusError(
+                        "404", request=MagicMock(), response=mock_response
+                    )
                 )
                 mock_client_class.return_value = mock_client
 
@@ -723,7 +788,9 @@ class TestGetBuildLogsEnhanced:
                 assert "Error" in result
                 assert "not found" in result or "404" in result
 
-    @pytest.mark.skip(reason="Sync context manager exception handling needs investigation - function returns None instead of error message")
+    @pytest.mark.skip(
+        reason="Sync context manager exception handling needs investigation - function returns None instead of error message"
+    )
     @pytest.mark.asyncio
     async def test_get_build_logs_http_500_error(self):
         """Test get_build_logs with 500 error (server error)."""
@@ -739,7 +806,9 @@ class TestGetBuildLogsEnhanced:
                 mock_client.__enter__ = MagicMock(return_value=mock_client)
                 mock_client.__exit__ = MagicMock()
                 mock_client.get = MagicMock(
-                    side_effect=httpx.HTTPStatusError("500", request=MagicMock(), response=mock_response)
+                    side_effect=httpx.HTTPStatusError(
+                        "500", request=MagicMock(), response=mock_response
+                    )
                 )
                 mock_client_class.return_value = mock_client
 
@@ -747,7 +816,9 @@ class TestGetBuildLogsEnhanced:
                 assert "Error" in result
                 assert "500" in result
 
-    @pytest.mark.skip(reason="Sync context manager exception handling needs investigation - function returns None instead of error message")
+    @pytest.mark.skip(
+        reason="Sync context manager exception handling needs investigation - function returns None instead of error message"
+    )
     @pytest.mark.asyncio
     async def test_get_build_logs_network_error(self):
         """Test get_build_logs with network error."""
@@ -862,10 +933,13 @@ class TestGetBuildLogsEnhanced:
         mock_response.json.return_value = {"logs": "Custom URL logs"}
         mock_response.raise_for_status = MagicMock()
 
-        with patch.dict(os.environ, {
-            "CLOUD_MANAGER_HOST": "cloud.example.com",
-            "BUILD_LOGS_URL": "https://custom.logs.api/v1/logs"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "CLOUD_MANAGER_HOST": "cloud.example.com",
+                "BUILD_LOGS_URL": "https://custom.logs.api/v1/logs",
+            },
+        ):
             with patch("httpx.Client") as mock_client_class:
                 mock_client = MagicMock()
                 mock_client.__enter__ = MagicMock(return_value=mock_client)
@@ -884,12 +958,18 @@ class TestIssueTechnicalUser:
     """Test issue_technical_user function."""
 
     @pytest.mark.asyncio
-    async def test_issue_technical_user_guest(self, mock_tool_context):
+    async def test_issue_technical_user_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test issue technical user as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.issue_technical_user(mock_tool_context, "dev")
         # Returns a string message about guest users
-        assert "guest" in result.lower() or "sign up" in result.lower() or "log in" in result.lower()
+        assert (
+            "guest" in result.lower()
+            or "sign up" in result.lower()
+            or "log in" in result.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_issue_technical_user_missing_env_name(self, mock_tool_context):
@@ -906,8 +986,7 @@ class TestDeployCyodaEnvironment:
     async def test_deploy_cyoda_environment_missing_env_name(self, mock_tool_context):
         """Test deploy environment without env_name."""
         result = await tools.deploy_cyoda_environment(
-            tool_context=mock_tool_context,
-            env_name=None
+            tool_context=mock_tool_context, env_name=None
         )
         # Should return Error about missing env_name
         assert "Error:" in result
@@ -927,7 +1006,7 @@ class TestDeployUserApplication:
             cyoda_client_id="client-id",
             cyoda_client_secret="client-secret",
             env_name=None,
-            app_name="myapp"
+            app_name="myapp",
         )
         assert "Error:" in result
         assert "env_name parameter is required" in result
@@ -942,7 +1021,7 @@ class TestDeployUserApplication:
             cyoda_client_id="client-id",
             cyoda_client_secret="client-secret",
             env_name="dev",
-            app_name=None
+            app_name=None,
         )
         assert "Error:" in result
         assert "app_name parameter is required" in result
@@ -957,7 +1036,7 @@ class TestDeployUserApplication:
             cyoda_client_id="client-id",
             cyoda_client_secret="client-secret",
             env_name="dev",
-            app_name="cyoda"
+            app_name="cyoda",
         )
         assert "Error:" in result
         assert "cannot be 'cyoda'" in result
@@ -967,19 +1046,24 @@ class TestGetDeploymentStatus:
     """Test get_deployment_status function."""
 
     @pytest.mark.asyncio
-    async def test_get_deployment_status_success(self, mock_tool_context, mock_env_vars):
+    async def test_get_deployment_status_success(
+        self, mock_tool_context, mock_env_vars
+    ):
         """Test successful deployment status retrieval."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "status": "in_progress",
-            "build_id": "build-123"
+            "build_id": "build-123",
         }
         mock_response.raise_for_status = MagicMock()
 
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service", return_value=mock_client):
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
             result = await tools.get_deployment_status(mock_tool_context, "build-123")
             # Check result contains status information
             assert result is not None
@@ -989,7 +1073,9 @@ class TestAdditionalEdgeCases:
     """Test additional edge cases and error paths."""
 
     @pytest.mark.asyncio
-    async def test_describe_environment_guest(self, mock_tool_context):
+    async def test_describe_environment_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test describe environment as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.describe_environment(mock_tool_context, "dev")
@@ -997,7 +1083,9 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_get_application_details_guest(self, mock_tool_context):
+    async def test_get_application_details_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test get application details as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.get_application_details(mock_tool_context, "dev", "api")
@@ -1005,7 +1093,9 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_scale_application_guest(self, mock_tool_context):
+    async def test_scale_application_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test scale application as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.scale_application(mock_tool_context, "dev", "api", 3)
@@ -1013,7 +1103,9 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_restart_application_guest(self, mock_tool_context):
+    async def test_restart_application_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test restart application as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.restart_application(mock_tool_context, "dev", "api")
@@ -1021,15 +1113,21 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_update_application_image_guest(self, mock_tool_context):
+    async def test_update_application_image_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test update image as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
-        result = await tools.update_application_image(mock_tool_context, "dev", "api", "img:v2")
+        result = await tools.update_application_image(
+            mock_tool_context, "dev", "api", "img:v2"
+        )
         result_data = json.loads(result)
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_get_application_status_guest(self, mock_tool_context):
+    async def test_get_application_status_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test get status as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.get_application_status(mock_tool_context, "dev", "api")
@@ -1037,7 +1135,9 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_get_environment_metrics_guest(self, mock_tool_context):
+    async def test_get_environment_metrics_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test get metrics as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.get_environment_metrics(mock_tool_context, "dev")
@@ -1045,7 +1145,9 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_get_environment_pods_guest(self, mock_tool_context):
+    async def test_get_environment_pods_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test get pods as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.get_environment_pods(mock_tool_context, "dev")
@@ -1053,7 +1155,9 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_delete_environment_guest(self, mock_tool_context):
+    async def test_delete_environment_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test delete environment as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.delete_environment(mock_tool_context, "dev")
@@ -1061,7 +1165,7 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_list_user_apps_guest(self, mock_tool_context):
+    async def test_list_user_apps_guest(self, mock_tool_context, disable_adk_test_mode):
         """Test list user apps as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.list_user_apps(mock_tool_context, "dev")
@@ -1069,7 +1173,9 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_get_user_app_details_guest(self, mock_tool_context):
+    async def test_get_user_app_details_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test get user app details as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.get_user_app_details(mock_tool_context, "dev", "app1")
@@ -1077,15 +1183,21 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_restart_user_app_guest(self, mock_tool_context):
+    async def test_restart_user_app_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test restart user app as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
-        result = await tools.restart_user_app(mock_tool_context, "dev", "app1", "deploy-1")
+        result = await tools.restart_user_app(
+            mock_tool_context, "dev", "app1", "deploy-1"
+        )
         result_data = json.loads(result)
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_update_user_app_image_guest(self, mock_tool_context):
+    async def test_update_user_app_image_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test update user app image as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.update_user_app_image(
@@ -1095,15 +1207,21 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_get_user_app_status_guest(self, mock_tool_context):
+    async def test_get_user_app_status_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test get user app status as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
-        result = await tools.get_user_app_status(mock_tool_context, "dev", "app1", "deploy-1")
+        result = await tools.get_user_app_status(
+            mock_tool_context, "dev", "app1", "deploy-1"
+        )
         result_data = json.loads(result)
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_get_user_app_metrics_guest(self, mock_tool_context):
+    async def test_get_user_app_metrics_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test get user app metrics as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.get_user_app_metrics(mock_tool_context, "dev", "app1")
@@ -1111,7 +1229,9 @@ class TestAdditionalEdgeCases:
         assert "error" in result_data
 
     @pytest.mark.asyncio
-    async def test_get_user_app_pods_guest(self, mock_tool_context):
+    async def test_get_user_app_pods_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test get user app pods as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
         result = await tools.get_user_app_pods(mock_tool_context, "dev", "app1")
@@ -1137,7 +1257,7 @@ class TestHandleDeploymentSuccessEnhanced:
             namespace="test-namespace",
             deployment_type="environment_deployment",
             task_name="Deploy Test",
-            task_description="Testing deployment"
+            task_description="Testing deployment",
         )
 
         # Should return tuple (None, None) when no conversation_id
@@ -1151,10 +1271,12 @@ class TestHandleDeploymentSuccessEnhanced:
         mock_context = MagicMock()
         mock_context.state = {
             "conversation_id": "test-conv-123",
-            "user_id": "test-user"
+            "user_id": "test-user",
         }
 
-        with patch("application.agents.environment.tool_definitions.deployment.helpers._tasks.get_task_service") as mock_task_service:
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.helpers._tasks.get_task_service"
+        ) as mock_task_service:
             mock_service = MagicMock()
             mock_task_service.return_value = mock_service
 
@@ -1164,7 +1286,10 @@ class TestHandleDeploymentSuccessEnhanced:
             mock_service.create_task = AsyncMock(return_value=mock_task)
             mock_service.update_task_status = AsyncMock()
 
-            with patch("application.agents.shared.repository_tools._add_task_to_conversation", new_callable=AsyncMock):
+            with patch(
+                "application.agents.shared.repository_tools._add_task_to_conversation",
+                new_callable=AsyncMock,
+            ):
                 with patch("asyncio.create_task"):
                     task_id, hook = await tools._handle_deployment_success(
                         tool_context=mock_context,
@@ -1173,12 +1298,12 @@ class TestHandleDeploymentSuccessEnhanced:
                         deployment_type="environment_deployment",
                         task_name="Deploy Test",
                         task_description="Testing deployment",
-                        env_url="https://test.cyoda.cloud"
+                        env_url="https://test.cyoda.cloud",
                     )
 
                     assert task_id == "task-456"
-                    assert hook is not None
-                    assert "hooks" in hook
+                    # Hook framework removed - hook is now None
+                    assert hook is None
 
     @pytest.mark.asyncio
     async def test_handle_deployment_success_with_metadata(self):
@@ -1186,10 +1311,12 @@ class TestHandleDeploymentSuccessEnhanced:
         mock_context = MagicMock()
         mock_context.state = {
             "conversation_id": "test-conv-123",
-            "user_id": "test-user"
+            "user_id": "test-user",
         }
 
-        with patch("application.agents.environment.tool_definitions.deployment.helpers._tasks.get_task_service") as mock_task_service:
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.helpers._tasks.get_task_service"
+        ) as mock_task_service:
             mock_service = MagicMock()
             mock_task_service.return_value = mock_service
 
@@ -1198,7 +1325,10 @@ class TestHandleDeploymentSuccessEnhanced:
             mock_service.create_task = AsyncMock(return_value=mock_task)
             mock_service.update_task_status = AsyncMock()
 
-            with patch("application.agents.shared.repository_tools._add_task_to_conversation", new_callable=AsyncMock):
+            with patch(
+                "application.agents.shared.repository_tools._add_task_to_conversation",
+                new_callable=AsyncMock,
+            ):
                 with patch("asyncio.create_task"):
                     task_id, hook = await tools._handle_deployment_success(
                         tool_context=mock_context,
@@ -1209,8 +1339,8 @@ class TestHandleDeploymentSuccessEnhanced:
                         task_description="Testing app deployment",
                         additional_metadata={
                             "repository_url": "https://github.com/test/repo",
-                            "branch_name": "main"
-                        }
+                            "branch_name": "main",
+                        },
                     )
 
                     assert task_id == "task-789"
@@ -1222,11 +1352,15 @@ class TestCheckEnvironmentExistsEnhanced:
     """Enhanced tests for check_environment_exists function."""
 
     @pytest.mark.asyncio
-    async def test_check_environment_exists_invalid_token_exception(self, mock_tool_context):
+    async def test_check_environment_exists_invalid_token_exception(
+        self, mock_tool_context
+    ):
         """Test environment exists check with InvalidTokenException (environment exists)."""
         from common.exception.exceptions import InvalidTokenException
 
-        with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_request:
+        with patch(
+            "common.utils.utils.send_get_request", new_callable=AsyncMock
+        ) as mock_request:
             mock_request.side_effect = InvalidTokenException("Invalid token")
 
             result = await tools.check_environment_exists(mock_tool_context, "dev")
@@ -1237,107 +1371,106 @@ class TestCheckEnvironmentExistsEnhanced:
     @pytest.mark.asyncio
     async def test_check_environment_exists_generic_exception(self, mock_tool_context):
         """Test environment check with generic exception (not deployed)."""
-        with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_request:
+        with patch(
+            "common.utils.utils.send_get_request", new_callable=AsyncMock
+        ) as mock_request:
             mock_request.side_effect = Exception("Connection timeout")
 
             result = await tools.check_environment_exists(mock_tool_context, "prod")
 
             # Generic exception means environment not deployed
-            assert "not deployed" in result.lower() or "not found" in result.lower() or "No Cyoda environment found" in result
+            assert (
+                "not deployed" in result.lower()
+                or "not found" in result.lower()
+                or "No Cyoda environment found" in result
+            )
 
     @pytest.mark.asyncio
-    async def test_check_environment_exists_success_no_exception(self, mock_tool_context):
+    async def test_check_environment_exists_success_no_exception(
+        self, mock_tool_context
+    ):
         """Test environment check when send_get_request succeeds (unclear status)."""
-        with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_request:
-            # No exception means unclear status
-            mock_request.return_value = {"status": "ok"}
-
-            with patch("application.agents.environment.tool_definitions.environment.check_exists_tool.create_cloud_window_hook") as mock_hook:
-                with patch("application.agents.environment.tool_definitions.environment.check_exists_tool.wrap_response_with_hook") as mock_wrap:
-                    mock_hook.return_value = {"hooks": [{"type": "cloud_window"}]}
-                    mock_wrap.return_value = "Environment status unclear with hook"
-
-                    result = await tools.check_environment_exists(mock_tool_context, "dev")
-
-                    # Should call hook creation
-                    mock_hook.assert_called_once()
-                    assert mock_hook.call_args[1]["environment_status"] == "unknown"
-
-    @pytest.mark.asyncio
-    async def test_check_environment_exists_success_no_conversation_id(self, mock_tool_context):
-        """Test environment check success without conversation_id (no hook)."""
-        mock_tool_context.state.pop("conversation_id", None)
-
-        with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_request:
+        with patch(
+            "common.utils.utils.send_get_request", new_callable=AsyncMock
+        ) as mock_request:
             # No exception means unclear status
             mock_request.return_value = {"status": "ok"}
 
             result = await tools.check_environment_exists(mock_tool_context, "dev")
 
-            # Should return JSON without hook
-            result_data = json.loads(result)
-            assert result_data["exists"] == False
-            assert "unclear" in result_data["message"].lower()
+            # After hooks removal, returns plain text
+            assert isinstance(result, str)
+            assert "unclear" in result.lower()
 
     @pytest.mark.asyncio
-    async def test_check_environment_exists_invalid_token_no_conversation_id(self, mock_tool_context):
+    async def test_check_environment_exists_success_no_conversation_id(
+        self, mock_tool_context
+    ):
+        """Test environment check success without conversation_id (no hook)."""
+        mock_tool_context.state.pop("conversation_id", None)
+
+        with patch(
+            "common.utils.utils.send_get_request", new_callable=AsyncMock
+        ) as mock_request:
+            # No exception means unclear status
+            mock_request.return_value = {"status": "ok"}
+
+            result = await tools.check_environment_exists(mock_tool_context, "dev")
+
+            # After hooks removal, returns plain text
+            assert isinstance(result, str)
+            assert "unclear" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_check_environment_exists_invalid_token_no_conversation_id(
+        self, mock_tool_context
+    ):
         """Test environment exists (InvalidTokenException) without conversation_id."""
         from common.exception.exceptions import InvalidTokenException
 
         mock_tool_context.state.pop("conversation_id", None)
 
-        with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_request:
+        with patch(
+            "common.utils.utils.send_get_request", new_callable=AsyncMock
+        ) as mock_request:
             mock_request.side_effect = InvalidTokenException("Invalid token")
 
             result = await tools.check_environment_exists(mock_tool_context, "dev")
 
-            # Should return JSON without hook
-            result_data = json.loads(result)
-            assert result_data["exists"] == True
-            assert "deployed" in result_data["message"].lower()
+            # After hooks removal, returns plain text
+            assert isinstance(result, str)
+            assert "deployed" in result.lower()
 
     @pytest.mark.asyncio
-    async def test_check_environment_exists_not_deployed_no_conversation_id(self, mock_tool_context):
+    async def test_check_environment_exists_not_deployed_no_conversation_id(
+        self, mock_tool_context
+    ):
         """Test environment not deployed (generic exception) without conversation_id."""
         mock_tool_context.state.pop("conversation_id", None)
 
-        with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_request:
+        with patch(
+            "common.utils.utils.send_get_request", new_callable=AsyncMock
+        ) as mock_request:
             mock_request.side_effect = Exception("Connection refused")
 
             result = await tools.check_environment_exists(mock_tool_context, "dev")
 
-            # Should return JSON without hook
-            result_data = json.loads(result)
-            assert result_data["exists"] == False
-            assert "not found" in result_data["message"].lower() or "No Cyoda environment found" in result_data["message"]
+            # After hooks removal, returns plain text
+            assert isinstance(result, str)
+            assert (
+                "not found" in result.lower()
+                or "no cyoda environment" in result.lower()
+            )
 
-    @pytest.mark.asyncio
-    async def test_check_environment_exists_with_hook_creation(self, mock_tool_context):
-        """Test environment check with hook creation for all scenarios."""
-        from common.exception.exceptions import InvalidTokenException
-
-        # Test with InvalidTokenException (environment exists)
-        with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_request:
-            mock_request.side_effect = InvalidTokenException("Invalid token")
-
-            with patch("application.agents.environment.tool_definitions.environment.check_exists_tool.create_cloud_window_hook") as mock_hook:
-                with patch("application.agents.environment.tool_definitions.environment.check_exists_tool.wrap_response_with_hook") as mock_wrap:
-                    mock_hook.return_value = {"hooks": [{"type": "cloud_window", "status": "deployed"}]}
-                    mock_wrap.return_value = "Environment deployed with hook"
-
-                    result = await tools.check_environment_exists(mock_tool_context, "dev")
-
-                    # Verify hook was created with correct status
-                    mock_hook.assert_called_once()
-                    assert mock_hook.call_args[1]["environment_status"] == "deployed"
-                    assert mock_hook.call_args[1]["environment_url"]
-                    mock_wrap.assert_called_once()
+    # test_check_environment_exists_with_hook_creation removed - hooks no longer exist
 
     @pytest.mark.skip(reason="Outer exception handler already tested via other paths")
     @pytest.mark.asyncio
     async def test_check_environment_exists_outer_exception(self, mock_tool_context):
         """Test environment check with outer exception handling."""
-        with patch("common.utils.utils.send_get_request", new_callable=AsyncMock) as mock_request:
+        with patch(
+            "common.utils.utils.send_get_request", new_callable=AsyncMock
+        ) as mock_request:
             # Simulate an error in the outer try block
             mock_request.side_effect = RuntimeError("Unexpected error")
 
@@ -1346,27 +1479,39 @@ class TestCheckEnvironmentExistsEnhanced:
             # Should handle exception gracefully
             result_data = json.loads(result)
             assert result_data["exists"] == False
-            assert "not found" in result_data["message"].lower() or "No Cyoda environment" in result_data["message"]
+            assert (
+                "not found" in result_data["message"].lower()
+                or "No Cyoda environment" in result_data["message"]
+            )
 
 
 class TestDeployCyodaEnvironmentEnhanced:
     """Enhanced tests for deploy_cyoda_environment function."""
 
     @pytest.mark.asyncio
-    async def test_deploy_cyoda_environment_no_cloud_manager_host(self, mock_tool_context):
+    async def test_deploy_cyoda_environment_no_cloud_manager_host(
+        self, mock_tool_context
+    ):
         """Test deployment with missing Cloud Manager credentials."""
         with patch.dict(os.environ, {}, clear=True):
-            result = await tools.deploy_cyoda_environment(mock_tool_context, env_name="dev")
+            result = await tools.deploy_cyoda_environment(
+                mock_tool_context, env_name="dev"
+            )
             assert "ERROR" in result or "Error" in result or "error" in result
             # The error could mention credentials, cloud manager, or deployment failure
-            assert any(term in result.lower() for term in ["credentials", "cloud manager", "missing", "error"])
+            assert any(
+                term in result.lower()
+                for term in ["credentials", "cloud manager", "missing", "error"]
+            )
 
     @pytest.mark.asyncio
-    async def test_deploy_cyoda_environment_guest_user(self, mock_tool_context):
+    async def test_deploy_cyoda_environment_guest_user(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test deployment as guest user."""
         mock_tool_context.state["user_id"] = "guest-456"
         result = await tools.deploy_cyoda_environment(mock_tool_context, env_name="dev")
-        assert "Error" in result and "logged-in" in result.lower()
+        assert "Error" in result and "not logged in" in result.lower()
 
     @pytest.mark.asyncio
     async def test_deploy_cyoda_environment_no_conversation_id(self, mock_tool_context):
@@ -1374,7 +1519,9 @@ class TestDeployCyodaEnvironmentEnhanced:
         mock_tool_context.state.pop("conversation_id", None)
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            result = await tools.deploy_cyoda_environment(mock_tool_context, env_name="dev")
+            result = await tools.deploy_cyoda_environment(
+                mock_tool_context, env_name="dev"
+            )
             assert "Error" in result
             assert "conversation ID" in result
 
@@ -1384,27 +1531,34 @@ class TestDeployCyodaEnvironmentEnhanced:
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "build_id": "build-xyz-123",
-            "build_namespace": "client-test-user-dev"
+            "build_namespace": "client-test-user-dev",
         }
         mock_response.raise_for_status = MagicMock()
 
         mock_client = AsyncMock()
         mock_client.post.return_value = mock_response
 
-        with patch.dict(os.environ, {
-            "CLOUD_MANAGER_HOST": "cloud.example.com",
-            "CLOUD_MANAGER_API_KEY": "dGVzdC1hcGkta2V5",
-            "CLOUD_MANAGER_API_SECRET": "dGVzdC1hcGktc2VjcmV0"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "CLOUD_MANAGER_HOST": "cloud.example.com",
+                "CLOUD_MANAGER_API_KEY": "dGVzdC1hcGkta2V5",  # gitleaks:allow
+                "CLOUD_MANAGER_API_SECRET": "dGVzdC1hcGktc2VjcmV0",  # gitleaks:allow
+            },
+        ):
             # Mock at service layer since DeploymentService calls it
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
-                with patch("application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
-                           new_callable=AsyncMock) as mock_handle:
+            with patch(
+                "application.services.deployment.service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                with patch(
+                    "application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
+                    new_callable=AsyncMock,
+                ) as mock_handle:
                     mock_handle.return_value = ("task-123", None)
 
                     result = await tools.deploy_cyoda_environment(
-                        mock_tool_context,
-                        env_name="dev"
+                        mock_tool_context, env_name="dev"
                     )
 
                     assert "SUCCESS" in result or "build-xyz-123" in result
@@ -1419,17 +1573,20 @@ class TestDeployCyodaEnvironmentEnhanced:
         mock_response.text = "Method not allowed"
 
         from httpx import HTTPStatusError, Request
+
         mock_client.post.side_effect = HTTPStatusError(
             "405 Method Not Allowed",
             request=MagicMock(spec=Request),
-            response=mock_response
+            response=mock_response,
         )
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
+            with patch(
+                "application.services.deployment.service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
                 result = await tools.deploy_cyoda_environment(
-                    mock_tool_context,
-                    env_name="dev"
+                    mock_tool_context, env_name="dev"
                 )
 
                 assert "Error" in result or "error" in result
@@ -1441,7 +1598,7 @@ class TestDeployCyodaEnvironmentEnhanced:
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "build_id": "build-from-response",
-            "build_namespace": "client-test-user-dev"
+            "build_namespace": "client-test-user-dev",
         }
         mock_response.raise_for_status = MagicMock()
 
@@ -1449,15 +1606,20 @@ class TestDeployCyodaEnvironmentEnhanced:
         mock_client.post.return_value = mock_response
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
-                with patch("application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
-                           new_callable=AsyncMock) as mock_handle:
+            with patch(
+                "application.services.deployment.service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                with patch(
+                    "application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
+                    new_callable=AsyncMock,
+                ) as mock_handle:
                     mock_handle.return_value = ("task-123", None)
 
                     result = await tools.deploy_cyoda_environment(
                         mock_tool_context,
                         env_name="dev",
-                        build_id="user-provided-build-id"  # Test with build_id
+                        build_id="user-provided-build-id",  # Test with build_id
                     )
 
                     # Verify build_id was included in payload
@@ -1479,75 +1641,92 @@ class TestDeployCyodaEnvironmentEnhanced:
         mock_client.post.return_value = mock_response
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
+            with patch(
+                "application.services.deployment.service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
                 result = await tools.deploy_cyoda_environment(
-                    mock_tool_context,
-                    env_name="dev"
+                    mock_tool_context, env_name="dev"
                 )
 
                 assert "Error" in result
                 assert "missing build information" in result
 
     @pytest.mark.asyncio
-    async def test_deploy_cyoda_environment_with_workflow_cache_update(self, mock_tool_context):
+    async def test_deploy_cyoda_environment_with_workflow_cache_update(
+        self, mock_tool_context
+    ):
         """Test deployment with conversation workflow_cache update."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "build_id": "build-123",
-            "build_namespace": "client-test-user-dev"
+            "build_namespace": "client-test-user-dev",
         }
         mock_response.raise_for_status = MagicMock()
 
         # Mock conversation entity
-        mock_conversation_data = {
-            "technical_id": "test-conv-123",
-            "workflow_cache": {}
-        }
+        mock_conversation_data = {"technical_id": "test-conv-123", "workflow_cache": {}}
 
         mock_client = AsyncMock()
         mock_client.post.return_value = mock_response
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
-                with patch("application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
-                           new_callable=AsyncMock) as mock_handle:
+            with patch(
+                "application.services.deployment.service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                with patch(
+                    "application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
+                    new_callable=AsyncMock,
+                ) as mock_handle:
                     mock_handle.return_value = ("task-123", None)
 
-                    with patch("services.services.get_entity_service") as mock_entity_service:
+                    with patch(
+                        "services.services.get_entity_service"
+                    ) as mock_entity_service:
                         mock_service = MagicMock()
                         mock_entity_service.return_value = mock_service
 
                         # Mock get_by_id response
                         mock_entity_response = MagicMock()
                         mock_entity_response.data = mock_conversation_data
-                        mock_service.get_by_id = AsyncMock(return_value=mock_entity_response)
+                        mock_service.get_by_id = AsyncMock(
+                            return_value=mock_entity_response
+                        )
                         mock_service.update = AsyncMock()
 
-                        with patch("application.entity.conversation.version_1.conversation.Conversation") as mock_conv_class:
+                        with patch(
+                            "application.entity.conversation.version_1.conversation.Conversation"
+                        ) as mock_conv_class:
                             mock_conv_instance = MagicMock()
                             mock_conv_instance.workflow_cache = {}
-                            mock_conv_instance.model_dump.return_value = mock_conversation_data
+                            mock_conv_instance.model_dump.return_value = (
+                                mock_conversation_data
+                            )
                             mock_conv_class.return_value = mock_conv_instance
                             mock_conv_class.ENTITY_NAME = "conversation"
                             mock_conv_class.ENTITY_VERSION = 1
 
                             result = await tools.deploy_cyoda_environment(
-                                mock_tool_context,
-                                env_name="dev"
+                                mock_tool_context, env_name="dev"
                             )
 
                             # Verify workflow_cache was updated
-                            assert "build-123" in mock_conv_instance.workflow_cache.get("build_id", "")
+                            assert "build-123" in mock_conv_instance.workflow_cache.get(
+                                "build_id", ""
+                            )
                             # Verify entity service update was called
                             mock_service.update.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_deploy_cyoda_environment_workflow_cache_error(self, mock_tool_context):
+    async def test_deploy_cyoda_environment_workflow_cache_error(
+        self, mock_tool_context
+    ):
         """Test deployment continues when workflow_cache update fails."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "build_id": "build-123",
-            "build_namespace": "client-test-user-dev"
+            "build_namespace": "client-test-user-dev",
         }
         mock_response.raise_for_status = MagicMock()
 
@@ -1555,55 +1734,32 @@ class TestDeployCyodaEnvironmentEnhanced:
         mock_client.post.return_value = mock_response
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
-                with patch("application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
-                           new_callable=AsyncMock) as mock_handle:
+            with patch(
+                "application.services.deployment.service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                with patch(
+                    "application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
+                    new_callable=AsyncMock,
+                ) as mock_handle:
                     mock_handle.return_value = ("task-123", None)
 
-                    with patch("services.services.get_entity_service") as mock_entity_service:
+                    with patch(
+                        "services.services.get_entity_service"
+                    ) as mock_entity_service:
                         # Simulate error in entity service
-                        mock_entity_service.side_effect = Exception("Entity service error")
+                        mock_entity_service.side_effect = Exception(
+                            "Entity service error"
+                        )
 
                         result = await tools.deploy_cyoda_environment(
-                            mock_tool_context,
-                            env_name="dev"
+                            mock_tool_context, env_name="dev"
                         )
 
                         # Should still succeed despite workflow_cache error
                         assert "SUCCESS" in result
 
-    @pytest.mark.asyncio
-    async def test_deploy_cyoda_environment_with_hook(self, mock_tool_context):
-        """Test deployment with hook wrapping."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "build_id": "build-123",
-            "build_namespace": "client-test-user-dev"
-        }
-        mock_response.raise_for_status = MagicMock()
-
-        mock_hook = {"hooks": [{"type": "background_task"}]}
-
-        mock_client = AsyncMock()
-        mock_client.post.return_value = mock_response
-
-        with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
-                with patch("application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
-                           new_callable=AsyncMock) as mock_handle:
-                    mock_handle.return_value = ("task-123", mock_hook)
-
-                    with patch("application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.wrap_response_with_hook") as mock_wrap:
-                        mock_wrap.return_value = "SUCCESS with hook"
-
-                        result = await tools.deploy_cyoda_environment(
-                            mock_tool_context,
-                            env_name="dev"
-                        )
-
-                        # Verify hook was wrapped
-                        mock_wrap.assert_called_once()
-                        assert result == "SUCCESS with hook"
+    # test_deploy_cyoda_environment_with_hook removed - hooks no longer exist
 
     @pytest.mark.asyncio
     async def test_deploy_cyoda_environment_without_hook(self, mock_tool_context):
@@ -1611,7 +1767,7 @@ class TestDeployCyodaEnvironmentEnhanced:
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "build_id": "build-456",
-            "build_namespace": "client-test-user-dev"
+            "build_namespace": "client-test-user-dev",
         }
         mock_response.raise_for_status = MagicMock()
 
@@ -1619,14 +1775,18 @@ class TestDeployCyodaEnvironmentEnhanced:
         mock_client.post.return_value = mock_response
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
-                with patch("application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
-                           new_callable=AsyncMock) as mock_handle:
+            with patch(
+                "application.services.deployment.service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                with patch(
+                    "application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
+                    new_callable=AsyncMock,
+                ) as mock_handle:
                     mock_handle.return_value = ("task-456", None)  # No hook
 
                     result = await tools.deploy_cyoda_environment(
-                        mock_tool_context,
-                        env_name="dev"
+                        mock_tool_context, env_name="dev"
                     )
 
                     # Should return plain success message
@@ -1634,13 +1794,17 @@ class TestDeployCyodaEnvironmentEnhanced:
                     assert "build-456" in result
                     assert "task-456" in result.lower()
 
-    @pytest.mark.skip(reason="HTTP error handling needs investigation - function returns None")
+    @pytest.mark.skip(
+        reason="HTTP error handling needs investigation - function returns None"
+    )
     @pytest.mark.asyncio
     async def test_deploy_cyoda_environment_network_error(self, mock_tool_context):
         """Test deployment with network error."""
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.agents.environment.tools._get_cloud_manager_auth_token",
-                       new_callable=AsyncMock) as mock_auth:
+            with patch(
+                "application.agents.environment.tools._get_cloud_manager_auth_token",
+                new_callable=AsyncMock,
+            ) as mock_auth:
                 mock_auth.return_value = "test-token"
 
                 with patch("httpx.AsyncClient") as mock_client:
@@ -1648,14 +1812,17 @@ class TestDeployCyodaEnvironmentEnhanced:
                     from httpx import HTTPError
 
                     mock_async_client = MagicMock()
-                    mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
+                    mock_async_client.__aenter__ = AsyncMock(
+                        return_value=mock_async_client
+                    )
                     mock_async_client.__aexit__ = AsyncMock()
-                    mock_async_client.post = AsyncMock(side_effect=HTTPError("Connection timeout"))
+                    mock_async_client.post = AsyncMock(
+                        side_effect=HTTPError("Connection timeout")
+                    )
                     mock_client.return_value = mock_async_client
 
                     result = await tools.deploy_cyoda_environment(
-                        mock_tool_context,
-                        env_name="dev"
+                        mock_tool_context, env_name="dev"
                     )
 
                     assert result is not None
@@ -1672,21 +1839,29 @@ class TestDeployUserApplicationEnhanced:
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "build_id": "build-app-456",
-            "build_namespace": "client-1-test-user-dev-myapp"
+            "build_namespace": "client-1-test-user-dev-myapp",
         }
         mock_response.raise_for_status = MagicMock()
 
         mock_client = AsyncMock()
         mock_client.post.return_value = mock_response
 
-        with patch.dict(os.environ, {
-            "CLOUD_MANAGER_HOST": "cloud.example.com",
-            "CLOUD_MANAGER_API_KEY": "dGVzdC1hcGkta2V5",
-            "CLOUD_MANAGER_API_SECRET": "dGVzdC1hcGktc2VjcmV0"
-        }):
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
-                with patch("application.agents.environment.tool_definitions.deployment.tools.deploy_user_application_tool.handle_deployment_success",
-                           new_callable=AsyncMock) as mock_handle:
+        with patch.dict(
+            os.environ,
+            {
+                "CLOUD_MANAGER_HOST": "cloud.example.com",
+                "CLOUD_MANAGER_API_KEY": "dGVzdC1hcGkta2V5",  # gitleaks:allow
+                "CLOUD_MANAGER_API_SECRET": "dGVzdC1hcGktc2VjcmV0",  # gitleaks:allow
+            },
+        ):
+            with patch(
+                "application.services.deployment.service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                with patch(
+                    "application.agents.environment.tool_definitions.deployment.tools.deploy_user_application_tool.handle_deployment_success",
+                    new_callable=AsyncMock,
+                ) as mock_handle:
                     mock_handle.return_value = ("task-app-123", None)
 
                     result = await tools.deploy_user_application(
@@ -1696,14 +1871,19 @@ class TestDeployUserApplicationEnhanced:
                         cyoda_client_id="client-id-123",
                         cyoda_client_secret="client-secret-456",
                         env_name="dev",
-                        app_name="myapp"
+                        app_name="myapp",
                     )
 
-                    assert "deployment started" in result.lower() or "build-app-456" in result
+                    assert (
+                        "deployment started" in result.lower()
+                        or "build-app-456" in result
+                    )
                     mock_handle.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_deploy_user_application_no_cloud_manager_host(self, mock_tool_context):
+    async def test_deploy_user_application_no_cloud_manager_host(
+        self, mock_tool_context
+    ):
         """Test user app deployment with missing Cloud Manager credentials."""
         with patch.dict(os.environ, {}, clear=True):
             result = await tools.deploy_user_application(
@@ -1713,13 +1893,18 @@ class TestDeployUserApplicationEnhanced:
                 cyoda_client_id="client-id",
                 cyoda_client_secret="client-secret",
                 env_name="dev",
-                app_name="myapp"
+                app_name="myapp",
             )
             # The error could mention various things - check for error indicator
-            assert any(term in result.lower() for term in ["error", "failed", "credentials", "validation"])
+            assert any(
+                term in result.lower()
+                for term in ["error", "failed", "credentials", "validation"]
+            )
 
     @pytest.mark.asyncio
-    async def test_deploy_user_application_guest_user(self, mock_tool_context):
+    async def test_deploy_user_application_guest_user(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test user app deployment as guest."""
         mock_tool_context.state["user_id"] = "guest-789"
 
@@ -1731,9 +1916,9 @@ class TestDeployUserApplicationEnhanced:
                 cyoda_client_id="client-id",
                 cyoda_client_secret="client-secret",
                 env_name="dev",
-                app_name="myapp"
+                app_name="myapp",
             )
-            assert "Error:" in result and "logged-in" in result.lower()
+            assert "Error:" in result and "not logged in" in result.lower()
 
     @pytest.mark.asyncio
     async def test_deploy_user_application_no_conversation_id(self, mock_tool_context):
@@ -1748,18 +1933,20 @@ class TestDeployUserApplicationEnhanced:
                 cyoda_client_id="client-id",
                 cyoda_client_secret="client-secret",
                 env_name="dev",
-                app_name="myapp"
+                app_name="myapp",
             )
             assert "Error" in result
             assert "conversation ID" in result
 
     @pytest.mark.asyncio
-    async def test_deploy_user_application_with_installation_id(self, mock_tool_context):
+    async def test_deploy_user_application_with_installation_id(
+        self, mock_tool_context
+    ):
         """Test deployment with GitHub installation_id."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "build_id": "build-123",
-            "namespace": "client-1-test-user-dev-app"
+            "namespace": "client-1-test-user-dev-app",
         }
         mock_response.raise_for_status = MagicMock()
 
@@ -1767,9 +1954,14 @@ class TestDeployUserApplicationEnhanced:
         mock_client.post.return_value = mock_response
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.deployment.service.get_cloud_manager_service", return_value=mock_client):
-                with patch("application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
-                           new_callable=AsyncMock) as mock_handle:
+            with patch(
+                "application.services.deployment.service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                with patch(
+                    "application.agents.environment.tool_definitions.deployment.tools.deploy_cyoda_environment_tool.handle_deployment_success",
+                    new_callable=AsyncMock,
+                ) as mock_handle:
                     mock_handle.return_value = ("task-123", None)
 
                     result = await tools.deploy_user_application(
@@ -1780,10 +1972,14 @@ class TestDeployUserApplicationEnhanced:
                         cyoda_client_secret="secret",
                         env_name="dev",
                         app_name="testapp",
-                        installation_id="install-456"
+                        installation_id="install-456",
                     )
 
-                    assert "deployment started" in result.lower() or "SUCCESS" in result or "build-123" in result
+                    assert (
+                        "deployment started" in result.lower()
+                        or "SUCCESS" in result
+                        or "build-123" in result
+                    )
 
 
 class TestMonitorDeploymentProgress:
@@ -1809,8 +2005,10 @@ class TestMonitorDeploymentProgress:
             mock_service.add_progress_update = AsyncMock()
 
             # Mock get_deployment_status to return COMPLETE
-            with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_deployment_status",
-                       new_callable=AsyncMock) as mock_status:
+            with patch(
+                "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_deployment_status",
+                new_callable=AsyncMock,
+            ) as mock_status:
                 mock_status.return_value = "STATUS:COMPLETE|Deployment completed|DONE"
 
                 # Mock asyncio.sleep to avoid waiting
@@ -1820,7 +2018,7 @@ class TestMonitorDeploymentProgress:
                         task_id="task-456",
                         tool_context=mock_context,
                         check_interval=0,
-                        max_checks=2
+                        max_checks=2,
                     )
 
                     # Verify task was updated (may not always have all details due to async)
@@ -1844,8 +2042,10 @@ class TestMonitorDeploymentProgress:
             mock_service.update_task_status = AsyncMock()
 
             # Mock get_deployment_status to return FAILURE
-            with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_deployment_status",
-                       new_callable=AsyncMock) as mock_status:
+            with patch(
+                "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_deployment_status",
+                new_callable=AsyncMock,
+            ) as mock_status:
                 mock_status.return_value = "STATUS:FAILED|Build failed|CONTINUE"
 
                 with patch("asyncio.sleep", new_callable=AsyncMock):
@@ -1854,7 +2054,7 @@ class TestMonitorDeploymentProgress:
                         task_id="task-456",
                         tool_context=mock_context,
                         check_interval=0,
-                        max_checks=2
+                        max_checks=2,
                     )
 
                     # Verify function completed (assertion details may vary)
@@ -1866,7 +2066,9 @@ class TestMonitorDeploymentProgress:
         mock_context = MagicMock()
         mock_context.state = {"conversation_id": "conv-123"}
 
-        with patch("application.agents.environment.tool_definitions.deployment.helpers._deployment_monitor.get_task_service") as mock_task_service_fn:
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.helpers._deployment_monitor.get_task_service"
+        ) as mock_task_service_fn:
             mock_service = AsyncMock()
             mock_task_service_fn.return_value = mock_service
 
@@ -1878,8 +2080,10 @@ class TestMonitorDeploymentProgress:
             mock_service.add_progress_update = AsyncMock()
 
             # Mock get_deployment_status to always return IN_PROGRESS
-            with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_deployment_status",
-                       new_callable=AsyncMock) as mock_status:
+            with patch(
+                "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_deployment_status",
+                new_callable=AsyncMock,
+            ) as mock_status:
                 mock_status.return_value = "STATUS:IN_PROGRESS|Building|CONTINUE"
 
                 with patch("asyncio.sleep", new_callable=AsyncMock):
@@ -1888,12 +2092,15 @@ class TestMonitorDeploymentProgress:
                         task_id="task-456",
                         tool_context=mock_context,
                         check_interval=0,
-                        max_checks=2
+                        max_checks=2,
                     )
 
                     # Verify timeout was handled
                     if mock_service.update_task_status.call_args_list:
-                        calls = [call for call in mock_service.update_task_status.call_args_list]
+                        calls = [
+                            call
+                            for call in mock_service.update_task_status.call_args_list
+                        ]
                         # Last call should be timeout/failed
                         last_call = calls[-1]
                         assert last_call[1]["status"] == "failed"
@@ -1919,11 +2126,13 @@ class TestMonitorDeploymentProgress:
             # Return in-progress, then complete
             status_responses = [
                 "STATUS:BUILDING|Building container|CONTINUE",
-                "STATUS:COMPLETE|Deployment complete|DONE"
+                "STATUS:COMPLETE|Deployment complete|DONE",
             ]
 
-            with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_deployment_status",
-                       new_callable=AsyncMock) as mock_status:
+            with patch(
+                "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_deployment_status",
+                new_callable=AsyncMock,
+            ) as mock_status:
                 mock_status.side_effect = status_responses
 
                 with patch("asyncio.sleep", new_callable=AsyncMock):
@@ -1932,7 +2141,7 @@ class TestMonitorDeploymentProgress:
                         task_id="task-456",
                         tool_context=mock_context,
                         check_interval=0,
-                        max_checks=3
+                        max_checks=3,
                     )
 
                     # Verify function completed
@@ -1944,12 +2153,16 @@ class TestMonitorDeploymentProgress:
         mock_context = MagicMock()
         mock_context.state = {"conversation_id": "conv-123"}
 
-        with patch("application.agents.environment.tool_definitions.deployment.helpers._deployment_monitor.get_task_service") as mock_task_service:
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.helpers._deployment_monitor.get_task_service"
+        ) as mock_task_service:
             mock_service = MagicMock()
             mock_task_service.return_value = mock_service
 
             # Mock get_task to raise exception
-            mock_service.get_task = AsyncMock(side_effect=Exception("Service unavailable"))
+            mock_service.get_task = AsyncMock(
+                side_effect=Exception("Service unavailable")
+            )
             mock_service.update_task_status = AsyncMock()
 
             # Should not raise exception, just log it
@@ -1958,7 +2171,7 @@ class TestMonitorDeploymentProgress:
                 task_id="task-456",
                 tool_context=mock_context,
                 check_interval=0,
-                max_checks=1
+                max_checks=1,
             )
 
 
@@ -1966,14 +2179,14 @@ class TestSearchLogs:
     """Comprehensive tests for search_logs function."""
 
     @pytest.mark.asyncio
-    async def test_search_logs_guest_user(self, mock_tool_context):
+    async def test_search_logs_guest_user(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test log search as guest user."""
         mock_tool_context.state["user_id"] = "guest-123"
 
         result = await tools.search_logs(
-            tool_context=mock_tool_context,
-            env_name="dev",
-            app_name="cyoda"
+            tool_context=mock_tool_context, env_name="dev", app_name="cyoda"
         )
 
         result_data = json.loads(result)
@@ -1984,9 +2197,7 @@ class TestSearchLogs:
     async def test_search_logs_missing_env_name(self, mock_tool_context):
         """Test log search with missing env_name."""
         result = await tools.search_logs(
-            tool_context=mock_tool_context,
-            env_name="",
-            app_name="cyoda"
+            tool_context=mock_tool_context, env_name="", app_name="cyoda"
         )
 
         result_data = json.loads(result)
@@ -1997,9 +2208,7 @@ class TestSearchLogs:
     async def test_search_logs_missing_app_name(self, mock_tool_context):
         """Test log search with missing app_name."""
         result = await tools.search_logs(
-            tool_context=mock_tool_context,
-            env_name="dev",
-            app_name=""
+            tool_context=mock_tool_context, env_name="dev", app_name=""
         )
 
         result_data = json.loads(result)
@@ -2011,9 +2220,7 @@ class TestSearchLogs:
         """Test log search with missing ELK configuration."""
         with patch.dict(os.environ, {}, clear=True):
             result = await tools.search_logs(
-                tool_context=mock_tool_context,
-                env_name="dev",
-                app_name="cyoda"
+                tool_context=mock_tool_context, env_name="dev", app_name="cyoda"
             )
 
             result_data = json.loads(result)
@@ -2036,8 +2243,8 @@ class TestSearchLogs:
                             "kubernetes": {
                                 "pod_name": "cyoda-api-pod-1",
                                 "container_name": "cyoda-api",
-                                "namespace_name": "client-test-user-dev"
-                            }
+                                "namespace_name": "client-test-user-dev",
+                            },
                         }
                     },
                     {
@@ -2048,20 +2255,23 @@ class TestSearchLogs:
                             "kubernetes": {
                                 "pod_name": "cyoda-api-pod-1",
                                 "container_name": "cyoda-api",
-                                "namespace_name": "client-test-user-dev"
-                            }
+                                "namespace_name": "client-test-user-dev",
+                            },
                         }
-                    }
-                ]
+                    },
+                ],
             }
         }
         mock_response.raise_for_status = MagicMock()
 
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
@@ -2070,9 +2280,7 @@ class TestSearchLogs:
                 mock_client.return_value = mock_async_client
 
                 result = await tools.search_logs(
-                    tool_context=mock_tool_context,
-                    env_name="dev",
-                    app_name="cyoda"
+                    tool_context=mock_tool_context, env_name="dev", app_name="cyoda"
                 )
 
                 result_data = json.loads(result)
@@ -2102,20 +2310,23 @@ class TestSearchLogs:
                             "kubernetes": {
                                 "pod_name": "myapp-pod-1",
                                 "container_name": "myapp",
-                                "namespace_name": "client-1-test-user-dev-myapp"
-                            }
+                                "namespace_name": "client-1-test-user-dev-myapp",
+                            },
                         }
                     }
-                ]
+                ],
             }
         }
         mock_response.raise_for_status = MagicMock()
 
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
@@ -2124,16 +2335,16 @@ class TestSearchLogs:
                 mock_client.return_value = mock_async_client
 
                 result = await tools.search_logs(
-                    tool_context=mock_tool_context,
-                    env_name="dev",
-                    app_name="myapp"
+                    tool_context=mock_tool_context, env_name="dev", app_name="myapp"
                 )
 
                 result_data = json.loads(result)
                 assert result_data["app_name"] == "myapp"
                 assert result_data["total_hits"] == 1
                 # Verify index pattern for user app logs
-                assert "logs-client-1-test-user-dev-myapp" in result_data["index_pattern"]
+                assert (
+                    "logs-client-1-test-user-dev-myapp" in result_data["index_pattern"]
+                )
 
     @pytest.mark.asyncio
     async def test_search_logs_with_query(self, mock_tool_context):
@@ -2151,20 +2362,23 @@ class TestSearchLogs:
                             "kubernetes": {
                                 "pod_name": "pod-1",
                                 "container_name": "container-1",
-                                "namespace_name": "namespace-1"
-                            }
+                                "namespace_name": "namespace-1",
+                            },
                         }
                     }
-                ]
+                ],
             }
         }
         mock_response.raise_for_status = MagicMock()
 
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
@@ -2176,7 +2390,7 @@ class TestSearchLogs:
                     tool_context=mock_tool_context,
                     env_name="dev",
                     app_name="cyoda",
-                    query="ERROR"
+                    query="ERROR",
                 )
 
                 result_data = json.loads(result)
@@ -2187,19 +2401,17 @@ class TestSearchLogs:
     async def test_search_logs_with_time_range(self, mock_tool_context):
         """Test log search with time_range parameter."""
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "hits": {
-                "total": {"value": 0},
-                "hits": []
-            }
-        }
+        mock_response.json.return_value = {"hits": {"total": {"value": 0}, "hits": []}}
         mock_response.raise_for_status = MagicMock()
 
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
@@ -2211,7 +2423,7 @@ class TestSearchLogs:
                     tool_context=mock_tool_context,
                     env_name="dev",
                     app_name="cyoda",
-                    time_range="1h"
+                    time_range="1h",
                 )
 
                 result_data = json.loads(result)
@@ -2234,20 +2446,23 @@ class TestSearchLogs:
                             "kubernetes": {
                                 "pod_name": "pod-1",
                                 "container_name": "container-1",
-                                "namespace_name": "namespace-1"
-                            }
+                                "namespace_name": "namespace-1",
+                            },
                         }
                     }
-                ]
+                ],
             }
         }
         mock_response.raise_for_status = MagicMock()
 
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
@@ -2260,30 +2475,30 @@ class TestSearchLogs:
                     env_name="dev",
                     app_name="cyoda",
                     time_range="1h",  # Should be ignored
-                    since_timestamp="2024-12-24T11:00:00Z"
+                    since_timestamp="2024-12-24T11:00:00Z",
                 )
 
                 result_data = json.loads(result)
                 assert result_data["since_timestamp"] == "2024-12-24T11:00:00Z"
-                assert result_data["time_range"] is None  # since_timestamp takes precedence
+                assert (
+                    result_data["time_range"] is None
+                )  # since_timestamp takes precedence
 
     @pytest.mark.asyncio
     async def test_search_logs_size_limiting(self, mock_tool_context):
         """Test that size parameter is limited to max 50."""
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "hits": {
-                "total": {"value": 0},
-                "hits": []
-            }
-        }
+        mock_response.json.return_value = {"hits": {"total": {"value": 0}, "hits": []}}
         mock_response.raise_for_status = MagicMock()
 
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
@@ -2296,7 +2511,7 @@ class TestSearchLogs:
                     tool_context=mock_tool_context,
                     env_name="dev",
                     app_name="cyoda",
-                    size=1000
+                    size=1000,
                 )
 
                 # Verify the ES query had size limited to 50
@@ -2308,19 +2523,17 @@ class TestSearchLogs:
     async def test_search_logs_empty_results(self, mock_tool_context):
         """Test log search with no results."""
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "hits": {
-                "total": {"value": 0},
-                "hits": []
-            }
-        }
+        mock_response.json.return_value = {"hits": {"total": {"value": 0}, "hits": []}}
         mock_response.raise_for_status = MagicMock()
 
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
@@ -2329,9 +2542,7 @@ class TestSearchLogs:
                 mock_client.return_value = mock_async_client
 
                 result = await tools.search_logs(
-                    tool_context=mock_tool_context,
-                    env_name="dev",
-                    app_name="cyoda"
+                    tool_context=mock_tool_context, env_name="dev", app_name="cyoda"
                 )
 
                 result_data = json.loads(result)
@@ -2339,7 +2550,9 @@ class TestSearchLogs:
                 assert result_data["returned"] == 0
                 assert len(result_data["logs"]) == 0
 
-    @pytest.mark.skip(reason="Async context manager exception handling needs investigation")
+    @pytest.mark.skip(
+        reason="Async context manager exception handling needs investigation"
+    )
     @pytest.mark.asyncio
     async def test_search_logs_http_error(self, mock_tool_context):
         """Test log search with HTTP error from Elasticsearch."""
@@ -2349,28 +2562,27 @@ class TestSearchLogs:
 
         from httpx import HTTPStatusError
 
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
                 mock_async_client.__aexit__ = AsyncMock()
 
                 http_error = HTTPStatusError(
-                    message="Forbidden",
-                    request=MagicMock(),
-                    response=mock_response
+                    message="Forbidden", request=MagicMock(), response=mock_response
                 )
                 mock_async_client.post = AsyncMock(side_effect=http_error)
                 mock_client.return_value = mock_async_client
 
                 result = await tools.search_logs(
-                    tool_context=mock_tool_context,
-                    env_name="dev",
-                    app_name="cyoda"
+                    tool_context=mock_tool_context, env_name="dev", app_name="cyoda"
                 )
 
                 assert result is not None
@@ -2378,32 +2590,40 @@ class TestSearchLogs:
                 assert "error" in result_data
                 assert "403" in result_data["error"]
 
-    @pytest.mark.skip(reason="Async context manager exception handling needs investigation")
+    @pytest.mark.skip(
+        reason="Async context manager exception handling needs investigation"
+    )
     @pytest.mark.asyncio
     async def test_search_logs_generic_exception(self, mock_tool_context):
         """Test log search with generic exception."""
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
                 mock_async_client.__aexit__ = AsyncMock()
-                mock_async_client.post = AsyncMock(side_effect=Exception("Network error"))
+                mock_async_client.post = AsyncMock(
+                    side_effect=Exception("Network error")
+                )
                 mock_client.return_value = mock_async_client
 
                 result = await tools.search_logs(
-                    tool_context=mock_tool_context,
-                    env_name="dev",
-                    app_name="cyoda"
+                    tool_context=mock_tool_context, env_name="dev", app_name="cyoda"
                 )
 
                 assert result is not None
                 result_data = json.loads(result)
                 assert "error" in result_data
-                assert "Network error" in result_data["error"] or "Error searching logs" in result_data["error"]
+                assert (
+                    "Network error" in result_data["error"]
+                    or "Error searching logs" in result_data["error"]
+                )
 
     @pytest.mark.asyncio
     async def test_search_logs_logs_without_kubernetes_info(self, mock_tool_context):
@@ -2416,20 +2636,23 @@ class TestSearchLogs:
                     {
                         "_source": {
                             "@timestamp": "2024-12-24T10:00:00Z",
-                            "message": "Log without kubernetes info"
+                            "message": "Log without kubernetes info",
                             # No level, no kubernetes
                         }
                     }
-                ]
+                ],
             }
         }
         mock_response.raise_for_status = MagicMock()
 
-        with patch.dict(os.environ, {
-            "ELK_HOST": "elk.example.com",
-            "ELK_USER": "elk-user",
-            "ELK_PASSWORD": "elk-password"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ELK_HOST": "elk.example.com",
+                "ELK_USER": "elk-user",
+                "ELK_PASSWORD": "elk-password",
+            },
+        ):
             with patch("httpx.AsyncClient") as mock_client:
                 mock_async_client = MagicMock()
                 mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
@@ -2438,9 +2661,7 @@ class TestSearchLogs:
                 mock_client.return_value = mock_async_client
 
                 result = await tools.search_logs(
-                    tool_context=mock_tool_context,
-                    env_name="dev",
-                    app_name="cyoda"
+                    tool_context=mock_tool_context, env_name="dev", app_name="cyoda"
                 )
 
                 result_data = json.loads(result)
@@ -2460,14 +2681,20 @@ class TestGetDeploymentStatusEnhanced:
     """Enhanced tests for get_deployment_status function."""
 
     @pytest.mark.asyncio
-    async def test_get_deployment_status_missing_cloud_manager_host(self, mock_tool_context):
+    async def test_get_deployment_status_missing_cloud_manager_host(
+        self, mock_tool_context
+    ):
         """Test get deployment status with authentication failure (missing credentials)."""
         # Mock client that raises exception when trying to authenticate
         mock_client = AsyncMock()
-        mock_client.get.side_effect = Exception("Cloud manager credentials not configured")
+        mock_client.get.side_effect = Exception(
+            "Cloud manager credentials not configured"
+        )
 
-        with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
-                   return_value=mock_client):
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
             result = await tools.get_deployment_status(mock_tool_context, "build-123")
             assert "Error" in result
             assert "credentials" in result.lower()
@@ -2479,8 +2706,10 @@ class TestGetDeploymentStatusEnhanced:
         mock_client = AsyncMock()
         mock_client.get.side_effect = Exception("Auth failed")
 
-        with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
-                   return_value=mock_client):
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
             result = await tools.get_deployment_status(mock_tool_context, "build-123")
             assert "Error" in result
 
@@ -2491,14 +2720,16 @@ class TestGetDeploymentStatusEnhanced:
         mock_response.json.return_value = {
             "state": "COMPLETE",
             "status": "FINISHED",
-            "message": "Deployment successful"
+            "message": "Deployment successful",
         }
 
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
-                   return_value=mock_client):
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
             result = await tools.get_deployment_status(mock_tool_context, "build-123")
 
             # Verify result contains success indicators
@@ -2512,14 +2743,16 @@ class TestGetDeploymentStatusEnhanced:
         mock_response.json.return_value = {
             "state": "FAILED",
             "status": "ERROR",
-            "message": "Build error"
+            "message": "Build error",
         }
 
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
-                   return_value=mock_client):
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
             result = await tools.get_deployment_status(mock_tool_context, "build-123")
 
             # Verify result contains failure indicators
@@ -2533,14 +2766,16 @@ class TestGetDeploymentStatusEnhanced:
         mock_response.json.return_value = {
             "state": "RUNNING",
             "status": "BUILDING",
-            "message": "Building container image"
+            "message": "Building container image",
         }
 
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
-                   return_value=mock_client):
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
             result = await tools.get_deployment_status(mock_tool_context, "build-123")
 
             # Verify result contains in-progress indicators
@@ -2554,15 +2789,19 @@ class TestGetDeploymentStatusEnhanced:
         mock_response.json.return_value = {
             "state": "COMPLETE",
             "status": "SUCCESS",
-            "message": "Done"
+            "message": "Done",
         }
 
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
-                   return_value=mock_client):
-            result = await tools.get_deployment_status(mock_tool_context, "build-123", for_monitoring=True)
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
+            result = await tools.get_deployment_status(
+                mock_tool_context, "build-123", for_monitoring=True
+            )
 
             # Verify structured format for monitoring
             assert "STATUS:" in result
@@ -2576,25 +2815,25 @@ class TestGetDeploymentStatusEnhanced:
         mock_response.json.return_value = {
             "state": "RUNNING",
             "status": "UNKNOWN",
-            "message": ""
+            "message": "",
         }
 
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
-                   return_value=mock_client):
+        with patch(
+            "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+            return_value=mock_client,
+        ):
             result = await tools.get_deployment_status(mock_tool_context, "build-123")
 
             # Verify UNKNOWN status is treated as failure
             assert "failed" in result.lower() or "UNKNOWN" in result
 
-    @pytest.mark.skip(reason="Async context manager exception handling needs investigation")
-
-
+    @pytest.mark.skip(
+        reason="Async context manager exception handling needs investigation"
+    )
     @pytest.mark.asyncio
-
-
     async def test_get_deployment_status_404(self, mock_tool_context):
         """Test deployment status with 404 not found."""
         mock_response = MagicMock()
@@ -2604,17 +2843,20 @@ class TestGetDeploymentStatusEnhanced:
         from httpx import HTTPStatusError
 
         http_error = HTTPStatusError(
-            message="Not found",
-            request=MagicMock(),
-            response=mock_response
+            message="Not found", request=MagicMock(), response=mock_response
         )
 
         mock_client = AsyncMock()
         mock_client.get.side_effect = http_error
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service", return_value=mock_client):
-                result = await tools.get_deployment_status(mock_tool_context, "build-123")
+            with patch(
+                "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                result = await tools.get_deployment_status(
+                    mock_tool_context, "build-123"
+                )
 
                 # Verify 404 error handling
                 assert "Error" in result
@@ -2624,43 +2866,16 @@ class TestGetDeploymentStatusEnhanced:
 class TestIssueTechnicalUserEnhanced:
     """Enhanced tests for issue_technical_user function."""
 
-    @pytest.mark.asyncio
-    async def test_issue_technical_user_success(self, mock_tool_context):
-        """Test successful technical user credential issuance."""
-        with patch("application.agents.shared.hooks.create_issue_technical_user_hook") as mock_hook:
-            with patch("application.agents.shared.hooks.wrap_response_with_hook") as mock_wrap:
-                mock_hook.return_value = {"hooks": [{"type": "issue_technical_user"}]}
-                mock_wrap.return_value = "Success with hook"
-
-                result = await tools.issue_technical_user(mock_tool_context, "dev")
-
-                # Verify hook was created
-                mock_hook.assert_called_once()
-                assert mock_hook.call_args[1]["env_url"]
-                assert "test-user" in mock_hook.call_args[1]["env_url"]
-                assert "dev" in mock_hook.call_args[1]["env_url"]
-
-                # Verify wrap was called
-                mock_wrap.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_issue_technical_user_exception(self, mock_tool_context):
-        """Test issue technical user with exception."""
-        with patch("application.agents.shared.hooks.create_issue_technical_user_hook") as mock_hook:
-            mock_hook.side_effect = Exception("Hook creation failed")
-
-            result = await tools.issue_technical_user(mock_tool_context, "dev")
-
-            # Verify error is handled
-            assert "error" in result.lower()
-            assert "issue_technical_user" in result.lower() or "hook creation failed" in result.lower()
+    pass  # Hook-related tests removed - hooks no longer exist
 
 
 class TestUpdateApplicationImageEnhanced:
     """Enhanced tests for update_application_image function."""
 
     @pytest.mark.asyncio
-    async def test_update_application_image_guest(self, mock_tool_context):
+    async def test_update_application_image_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test update application image as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
 
@@ -2684,7 +2899,9 @@ class TestUpdateApplicationImageEnhanced:
         assert "required" in result_data["error"].lower()
 
     @pytest.mark.asyncio
-    async def test_update_application_image_missing_cloud_manager(self, mock_tool_context):
+    async def test_update_application_image_missing_cloud_manager(
+        self, mock_tool_context
+    ):
         """Test update application image with missing credentials."""
         with patch.dict(os.environ, {}, clear=True):
             result = await tools.update_application_image(
@@ -2693,7 +2910,11 @@ class TestUpdateApplicationImageEnhanced:
 
             # The function will return various error indicators depending on the implementation
             # Check for any error-like response
-            assert "error" in result.lower() or "failed" in result.lower() or "{}" in result
+            assert (
+                "error" in result.lower()
+                or "failed" in result.lower()
+                or "{}" in result
+            )
 
     @pytest.mark.asyncio
     async def test_update_application_image_auth_failure(self, mock_tool_context):
@@ -2704,23 +2925,33 @@ class TestUpdateApplicationImageEnhanced:
         mock_response.text = "Method not allowed"
 
         from httpx import HTTPStatusError, Request
+
         mock_client.patch.side_effect = HTTPStatusError(
             "405 Method Not Allowed",
             request=MagicMock(spec=Request),
-            response=mock_response
+            response=mock_response,
         )
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.environment_management.environment_operations.get_cloud_manager_service", return_value=mock_client):
+            with patch(
+                "application.services.environment_management.environment_operations.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
                 result = await tools.update_application_image(
                     mock_tool_context, "dev", "api", "myapp:v2"
                 )
 
                 # Check that the result contains error information
-                assert "error" in result.lower() or "failed" in result.lower() or "405" in result
+                assert (
+                    "error" in result.lower()
+                    or "failed" in result.lower()
+                    or "405" in result
+                )
 
     @pytest.mark.asyncio
-    async def test_update_application_image_with_container(self, mock_tool_context, mock_cloud_manager_base):
+    async def test_update_application_image_with_container(
+        self, mock_tool_context, mock_cloud_manager_base
+    ):
         """Test update application image with specific container."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"image": "myapp:v2", "container": "main"}
@@ -2734,14 +2965,15 @@ class TestUpdateApplicationImageEnhanced:
 
         result_data = json.loads(result)
         # Verify the result contains the image data
-        assert result_data.get("image") == "myapp:v2" or result_data.get("container") == "main"
+        assert (
+            result_data.get("image") == "myapp:v2"
+            or result_data.get("container") == "main"
+        )
 
-    @pytest.mark.skip(reason="Async context manager exception handling needs investigation")
-
-
+    @pytest.mark.skip(
+        reason="Async context manager exception handling needs investigation"
+    )
     @pytest.mark.asyncio
-
-
     async def test_update_application_image_404(self, mock_tool_context):
         """Test update application image with 404 not found."""
         mock_response = MagicMock()
@@ -2751,16 +2983,17 @@ class TestUpdateApplicationImageEnhanced:
         from httpx import HTTPStatusError
 
         http_error = HTTPStatusError(
-            message="Not found",
-            request=MagicMock(),
-            response=mock_response
+            message="Not found", request=MagicMock(), response=mock_response
         )
 
         mock_client = AsyncMock()
         mock_client.patch.side_effect = http_error
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service", return_value=mock_client):
+            with patch(
+                "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
                 result = await tools.update_application_image(
                     mock_tool_context, "dev", "api", "myapp:v2"
                 )
@@ -2774,7 +3007,9 @@ class TestGetUserAppDetailsEnhanced:
     """Enhanced tests for get_user_app_details function."""
 
     @pytest.mark.asyncio
-    async def test_get_user_app_details_guest(self, mock_tool_context):
+    async def test_get_user_app_details_guest(
+        self, mock_tool_context, disable_adk_test_mode
+    ):
         """Test get user app details as guest."""
         mock_tool_context.state["user_id"] = "guest-123"
 
@@ -2819,27 +3054,39 @@ class TestGetUserAppDetailsEnhanced:
         mock_response.text = "Method not allowed"
 
         from httpx import HTTPStatusError, Request
+
         mock_client.get.side_effect = HTTPStatusError(
             "405 Method Not Allowed",
             request=MagicMock(spec=Request),
-            response=mock_response
+            response=mock_response,
         )
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.environment_management.application_operations.get_cloud_manager_service", return_value=mock_client):
-                result = await tools.get_user_app_details(mock_tool_context, "dev", "myapp")
+            with patch(
+                "application.services.environment_management.application_operations.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                result = await tools.get_user_app_details(
+                    mock_tool_context, "dev", "myapp"
+                )
 
                 # Verify error was returned
-                assert "error" in result.lower() or "failed" in result.lower() or "405" in result
+                assert (
+                    "error" in result.lower()
+                    or "failed" in result.lower()
+                    or "405" in result
+                )
 
     @pytest.mark.asyncio
-    async def test_get_user_app_details_success(self, mock_tool_context, mock_cloud_manager_base):
+    async def test_get_user_app_details_success(
+        self, mock_tool_context, mock_cloud_manager_base
+    ):
         """Test successful get user app details."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "deployments": [
                 {"name": "myapp-deploy", "replicas": 3},
-                {"name": "myapp-worker", "replicas": 2}
+                {"name": "myapp-worker", "replicas": 2},
             ]
         }
         mock_response.raise_for_status = MagicMock()
@@ -2864,19 +3111,22 @@ class TestGetUserAppDetailsEnhanced:
         mock_client.get.return_value = mock_response
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.services.environment_management_service.get_cloud_manager_service", return_value=mock_client):
-                result = await tools.get_user_app_details(mock_tool_context, "dev", "myapp")
+            with patch(
+                "application.services.environment_management_service.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                result = await tools.get_user_app_details(
+                    mock_tool_context, "dev", "myapp"
+                )
 
                 result_data = json.loads(result)
                 assert result_data["deployment_count"] == 0
                 assert result_data["deployments"] == []
 
-    @pytest.mark.skip(reason="Async context manager exception handling needs investigation")
-
-
+    @pytest.mark.skip(
+        reason="Async context manager exception handling needs investigation"
+    )
     @pytest.mark.asyncio
-
-
     async def test_get_user_app_details_404(self, mock_tool_context):
         """Test get user app details with 404 not found."""
         mock_response = MagicMock()
@@ -2886,17 +3136,20 @@ class TestGetUserAppDetailsEnhanced:
         from httpx import HTTPStatusError
 
         http_error = HTTPStatusError(
-            message="Not found",
-            request=MagicMock(),
-            response=mock_response
+            message="Not found", request=MagicMock(), response=mock_response
         )
 
         mock_client = AsyncMock()
         mock_client.get.side_effect = http_error
 
         with patch.dict(os.environ, {"CLOUD_MANAGER_HOST": "cloud.example.com"}):
-            with patch("application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service", return_value=mock_client):
-                result = await tools.get_user_app_details(mock_tool_context, "dev", "myapp")
+            with patch(
+                "application.agents.environment.tool_definitions.deployment.tools.get_deployment_status_tool.get_cloud_manager_service",
+                return_value=mock_client,
+            ):
+                result = await tools.get_user_app_details(
+                    mock_tool_context, "dev", "myapp"
+                )
 
                 result_data = json.loads(result)
                 assert "error" in result_data

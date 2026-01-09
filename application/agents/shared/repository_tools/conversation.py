@@ -15,31 +15,30 @@ import logging
 from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
+
 from services.services import get_entity_service
 
 # Re-export from conv modules for backward compatibility
 from .conv import (
-    _fetch_conversation,
     _acquire_lock,
-    _release_lock,
-    _calculate_next_retry_delay,
-    _persist_and_verify_update,
-    _update_conversation_with_lock,
-    _apply_update_and_persist,
-    _update_conversation_build_context,
     _add_task_to_conversation,
-    _validate_tool_context,
-    _get_conversation_entity,
+    _apply_update_and_persist,
+    _calculate_next_retry_delay,
     _collect_file_ids_from_conversation,
-    _retrieve_edge_message,
-    _extract_filename_from_metadata,
     _decode_file_content,
     _extract_file_from_edge_data,
     _extract_file_from_edge_object,
+    _extract_filename_from_metadata,
+    _fetch_conversation,
+    _get_conversation_entity,
+    _persist_and_verify_update,
+    _release_lock,
     _retrieve_and_decode_files,
+    _retrieve_edge_message,
+    _update_conversation_build_context,
+    _update_conversation_with_lock,
+    _validate_tool_context,
 )
-from .conv.files import _collect_file_ids_from_conversation, _retrieve_and_decode_files
-from .conv.management import _get_conversation_entity, _validate_tool_context
 
 logger = logging.getLogger(__name__)
 
@@ -87,15 +86,22 @@ async def retrieve_and_save_conversation_files(
 
         # Save files to branch
         logger.info(f"💾 Saving {len(files_to_save)} files to branch...")
-        from application.agents.shared.repository_tools.files import save_files_to_branch
-        return await save_files_to_branch(files=files_to_save, tool_context=tool_context)
+        from application.agents.shared.repository_tools.files import (
+            save_files_to_branch,
+        )
+
+        return await save_files_to_branch(
+            files=files_to_save, tool_context=tool_context
+        )
 
     except ValueError as e:
         error_msg = str(e)
         logger.error(f"❌ Validation error: {error_msg}")
         return f"ERROR: {error_msg}"
     except Exception as e:
-        logger.error(f"❌ Failed to retrieve and save conversation files: {e}", exc_info=True)
+        logger.error(
+            f"❌ Failed to retrieve and save conversation files: {e}", exc_info=True
+        )
         return f"ERROR: Failed to retrieve and save conversation files: {str(e)}"
 
 

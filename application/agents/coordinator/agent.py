@@ -6,15 +6,13 @@ import logging
 
 from google.adk.agents import LlmAgent
 
-from application.agents.shared import get_model_config
-from application.agents.shared.prompts import create_instruction_provider
-
 # Import all sub-agents
 from application.agents.cyoda_data_agent.agent import root_agent as cyoda_data_agent
 from application.agents.environment.agent import root_agent as environment_agent
 from application.agents.github.agent import root_agent as github_agent
 from application.agents.qa.agent import root_agent as qa_agent
-from application.agents.setup.agent import root_agent as setup_agent
+from application.agents.shared import get_model_config
+from application.agents.shared.prompts import create_instruction_provider
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +25,6 @@ root_agent = LlmAgent(
     tools=[],
     sub_agents=[
         qa_agent,
-        setup_agent,
         environment_agent,
         github_agent,
         cyoda_data_agent,
@@ -35,8 +32,7 @@ root_agent = LlmAgent(
 )
 
 logger.info(
-    "✓ Coordinator created with QA, Setup, Environment, "
-    "GitHub, and Cyoda Data sub-agents"
+    "✓ Coordinator created with QA, Environment, " "GitHub, and Cyoda Data sub-agents"
 )
 
 agent = root_agent

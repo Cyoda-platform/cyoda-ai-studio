@@ -4,16 +4,17 @@ Unit tests for ChatService.
 Tests business logic without HTTP dependencies.
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock, patch
 from datetime import datetime, timezone
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from application.entity.conversation import Conversation
 from application.services.chat.service import ChatService
 from tests.fixtures.conversation_fixtures import (
+    create_conversation_list_response,
     create_test_conversation,
     create_test_conversation_with_messages,
-    create_conversation_list_response,
 )
 
 
@@ -27,9 +28,7 @@ class TestChatServiceCreate:
         mock_repo = Mock()
         mock_repo.create = AsyncMock(
             return_value=create_test_conversation(
-                technical_id="created-123",
-                user_id="alice",
-                name="New Chat"
+                technical_id="created-123", user_id="alice", name="New Chat"
             )
         )
         mock_persistence = Mock()
@@ -38,9 +37,7 @@ class TestChatServiceCreate:
 
         # Act
         result = await service.create_conversation(
-            user_id="alice",
-            name="New Chat",
-            description="Test description"
+            user_id="alice", name="New Chat", description="Test description"
         )
 
         # Assert
@@ -62,7 +59,10 @@ class TestChatServiceCreate:
         service = ChatService(mock_repo, mock_persistence)
 
         # Pre-populate cache
-        service.cache_manager._chat_list_cache["chats:alice"] = ([], datetime.now(timezone.utc).timestamp())
+        service.cache_manager._chat_list_cache["chats:alice"] = (
+            [],
+            datetime.now(timezone.utc).timestamp(),
+        )
 
         # Act
         await service.create_conversation(user_id="alice", name="New")
@@ -107,7 +107,10 @@ class TestChatServiceUpdate:
         service = ChatService(mock_repo, mock_persistence)
 
         # Pre-populate cache
-        service.cache_manager._chat_list_cache["chats:alice"] = ([], datetime.now(timezone.utc).timestamp())
+        service.cache_manager._chat_list_cache["chats:alice"] = (
+            [],
+            datetime.now(timezone.utc).timestamp(),
+        )
 
         # Act
         await service.update_conversation(conversation)
@@ -155,10 +158,7 @@ class TestChatServiceTransfer:
     async def test_transfer_guest_chats_success(self):
         """Test successful chat transfer from guest to user."""
         # Arrange
-        guest_chats = create_conversation_list_response(
-            count=3,
-            user_id="guest.123"
-        )
+        guest_chats = create_conversation_list_response(count=3, user_id="guest.123")
 
         mock_repo = Mock()
         mock_repo.search = AsyncMock(return_value=guest_chats)
@@ -168,9 +168,7 @@ class TestChatServiceTransfer:
                 for i in range(3)
             ]
         )
-        mock_repo.update_with_retry = AsyncMock(
-            side_effect=lambda conv: conv
-        )
+        mock_repo.update_with_retry = AsyncMock(side_effect=lambda conv: conv)
         mock_persistence = Mock()
 
         service = ChatService(mock_repo, mock_persistence)
@@ -211,6 +209,7 @@ class TestChatServiceCaching:
         """Test that list uses cache when available."""
         # Arrange
         from common.constants import CHAT_LIST_DEFAULT_LIMIT
+
         cached_chats = [
             {"technical_id": "conv-1", "name": "Chat 1", "date": "2025-01-01"}
         ]
@@ -225,14 +224,12 @@ class TestChatServiceCaching:
         cache_key = "chats:alice"
         service.cache_manager._chat_list_cache[cache_key] = (
             cached_chats,
-            datetime.now(timezone.utc).timestamp()
+            datetime.now(timezone.utc).timestamp(),
         )
 
         # Act - use default limit to match cache key constraint
         result = await service.list_conversations(
-            user_id="alice",
-            limit=CHAT_LIST_DEFAULT_LIMIT,
-            use_cache=True
+            user_id="alice", limit=CHAT_LIST_DEFAULT_LIMIT, use_cache=True
         )
 
         # Assert
@@ -245,6 +242,7 @@ class TestChatServiceCaching:
         """Test that cache can be bypassed."""
         # Arrange
         from common.constants import CHAT_LIST_DEFAULT_LIMIT
+
         mock_repo = Mock()
         mock_repo.search = AsyncMock(return_value=[])
         mock_persistence = Mock()
@@ -254,14 +252,12 @@ class TestChatServiceCaching:
         # Pre-populate cache
         service.cache_manager._chat_list_cache["chats:alice"] = (
             [{"technical_id": "cached"}],
-            datetime.now(timezone.utc).timestamp()
+            datetime.now(timezone.utc).timestamp(),
         )
 
         # Act
         result = await service.list_conversations(
-            user_id="alice",
-            limit=CHAT_LIST_DEFAULT_LIMIT,
-            use_cache=False
+            user_id="alice", limit=CHAT_LIST_DEFAULT_LIMIT, use_cache=False
         )
 
         # Assert
@@ -280,7 +276,9 @@ class TestChatServiceCaching:
 
         # Assert
         assert "chats:alice" not in service.cache_manager._chat_list_cache
-        assert "chats:bob" in service.cache_manager._chat_list_cache  # Other users unaffected
+        assert (
+            "chats:bob" in service.cache_manager._chat_list_cache
+        )  # Other users unaffected
 
 
 if __name__ == "__main__":

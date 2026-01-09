@@ -5,8 +5,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from common.config.config import PROJECT_DIR
 from application.services.github.models.types import GitOperationResult
+from common.config.config import PROJECT_DIR
 
 logger = logging.getLogger(__name__)
 

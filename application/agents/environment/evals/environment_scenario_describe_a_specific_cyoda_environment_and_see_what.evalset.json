@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_describe_a_specific_cyoda_environment_and_see_what",
+  "name": "environment_scenario_describe_a_specific_cyoda_environment_and_see_what",
+  "description": "Test case for: As a user, I want to describe a specific Cyoda environment and see what services are running in it.",
+  "eval_cases": [
+    {
+      "eval_id": "env_describe",
+      "conversation": [
+        {
+          "invocation_id": "e-0ecb4a9f-5dbc-4af7-8d8b-455ccf345046",
+          "user_content": {
+            "parts": [
+              {
+                "text": "describe a specific Cyoda environment and see what services are running in it."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Which environment would you like me to describe? (e.g., `dev`, `staging`, `prod`). I will first check existence, then list the Cyoda platform services running in that environment.\n\n[options-single-choice: Describe 'dev', Describe 'staging', Describe 'prod', List Environments]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8042126
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.804213
+    }
+  ],
+  "creation_timestamp": 1767903917.804213
+}

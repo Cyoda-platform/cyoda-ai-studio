@@ -26,9 +26,7 @@ def get_namespace(name: str) -> str:
     return re.sub(r"[^a-z0-9-]", "-", name.lower())
 
 
-def build_log_index_pattern(
-    org_id: str, env_name: str, app_name: str = "cyoda"
-) -> str:
+def build_log_index_pattern(org_id: str, env_name: str, app_name: str = "cyoda") -> str:
     """Build Elasticsearch index pattern for logs.
 
     Args:

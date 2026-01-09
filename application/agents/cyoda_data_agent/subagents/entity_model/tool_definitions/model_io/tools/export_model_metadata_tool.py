@@ -40,4 +40,6 @@ async def export_model_metadata(
     """
     logger.info(f"Exporting {entity_name} v{model_version} metadata from {cyoda_host}")
     container = get_user_service_container(client_id, client_secret, cyoda_host)
-    return format_model_success({"message": "Export metadata endpoint not yet implemented"})
+    return format_model_success(
+        {"message": "Export metadata endpoint not yet implemented"}
+    )

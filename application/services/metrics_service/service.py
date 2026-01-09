@@ -8,9 +8,9 @@ import httpx
 from application.routes.common.constants import DEFAULT_HTTP_TIMEOUT_SECONDS
 from application.services.core.config_service import ConfigService
 
-from .query_builder import PrometheusQueryBuilder
 from .grafana_ops import GrafanaOperations
 from .prometheus_ops import PrometheusOperations
+from .query_builder import PrometheusQueryBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,7 @@ class MetricsService:
         """Build Kubernetes namespace from organization, environment, and app."""
         return self.query_builder.build_namespace(org_id, env_name, app_name)
 
-    def build_prometheus_query(
-        self, query_type: str, namespace: str, **params
-    ) -> str:
+    def build_prometheus_query(self, query_type: str, namespace: str, **params) -> str:
         """Build Prometheus query from query type and namespace."""
         return self.query_builder.build_query(query_type, namespace, **params)
 

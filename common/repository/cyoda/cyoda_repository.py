@@ -210,6 +210,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
     ) -> List[Dict[str, Any]]:
         """Find entities matching specific criteria, optionally at a specific point in time."""
         import time
+
         start_time = time.time()
 
         # Use direct search endpoint: POST /search/{entityName}/{modelVersion}
@@ -240,7 +241,9 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         # Convert criteria to Cyoda-native format if needed
         search_criteria: Dict[str, Any] = self._ensure_cyoda_format(criteria)
 
-        logger.info(f"🔍 Final search criteria: {json.dumps(search_criteria, indent=2)}")
+        logger.info(
+            f"🔍 Final search criteria: {json.dumps(search_criteria, indent=2)}"
+        )
 
         search_data = json.dumps(search_criteria, default=custom_serializer)
         full_url = f"{self._api_url or CYODA_API_URL}/{search_path}"
@@ -258,7 +261,9 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
 
         if resp.get("status") != 200:
             error_detail = resp.get("json", resp.get("content", "No error details"))
-            logger.warning(f"❌ Direct search failed with status {resp.get('status')} (took {elapsed_time:.3f}s)")
+            logger.warning(
+                f"❌ Direct search failed with status {resp.get('status')} (took {elapsed_time:.3f}s)"
+            )
             logger.warning(f"❌ Error details: {error_detail}")
             return []
 
@@ -267,10 +272,11 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         entities = self._coerce_list_of_dicts(entities_any)
         result = self._ensure_technical_id_on_entities(entities)
 
-        logger.info(f"✅ Direct search completed: found {len(result)} entities in {elapsed_time:.3f}s")
+        logger.info(
+            f"✅ Direct search completed: found {len(result)} entities in {elapsed_time:.3f}s"
+        )
 
         return result
-
 
     # -----------------------
     # Internal HTTP utilities
@@ -319,7 +325,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
 
             # DEBUG: Log the response
             logger.info(f"🔍 RESPONSE STATUS: {response.get('status')}")
-            resp_body = response.get('json', response.get('content', 'NO CONTENT'))
+            resp_body = response.get("json", response.get("content", "NO CONTENT"))
             if isinstance(resp_body, list):
                 logger.info(f"🔍 RESPONSE: List with {len(resp_body)} items")
                 if len(resp_body) > 0:

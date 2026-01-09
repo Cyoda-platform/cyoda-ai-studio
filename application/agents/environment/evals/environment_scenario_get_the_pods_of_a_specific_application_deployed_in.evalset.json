@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_get_the_pods_of_a_specific_application_deployed_in",
+  "name": "environment_scenario_get_the_pods_of_a_specific_application_deployed_in",
+  "description": "Test case for: As a user, I want to get the pods of a specific application deployed in a Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_get_app_pods",
+      "conversation": [
+        {
+          "invocation_id": "e-284ae1be-ddba-4e47-b610-b142a5d341f2",
+          "user_content": {
+            "parts": [
+              {
+                "text": "get the pods of a specific application deployed in a Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Which environment and application do you want to get pods for? Please provide:\n- Environment name (e.g., `dev`, `staging`, `prod`)\n- Application name (exact app namespace/name)\n\nI will first run check_environment_exists() once you provide those values.\n\n[options-single-choice: Provide env & app names, List Environments, Cancel]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8055272
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8055274
+    }
+  ],
+  "creation_timestamp": 1767903917.805528
+}

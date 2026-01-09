@@ -19,8 +19,8 @@ async def update_task_status(
     **kwargs: Any,
 ) -> BackgroundTask:
     """Update task status and add progress message."""
-    from .task_operations import get_task
     from .retry_logic import update_task_with_retry
+    from .task_operations import get_task
 
     task = await get_task(entity_service, task_id)
     if not task:
@@ -46,8 +46,8 @@ async def add_progress_update(
     metadata: Optional[Dict[str, Any]] = None,
 ) -> BackgroundTask:
     """Add a progress update to a task."""
-    from .task_operations import get_task
     from .retry_logic import update_task_with_retry
+    from .task_operations import get_task
 
     task = await get_task(entity_service, task_id)
     if not task:

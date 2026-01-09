@@ -7,7 +7,9 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-async def _clone_repo_to_path(repo_url: str, target_path: Path) -> tuple[bool, Optional[str]]:
+async def _clone_repo_to_path(
+    repo_url: str, target_path: Path
+) -> tuple[bool, Optional[str]]:
     """Clone repository to target path.
 
     Args:
@@ -21,7 +23,9 @@ async def _clone_repo_to_path(repo_url: str, target_path: Path) -> tuple[bool, O
     from application.agents.shared.repository_tools import repository
 
     clone_cmd = ["git", "clone", repo_url, str(target_path)]
-    returncode, stdout, stderr = await repository._run_git_command(clone_cmd, timeout=300)
+    returncode, stdout, stderr = await repository._run_git_command(
+        clone_cmd, timeout=300
+    )
 
     if returncode != 0:
         error_msg = stderr or stdout
@@ -32,8 +36,7 @@ async def _clone_repo_to_path(repo_url: str, target_path: Path) -> tuple[bool, O
 
 
 async def _checkout_existing_branch(
-    target_path: Path,
-    branch_name: str
+    target_path: Path, branch_name: str
 ) -> tuple[bool, Optional[str]]:
     """Checkout and pull existing branch.
 
@@ -100,9 +103,7 @@ async def _checkout_existing_branch(
 
 
 async def _create_new_branch(
-    target_path: Path,
-    branch_name: str,
-    base_branch: str
+    target_path: Path, branch_name: str, base_branch: str
 ) -> bool:
     """Create and checkout new branch.
 
@@ -126,7 +127,9 @@ async def _create_new_branch(
     )
 
     if returncode != 0:
-        logger.warning(f"Failed to checkout base branch '{base_branch}': {stderr or stdout}")
+        logger.warning(
+            f"Failed to checkout base branch '{base_branch}': {stderr or stdout}"
+        )
 
     # Create and checkout new branch
     checkout_cmd = ["git", "checkout", "-b", branch_name]
@@ -150,9 +153,7 @@ async def _create_new_branch(
 
 
 async def _push_branch_to_remote(
-    target_path: Path,
-    branch_name: str,
-    repo_url: Optional[str]
+    target_path: Path, branch_name: str, repo_url: Optional[str]
 ) -> None:
     """Push new branch to remote repository.
 
@@ -173,6 +174,8 @@ async def _push_branch_to_remote(
     )
 
     if returncode != 0:
-        logger.warning(f"⚠️ Failed to push branch {branch_name} to remote: {stderr or stdout}")
+        logger.warning(
+            f"⚠️ Failed to push branch {branch_name} to remote: {stderr or stdout}"
+        )
     else:
         logger.info(f"✅ Successfully pushed branch {branch_name} to {repo_url}")

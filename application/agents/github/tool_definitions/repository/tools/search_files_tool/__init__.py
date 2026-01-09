@@ -15,16 +15,16 @@ from google.adk.tools.tool_context import ToolContext
 
 from .command_execution import (
     execute_find_command,
-    get_matching_lines,
     get_directory_contents,
     get_file_type,
+    get_matching_lines,
 )
 from .search_handlers import (
+    route_search,
     search_content,
     search_filename,
-    search_structure,
     search_filetype,
-    route_search,
+    search_structure,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,9 @@ async def search_repository_files(
                 {"error": f"Repository path does not exist: {repository_path}"}
             )
 
-        matches = await route_search(search_type, repo_path, search_pattern, file_pattern)
+        matches = await route_search(
+            search_type, repo_path, search_pattern, file_pattern
+        )
 
         results = {
             "search_type": search_type,

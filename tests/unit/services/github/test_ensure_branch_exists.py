@@ -1,10 +1,11 @@
 """Tests for _ensure_branch_exists method in GitOperations."""
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from application.services.github.git.operations import GitOperations, GitOperationResult
+import pytest
+
+from application.services.github.git.operations import GitOperationResult, GitOperations
 
 
 class TestEnsureBranchExists:
@@ -29,8 +30,7 @@ class TestEnsureBranchExists:
             mock_exec.side_effect = [mock_check_process, mock_checkout_process]
 
             success, message = await git_ops._ensure_branch_exists(
-                clone_dir="/repo",
-                git_branch_id="feature-branch"
+                clone_dir="/repo", git_branch_id="feature-branch"
             )
 
             assert success is True
@@ -49,14 +49,15 @@ class TestEnsureBranchExists:
         # Mock subprocess for checkout (fails)
         mock_checkout_process = AsyncMock()
         mock_checkout_process.returncode = 1
-        mock_checkout_process.communicate = AsyncMock(return_value=(b"", b"Error message"))
+        mock_checkout_process.communicate = AsyncMock(
+            return_value=(b"", b"Error message")
+        )
 
         with patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_exec.side_effect = [mock_check_process, mock_checkout_process]
 
             success, message = await git_ops._ensure_branch_exists(
-                clone_dir="/repo",
-                git_branch_id="feature-branch"
+                clone_dir="/repo", git_branch_id="feature-branch"
             )
 
             assert success is False
@@ -92,18 +93,21 @@ class TestEnsureBranchExists:
                 mock_check_process,
                 mock_base_checkout,
                 mock_create_branch,
-                mock_upstream
+                mock_upstream,
             ]
 
             with patch("os.chdir"):
                 with patch("os.getcwd", return_value="/original"):
                     success, message = await git_ops._ensure_branch_exists(
-                        clone_dir="/repo",
-                        git_branch_id="feature-branch"
+                        clone_dir="/repo", git_branch_id="feature-branch"
                     )
 
                     assert success is True
-                    assert message is None or "Created" in (message or "") or "created" in (message or "").lower()
+                    assert (
+                        message is None
+                        or "Created" in (message or "")
+                        or "created" in (message or "").lower()
+                    )
 
     @pytest.mark.asyncio
     async def test_ensure_branch_exists_base_checkout_fails(self):
@@ -118,14 +122,15 @@ class TestEnsureBranchExists:
         # Mock subprocess for base checkout (fails)
         mock_base_checkout = AsyncMock()
         mock_base_checkout.returncode = 1
-        mock_base_checkout.communicate = AsyncMock(return_value=(b"", b"Base checkout error"))
+        mock_base_checkout.communicate = AsyncMock(
+            return_value=(b"", b"Base checkout error")
+        )
 
         with patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_exec.side_effect = [mock_check_process, mock_base_checkout]
 
             success, message = await git_ops._ensure_branch_exists(
-                clone_dir="/repo",
-                git_branch_id="feature-branch"
+                clone_dir="/repo", git_branch_id="feature-branch"
             )
 
             assert success is False
@@ -149,18 +154,19 @@ class TestEnsureBranchExists:
         # Mock subprocess for create branch (fails)
         mock_create_branch = AsyncMock()
         mock_create_branch.returncode = 1
-        mock_create_branch.communicate = AsyncMock(return_value=(b"", b"Create branch error"))
+        mock_create_branch.communicate = AsyncMock(
+            return_value=(b"", b"Create branch error")
+        )
 
         with patch("asyncio.create_subprocess_exec") as mock_exec:
             mock_exec.side_effect = [
                 mock_check_process,
                 mock_base_checkout,
-                mock_create_branch
+                mock_create_branch,
             ]
 
             success, message = await git_ops._ensure_branch_exists(
-                clone_dir="/repo",
-                git_branch_id="feature-branch"
+                clone_dir="/repo", git_branch_id="feature-branch"
             )
 
             assert success is False
@@ -196,15 +202,13 @@ class TestEnsureBranchExists:
                 mock_check_process,
                 mock_base_checkout,
                 mock_create_branch,
-                mock_upstream
+                mock_upstream,
             ]
 
             with patch("os.chdir"):
                 with patch("os.getcwd", return_value="/original"):
                     success, message = await git_ops._ensure_branch_exists(
-                        clone_dir="/repo",
-                        git_branch_id="feature-branch"
+                        clone_dir="/repo", git_branch_id="feature-branch"
                     )
 
                     assert success is True
-

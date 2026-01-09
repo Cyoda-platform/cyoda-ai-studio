@@ -23,12 +23,16 @@ async def _create_prompt_file(full_prompt: str) -> str:
     Returns:
         Path to created prompt file
     """
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, dir='/tmp') as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".txt", delete=False, dir="/tmp"
+    ) as f:
         f.write(full_prompt)
         return f.name
 
 
-def _create_output_log_file(provider: str, branch_name: str, log_type: str = "build") -> tuple[str, int]:
+def _create_output_log_file(
+    provider: str, branch_name: str, log_type: str = "build"
+) -> tuple[str, int]:
     """Create output log file for CLI process.
 
     Args:
@@ -40,12 +44,16 @@ def _create_output_log_file(provider: str, branch_name: str, log_type: str = "bu
         Tuple of (file_path, file_descriptor)
     """
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = os.path.join('/tmp', f"{provider}_{log_type}_{branch_name}_TEMP_{timestamp}.log")
+    output_file = os.path.join(
+        "/tmp", f"{provider}_{log_type}_{branch_name}_TEMP_{timestamp}.log"
+    )
     output_fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
     return output_file, output_fd
 
 
-def _write_log_header(output_fd: int, branch_name: str, log_type: str, model: str = "") -> None:
+def _write_log_header(
+    output_fd: int, branch_name: str, log_type: str, model: str = ""
+) -> None:
     """Write log file header.
 
     Args:
@@ -69,7 +77,7 @@ async def _start_subprocess(
     repository_path: str,
     branch_name: str,
     output_fd: int,
-    cwd: Optional[str] = None
+    cwd: Optional[str] = None,
 ) -> asyncio.subprocess.Process:
     """Start CLI subprocess.
 
@@ -86,16 +94,16 @@ async def _start_subprocess(
         Process instance
     """
     cmd = [
-        "bash", str(script_path.absolute()),
-        f"@{prompt_file}", model,
-        repository_path, branch_name
+        "bash",
+        str(script_path.absolute()),
+        f"@{prompt_file}",
+        model,
+        repository_path,
+        branch_name,
     ]
 
     process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=output_fd,
-        stderr=output_fd,
-        cwd=cwd or str(script_path.parent)
+        *cmd, stdout=output_fd, stderr=output_fd, cwd=cwd or str(script_path.parent)
     )
     os.close(output_fd)
     return process
@@ -132,7 +140,7 @@ async def _register_process_and_create_task(
     conversation_id: str,
     repository_path: str,
     repo_auth_config: Dict[str, Any],
-    output_file: str
+    output_file: str,
 ) -> str:
     """Register process and create task record.
 
@@ -162,8 +170,8 @@ async def _register_process_and_create_task(
 
     task_service = get_task_service()
     repo_url_public = (
-        repo_auth_config.get('url')
-        if repo_auth_config.get('type') == 'public'
+        repo_auth_config.get("url")
+        if repo_auth_config.get("type") == "public"
         else None
     )
 
@@ -177,8 +185,8 @@ async def _register_process_and_create_task(
         user_request=user_request,
         conversation_id=conversation_id,
         repository_path=repository_path,
-        repository_type=repo_auth_config.get('type'),
-        repository_url=repo_url_public
+        repository_type=repo_auth_config.get("type"),
+        repository_url=repo_url_public,
     )
     task_id = background_task.technical_id
 
@@ -188,13 +196,15 @@ async def _register_process_and_create_task(
         message=f"Process started (PID: {process_pid})",
         progress=5,
         process_pid=process_pid,
-        metadata={"output_log": output_file}
+        metadata={"output_log": output_file},
     )
 
     return task_id
 
 
-def _extract_repo_metadata(repo_auth_config: Dict[str, Any]) -> tuple[Optional[str], Optional[str]]:
+def _extract_repo_metadata(
+    repo_auth_config: Dict[str, Any],
+) -> tuple[Optional[str], Optional[str]]:
     """Extract repository name and owner from config URL.
 
     Args:
@@ -206,12 +216,15 @@ def _extract_repo_metadata(repo_auth_config: Dict[str, Any]) -> tuple[Optional[s
     repository_name = None
     repository_owner = None
 
-    if repo_auth_config.get('url'):
+    if repo_auth_config.get("url"):
         try:
-            from application.services.github.repository.url_parser import parse_github_url
-            parsed = parse_github_url(repo_auth_config['url'])
-            repository_owner = parsed.get('owner')
-            repository_name = parsed.get('repo')
+            from application.services.github.repository.url_parser import (
+                parse_github_url,
+            )
+
+            parsed = parse_github_url(repo_auth_config["url"])
+            repository_owner = parsed.get("owner")
+            repository_name = parsed.get("repo")
         except Exception as e:
             logger.warning(f"Failed to parse repo URL: {e}")
 

@@ -10,9 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 
-async def execute_find_command(
-    repo_path: Path, *args: str
-) -> tuple[bool, list[str]]:
+async def execute_find_command(repo_path: Path, *args: str) -> tuple[bool, list[str]]:
     """Execute find command and return file paths.
 
     Args:

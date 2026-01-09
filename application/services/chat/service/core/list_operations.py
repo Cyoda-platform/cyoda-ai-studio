@@ -8,12 +8,12 @@ from application.repositories.conversation_repository import ConversationReposit
 from common.constants import CHAT_LIST_DEFAULT_LIMIT
 
 from .cache import ChatCacheManager
+from .constants import FIELD_DATE
 from .formatters import (
     calculate_pagination,
-    format_response,
     extract_conversations_from_response,
+    format_response,
 )
-from .constants import FIELD_DATE
 from .models import PaginationResult
 
 logger = logging.getLogger(__name__)
@@ -55,9 +55,9 @@ async def list_conversations(
         if cache_result.hit:
             pagination = PaginationResult(
                 has_more=len(cache_result.chats) == limit,
-                next_cursor=cache_result.chats[-1][FIELD_DATE]
-                if cache_result.chats
-                else None,
+                next_cursor=(
+                    cache_result.chats[-1][FIELD_DATE] if cache_result.chats else None
+                ),
             )
             return format_response(cache_result.chats, pagination, cached=True)
 

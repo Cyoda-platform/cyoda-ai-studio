@@ -238,4 +238,3 @@ Workflow Details:
 5. Check that agent responds appropriately to selections
 6. Verify canvas opens to correct tabs
 7. Test error scenarios and fallback behavior
-

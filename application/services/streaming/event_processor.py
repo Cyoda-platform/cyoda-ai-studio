@@ -61,7 +61,9 @@ def extract_ui_functions_from_session(
     for ui_func in session_ui_functions:
         if ui_func not in current_ui_functions:
             current_ui_functions.append(ui_func)
-            logger.info(f"📋 Collected ui_function from stream: {ui_func.get('function', 'unknown')}")
+            logger.info(
+                f"📋 Collected ui_function from stream: {ui_func.get('function', 'unknown')}"
+            )
 
     return current_ui_functions
 
@@ -77,11 +79,13 @@ def extract_repository_info(
     Returns:
         Repository info dict or None
     """
-    if not all([
-        session_state.get("repository_name"),
-        session_state.get("repository_owner"),
-        session_state.get("branch_name"),
-    ]):
+    if not all(
+        [
+            session_state.get("repository_name"),
+            session_state.get("repository_owner"),
+            session_state.get("branch_name"),
+        ]
+    ):
         return None
 
     return {
@@ -91,4 +95,3 @@ def extract_repository_info(
         "repository_url": session_state.get("repository_url"),
         "installation_id": session_state.get("installation_id"),
     }
-

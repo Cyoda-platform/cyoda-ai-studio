@@ -1,13 +1,15 @@
 """Unit tests for cyoda_session_service module."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from application.services.cyoda_session_service import (
-    CyodaSessionService,
-    CachedSession,
-)
-from application.entity.adk_session import AdkSession
+
+import pytest
 from google.adk.sessions.session import Session
+
+from application.entity.adk_session import AdkSession
+from application.services.cyoda_session_service import (
+    CachedSession,
+    CyodaSessionService,
+)
 
 
 class TestCachedSession:
@@ -50,7 +52,7 @@ class TestCyodaSessionService:
             app_name="test-app",
             user_id="user1",
             session_id="session1",
-            state={"key": "value"}
+            state={"key": "value"},
         )
 
         assert session is not None
@@ -60,7 +62,9 @@ class TestCyodaSessionService:
         mock_entity_service.save.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_session_by_technical_id(self, session_service, mock_entity_service):
+    async def test_get_session_by_technical_id(
+        self, session_service, mock_entity_service
+    ):
         """Test getting session by technical ID."""
         # Create a proper AdkSession instance
         adk_session = AdkSession(
@@ -68,7 +72,7 @@ class TestCyodaSessionService:
             app_name="test-app",
             user_id="user1",
             session_state={},
-            events=[]
+            events=[],
         )
         adk_session.technical_id = "tech-id-123"
 
@@ -131,25 +135,25 @@ class TestCyodaSessionService:
             app_name="test-app",
             user_id="user1",
             session_state={},
-            events=[]
+            events=[],
         )
 
         mock_response = MagicMock()
         mock_response.data = MagicMock()
-        mock_response.data.model_dump = MagicMock(return_value={
-            "session_id": "session1",
-            "app_name": "test-app",
-            "user_id": "user1",
-            "session_state": {},
-            "events": []
-        })
+        mock_response.data.model_dump = MagicMock(
+            return_value={
+                "session_id": "session1",
+                "app_name": "test-app",
+                "user_id": "user1",
+                "session_state": {},
+                "events": [],
+            }
+        )
         mock_entity_service.search.return_value = [mock_response]
 
         result = await session_service.list_sessions(
-            app_name="test-app",
-            user_id="user1"
+            app_name="test-app", user_id="user1"
         )
 
         assert result is not None
         assert len(result.sessions) == 1
-

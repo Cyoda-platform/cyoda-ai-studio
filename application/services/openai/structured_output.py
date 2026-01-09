@@ -12,7 +12,7 @@ from pydantic import BaseModel, ValidationError
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T', bound=BaseModel)
+T = TypeVar("T", bound=BaseModel)
 
 
 class StructuredOutputHandler:
@@ -126,7 +126,7 @@ class StructuredOutputHandler:
                 fields[field_name] = {
                     "type": str(field_info.annotation),
                     "required": field_info.is_required(),
-                    "description": field_info.description or ""
+                    "description": field_info.description or "",
                 }
             logger.debug(f"Extracted {len(fields)} fields from schema")
             return fields
@@ -158,16 +158,17 @@ class StructuredOutputHandler:
                 "type": "object",
                 "properties": {
                     **json_schema1.get("properties", {}),
-                    **json_schema2.get("properties", {})
+                    **json_schema2.get("properties", {}),
                 },
-                "required": list(set(
-                    json_schema1.get("required", []) +
-                    json_schema2.get("required", [])
-                ))
+                "required": list(
+                    set(
+                        json_schema1.get("required", [])
+                        + json_schema2.get("required", [])
+                    )
+                ),
             }
             logger.debug(f"Schemas merged successfully")
             return merged
         except Exception as e:
             logger.error(f"Failed to merge schemas: {e}")
             raise
-

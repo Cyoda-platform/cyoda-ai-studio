@@ -62,8 +62,7 @@ def ensure_non_empty_response(
     if not has_text_response:
         logger.info("⚠️ No text response found - providing default message")
         return types.Content(
-            role="model",
-            parts=[types.Part(text="Task completed successfully.")]
+            role="model", parts=[types.Part(text="Task completed successfully.")]
         )
 
     # Response is valid, allow it to proceed
@@ -111,24 +110,22 @@ def ensure_non_empty_response_with_tool_summary(
     if not has_text_response:
         if tool_calls:
             # Generate summary of tools executed
-            unique_tools = list(dict.fromkeys(tool_calls))  # Preserve order, remove duplicates
+            unique_tools = list(
+                dict.fromkeys(tool_calls)
+            )  # Preserve order, remove duplicates
             if len(unique_tools) == 1:
                 message = f"Executed {unique_tools[0]} successfully."
             else:
                 tools_list = ", ".join(unique_tools[:-1]) + f" and {unique_tools[-1]}"
                 message = f"Executed the following tools: {tools_list}."
-            
+
             logger.info(f"⚠️ No text response found - providing tool summary: {message}")
-            return types.Content(
-                role="model",
-                parts=[types.Part(text=message)]
-            )
+            return types.Content(role="model", parts=[types.Part(text=message)])
         else:
             # No tools and no text - generic message
             logger.info("⚠️ No text response or tools found - providing default message")
             return types.Content(
-                role="model",
-                parts=[types.Part(text="Task completed successfully.")]
+                role="model", parts=[types.Part(text="Task completed successfully.")]
             )
 
     # Response is valid, allow it to proceed
@@ -160,12 +157,11 @@ def extract_hook_from_state(
     """
     # Check if there's a hook in session state
     hook = callback_context.state.get("last_tool_hook")
-    
+
     if hook:
         logger.info(f"🎣 Hook found in session state: {hook.get('type', 'unknown')}")
         # Hook will be extracted by StreamingService from session state
         # We don't need to modify the response content here
-    
+
     # Return None to allow normal response flow
     return None
-

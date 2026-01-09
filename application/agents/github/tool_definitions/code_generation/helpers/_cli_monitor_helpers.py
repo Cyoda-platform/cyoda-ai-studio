@@ -40,10 +40,14 @@ def extract_auth_info(
         return None, None, None
 
     repository_type = tool_context.state.get("repository_type")
-    repo_url = tool_context.state.get("user_repository_url") or tool_context.state.get("repository_url")
+    repo_url = tool_context.state.get("user_repository_url") or tool_context.state.get(
+        "repository_url"
+    )
     installation_id = tool_context.state.get("installation_id")
 
-    logger.info(f"🔐 Extracted auth info - type: {repository_type}, url: {repo_url}, inst_id: {installation_id}")
+    logger.info(
+        f"🔐 Extracted auth info - type: {repository_type}, url: {repo_url}, inst_id: {installation_id}"
+    )
 
     return repo_url, installation_id, repository_type
 
@@ -85,15 +89,20 @@ async def send_commit(
                 installation_id=auth_installation_id,
                 repository_type=auth_repository_type,
             ),
-            timeout=COMMIT_TIMEOUT
+            timeout=COMMIT_TIMEOUT,
         )
         logger.info(f"✅ [{branch_name}] {commit_type.capitalize()} commit completed")
         return result
     except asyncio.TimeoutError:
-        logger.warning(f"⚠️ [{branch_name}] {commit_type.capitalize()} commit timed out after {COMMIT_TIMEOUT}s")
+        logger.warning(
+            f"⚠️ [{branch_name}] {commit_type.capitalize()} commit timed out after {COMMIT_TIMEOUT}s"
+        )
         return {"status": "timeout"}
     except Exception as e:
-        logger.error(f"❌ [{branch_name}] Failed to send {commit_type} commit: {e}", exc_info=True)
+        logger.error(
+            f"❌ [{branch_name}] Failed to send {commit_type} commit: {e}",
+            exc_info=True,
+        )
         return {"status": "error", "message": str(e)}
 
 
@@ -106,7 +115,9 @@ async def get_diff_summary(tool_context: Optional[ToolContext]) -> Tuple[list, d
     Returns:
         Tuple of (changed_files list, diff_summary dict)
     """
-    from application.agents.github.tool_definitions.repository import get_repository_diff
+    from application.agents.github.tool_definitions.repository import (
+        get_repository_diff,
+    )
 
     changed_files = []
     diff_summary = {}
@@ -118,14 +129,18 @@ async def get_diff_summary(tool_context: Optional[ToolContext]) -> Tuple[list, d
         diff_result = await get_repository_diff(tool_context)
         diff_data = json.loads(diff_result)
 
-        for category in [DIFF_CATEGORY_MODIFIED, DIFF_CATEGORY_ADDED, DIFF_CATEGORY_UNTRACKED]:
+        for category in [
+            DIFF_CATEGORY_MODIFIED,
+            DIFF_CATEGORY_ADDED,
+            DIFF_CATEGORY_UNTRACKED,
+        ]:
             changed_files.extend(diff_data.get(category, []))
 
         diff_summary = {
             DIFF_CATEGORY_ADDED: diff_data.get(DIFF_CATEGORY_ADDED, []),
             DIFF_CATEGORY_MODIFIED: diff_data.get(DIFF_CATEGORY_MODIFIED, []),
             "deleted": diff_data.get("deleted", []),
-            DIFF_CATEGORY_UNTRACKED: diff_data.get(DIFF_CATEGORY_UNTRACKED, [])
+            DIFF_CATEGORY_UNTRACKED: diff_data.get(DIFF_CATEGORY_UNTRACKED, []),
         }
     except Exception as e:
         logger.warning(f"Could not get diff: {e}")
@@ -150,7 +165,11 @@ async def update_task_completed(
     try:
         task_service = get_task_service()
 
-        files_summary = f"{len(changed_files)} files changed" if changed_files else "No files changed"
+        files_summary = (
+            f"{len(changed_files)} files changed"
+            if changed_files
+            else "No files changed"
+        )
 
         current_task = await task_service.get_task(task_id)
         existing_metadata = current_task.metadata if current_task else {}
@@ -158,7 +177,7 @@ async def update_task_completed(
         updated_metadata = {
             **existing_metadata,
             "changed_files": changed_files[:MAX_CHANGED_FILES_IN_METADATA],
-            "diff": diff_summary
+            "diff": diff_summary,
         }
 
         await task_service.update_task_status(
@@ -225,8 +244,10 @@ async def update_task_with_diff(
 
         updated_metadata = {
             **existing_metadata,
-            "changed_files": commit_result.get("changed_files", [])[:MAX_CHANGED_FILES_IN_METADATA],
-            "diff": commit_result.get("diff", {})
+            "changed_files": commit_result.get("changed_files", [])[
+                :MAX_CHANGED_FILES_IN_METADATA
+            ],
+            "diff": commit_result.get("diff", {}),
         }
 
         await task_service.add_progress_update(
@@ -273,6 +294,7 @@ async def unregister_process(pid: int) -> None:
     """
     try:
         from application.agents.shared.process_manager import get_process_manager
+
         process_manager = get_process_manager()
         await process_manager.unregister_process(pid)
         logger.info(f"✅ Unregistered CLI process {pid}")

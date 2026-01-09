@@ -13,22 +13,18 @@ For new code, consider importing directly from:
 from __future__ import annotations
 
 # Re-export all public APIs for backward compatibility
-from .operations import (
-    # Data classes
+from .operations import (  # Data classes; Diff operations; Git commands; Workflow
     DiffResult,
-    # Diff operations
-    _parse_diff_line,
     _categorize_diff_changes,
-    _get_staged_diff,
-    # Git commands
-    _stage_all_changes,
-    _configure_git_user,
-    _commit_changes,
-    _get_current_remote_url,
-    _push_changes,
-    # Workflow
-    _execute_commit_push_workflow,
     _commit_and_push_changes,
+    _commit_changes,
+    _configure_git_user,
+    _execute_commit_push_workflow,
+    _get_current_remote_url,
+    _get_staged_diff,
+    _parse_diff_line,
+    _push_changes,
+    _stage_all_changes,
 )
 
 __all__ = [

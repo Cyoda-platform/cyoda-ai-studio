@@ -50,5 +50,7 @@ async def search_entities(
     ]
     search_request = SearchConditionRequest(conditions=conditions)
 
-    results = await entity_service.search(entity_model, search_request, entity_version="1")
+    results = await entity_service.search(
+        entity_model, search_request, entity_version="1"
+    )
     return format_entity_success(results)

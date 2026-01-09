@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class EntityInfo:
     """Information about an entity in the repository."""
+
     name: str
     version: int
     file_path: str
@@ -18,6 +19,7 @@ class EntityInfo:
 @dataclass
 class WorkflowInfo:
     """Information about a workflow in the repository."""
+
     entity_name: str
     file_path: str
     version: Optional[int] = None
@@ -27,6 +29,7 @@ class WorkflowInfo:
 @dataclass
 class RequirementInfo:
     """Information about a functional requirement."""
+
     file_name: str
     file_path: str
     content: Optional[str] = None
@@ -35,6 +38,7 @@ class RequirementInfo:
 @dataclass
 class RepositoryStructure:
     """Complete repository structure."""
+
     app_type: str  # "python" or "java"
     entities: List[EntityInfo]
     workflows: List[WorkflowInfo]

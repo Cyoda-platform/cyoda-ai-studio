@@ -2,10 +2,10 @@
 
 import httpx
 
-from .service import MetricsService
-from .query_builder import PrometheusQueryBuilder
 from .grafana_ops import GrafanaOperations
 from .prometheus_ops import PrometheusOperations
+from .query_builder import PrometheusQueryBuilder
+from .service import MetricsService
 
 __all__ = [
     "MetricsService",

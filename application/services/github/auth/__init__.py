@@ -7,11 +7,12 @@ Handles GitHub App authentication including:
 - Token caching and refresh
 """
 
+from application.services.github.auth.installation_token_manager import (
+    InstallationTokenManager,
+)
 from application.services.github.auth.jwt_generator import GitHubAppJWTGenerator
-from application.services.github.auth.installation_token_manager import InstallationTokenManager
 
 __all__ = [
     "GitHubAppJWTGenerator",
     "InstallationTokenManager",
 ]
-

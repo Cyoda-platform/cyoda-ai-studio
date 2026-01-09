@@ -133,4 +133,3 @@ class PromptHookHelper:
 ✅ **Testability**: Hook creation independently testable
 ✅ **Documentation**: Auto-generated from registry
 ✅ **Extensibility**: New hooks added without modifying core
-

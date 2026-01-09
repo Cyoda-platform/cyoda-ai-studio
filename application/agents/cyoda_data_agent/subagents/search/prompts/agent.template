@@ -62,4 +62,3 @@ When the data returns:
 
 * **No Guessing JSONPaths:** If the entity schema is unknown, ask the user for the field names or suggest a simple "All" search first to inspect the data structure.
 * **Operator Precision:** Strictly use valid operators: `EQUALS`, `CONTAINS`, `GREATER_THAN`, `LESS_THAN`, `GREATER_OR_EQUAL`, `LESS_OR_EQUAL`.
-

@@ -2,11 +2,12 @@
 
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from application.agents.shared.repository_tools.cli_process import (
-    start_cli_process,
     setup_and_monitor_cli_process,
+    start_cli_process,
 )
 
 
@@ -16,8 +17,13 @@ async def test_start_cli_process_success():
     mock_process = AsyncMock()
     mock_process.pid = 12345
 
-    with patch("application.agents.shared.repository_tools.cli_process.asyncio.create_subprocess_exec", return_value=mock_process):
-        with patch("application.agents.shared.repository_tools.cli_process.get_process_manager") as mock_pm:
+    with patch(
+        "application.agents.shared.repository_tools.cli_process.asyncio.create_subprocess_exec",
+        return_value=mock_process,
+    ):
+        with patch(
+            "application.agents.shared.repository_tools.cli_process.get_process_manager"
+        ) as mock_pm:
             mock_pm_instance = AsyncMock()
             mock_pm_instance.can_start_process = AsyncMock(return_value=True)
             mock_pm_instance.register_process = AsyncMock(return_value=True)
@@ -39,7 +45,9 @@ async def test_start_cli_process_success():
 @pytest.mark.asyncio
 async def test_start_cli_process_process_limit_exceeded():
     """Test CLI process startup when process limit is exceeded."""
-    with patch("application.agents.shared.repository_tools.cli_process.get_process_manager") as mock_pm:
+    with patch(
+        "application.agents.shared.repository_tools.cli_process.get_process_manager"
+    ) as mock_pm:
         mock_pm_instance = AsyncMock()
         mock_pm_instance.can_start_process = AsyncMock(return_value=False)
         mock_pm_instance.get_active_count = AsyncMock(return_value=5)
@@ -60,10 +68,14 @@ async def test_start_cli_process_process_limit_exceeded():
 @pytest.mark.asyncio
 async def test_start_cli_process_subprocess_creation_fails():
     """Test CLI process startup when subprocess creation fails."""
-    with patch("application.agents.shared.repository_tools.cli_process.asyncio.create_subprocess_exec") as mock_exec:
+    with patch(
+        "application.agents.shared.repository_tools.cli_process.asyncio.create_subprocess_exec"
+    ) as mock_exec:
         mock_exec.side_effect = OSError("Failed to create subprocess")
 
-        with patch("application.agents.shared.repository_tools.cli_process.get_process_manager") as mock_pm:
+        with patch(
+            "application.agents.shared.repository_tools.cli_process.get_process_manager"
+        ) as mock_pm:
             mock_pm_instance = AsyncMock()
             mock_pm_instance.can_start_process = AsyncMock(return_value=True)
             mock_pm.return_value = mock_pm_instance
@@ -85,14 +97,21 @@ async def test_start_cli_process_registration_fails():
     mock_process = AsyncMock()
     mock_process.pid = 12345
 
-    with patch("application.agents.shared.repository_tools.cli_process.asyncio.create_subprocess_exec", return_value=mock_process):
-        with patch("application.agents.shared.repository_tools.cli_process.get_process_manager") as mock_pm:
+    with patch(
+        "application.agents.shared.repository_tools.cli_process.asyncio.create_subprocess_exec",
+        return_value=mock_process,
+    ):
+        with patch(
+            "application.agents.shared.repository_tools.cli_process.get_process_manager"
+        ) as mock_pm:
             mock_pm_instance = AsyncMock()
             mock_pm_instance.can_start_process = AsyncMock(return_value=True)
             mock_pm_instance.register_process = AsyncMock(return_value=False)
             mock_pm.return_value = mock_pm_instance
 
-            with patch("application.agents.shared.repository_tools.cli_process._terminate_process") as mock_terminate:
+            with patch(
+                "application.agents.shared.repository_tools.cli_process._terminate_process"
+            ) as mock_terminate:
                 success, error_msg, process = await start_cli_process(
                     command=["bash", "script.sh"],
                     repository_path="/tmp/repo",
@@ -111,14 +130,21 @@ async def test_start_cli_process_with_file_descriptors():
     mock_process = AsyncMock()
     mock_process.pid = 12345
 
-    with patch("application.agents.shared.repository_tools.cli_process.asyncio.create_subprocess_exec", return_value=mock_process):
-        with patch("application.agents.shared.repository_tools.cli_process.get_process_manager") as mock_pm:
+    with patch(
+        "application.agents.shared.repository_tools.cli_process.asyncio.create_subprocess_exec",
+        return_value=mock_process,
+    ):
+        with patch(
+            "application.agents.shared.repository_tools.cli_process.get_process_manager"
+        ) as mock_pm:
             mock_pm_instance = AsyncMock()
             mock_pm_instance.can_start_process = AsyncMock(return_value=True)
             mock_pm_instance.register_process = AsyncMock(return_value=True)
             mock_pm.return_value = mock_pm_instance
 
-            with patch("application.agents.shared.repository_tools.cli_process.os.close") as mock_close:
+            with patch(
+                "application.agents.shared.repository_tools.cli_process.os.close"
+            ) as mock_close:
                 success, error_msg, process = await start_cli_process(
                     command=["bash", "script.sh"],
                     repository_path="/tmp/repo",

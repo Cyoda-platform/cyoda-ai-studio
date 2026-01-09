@@ -7,7 +7,7 @@ Provides a fluent API for building complex search conditions using CyodaOperator
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-from common.search.operators import LogicalOperator, CyodaOperator
+from common.search.operators import CyodaOperator, LogicalOperator
 
 
 @dataclass
@@ -81,4 +81,3 @@ class SearchConditionRequestBuilder:
             limit=self._limit,
             offset=self._offset,
         )
-

@@ -33,32 +33,32 @@ from google.adk.sessions.base_session_service import (
 from google.adk.sessions.session import Session
 
 from application.entity.adk_session import AdkSession
+from common.search import CyodaOperator
 from common.service.entity_service import (
     EntityService,
     SearchConditionRequest,
 )
-from common.search import CyodaOperator
 
 # Re-export from session_service modules for backward compatibility
 from .session_service import (
-    save_session_entity,
+    CachedSession,
     activate_session,
-    normalize_session_id,
-    is_uuid_format,
-    fetch_session_from_cyoda,
-    find_session_entity,
-    filter_session_events,
-    try_fast_lookup,
+    deserialize_event,
     fallback_search,
     fallback_search_with_retry,
-    CachedSession,
-    queue_event,
-    persist_session_with_retry,
-    flush_session,
-    to_adk_session,
-    serialize_event,
+    fetch_session_from_cyoda,
     filter_none_values,
-    deserialize_event,
+    filter_session_events,
+    find_session_entity,
+    flush_session,
+    is_uuid_format,
+    normalize_session_id,
+    persist_session_with_retry,
+    queue_event,
+    save_session_entity,
+    serialize_event,
+    to_adk_session,
+    try_fast_lookup,
 )
 
 logger = logging.getLogger(__name__)
@@ -117,10 +117,22 @@ class CyodaSessionService(BaseSessionService):
         )
 
         adk_session, technical_id = await save_session_entity(
-            self.entity_service, session_id, app_name, user_id, state or {}, self.ENTITY_NAME, self.ENTITY_VERSION
+            self.entity_service,
+            session_id,
+            app_name,
+            user_id,
+            state or {},
+            self.ENTITY_NAME,
+            self.ENTITY_VERSION,
         )
 
-        await activate_session(self.entity_service, session_id, technical_id, self.ENTITY_NAME, self.ENTITY_VERSION)
+        await activate_session(
+            self.entity_service,
+            session_id,
+            technical_id,
+            self.ENTITY_NAME,
+            self.ENTITY_VERSION,
+        )
 
         session = to_adk_session(adk_session, deserialize_event)
         session.state["__cyoda_technical_id__"] = technical_id
@@ -159,18 +171,24 @@ class CyodaSessionService(BaseSessionService):
         # Try fast lookup if UUID format
         if is_uuid_format(session_id):
             session = await try_fast_lookup(
-                self.entity_service, session_id,
+                self.entity_service,
+                session_id,
                 lambda adk: to_adk_session(adk, deserialize_event),
-                self.ENTITY_NAME, self.ENTITY_VERSION
+                self.ENTITY_NAME,
+                self.ENTITY_VERSION,
             )
             if session:
                 return filter_session_events(session, config)
 
         # Fallback to search with retry logic for eventual consistency
         session = await fallback_search_with_retry(
-            self.entity_service, app_name, user_id, session_id,
+            self.entity_service,
+            app_name,
+            user_id,
+            session_id,
             lambda adk: to_adk_session(adk, deserialize_event),
-            self.ENTITY_NAME, self.ENTITY_VERSION
+            self.ENTITY_NAME,
+            self.ENTITY_VERSION,
         )
         if not session:
             return None
@@ -220,7 +238,12 @@ class CyodaSessionService(BaseSessionService):
             session_id: Session ID
         """
         adk_session = await find_session_entity(
-            self.entity_service, app_name, user_id, session_id, self.ENTITY_NAME, self.ENTITY_VERSION
+            self.entity_service,
+            app_name,
+            user_id,
+            session_id,
+            self.ENTITY_NAME,
+            self.ENTITY_VERSION,
         )
         if not adk_session or not adk_session.technical_id:
             return
@@ -262,8 +285,13 @@ class CyodaSessionService(BaseSessionService):
         # Queue event for batch persistence (write-behind)
         event_data = serialize_event(event)
         await queue_event(
-            technical_id, event_data, event, self._session_cache,
-            self.entity_service, self.ENTITY_NAME, self.ENTITY_VERSION
+            technical_id,
+            event_data,
+            event,
+            self._session_cache,
+            self.entity_service,
+            self.ENTITY_NAME,
+            self.ENTITY_VERSION,
         )
 
         return event
@@ -281,8 +309,12 @@ class CyodaSessionService(BaseSessionService):
             True if flush was successful, False otherwise
         """
         return await flush_session(
-            technical_id, self._session_cache, self.entity_service,
-            self._flush_lock, self.ENTITY_NAME, self.ENTITY_VERSION
+            technical_id,
+            self._session_cache,
+            self.entity_service,
+            self._flush_lock,
+            self.ENTITY_NAME,
+            self.ENTITY_VERSION,
         )
 
     def get_pending_event_count(self, technical_id: str) -> int:

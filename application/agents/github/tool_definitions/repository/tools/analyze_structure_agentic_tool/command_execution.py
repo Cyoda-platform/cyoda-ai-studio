@@ -7,7 +7,9 @@ import logging
 
 from google.adk.tools.tool_context import ToolContext
 
-from application.agents.github.tool_definitions.repository.tools.execute_command_tool import execute_unix_command
+from application.agents.github.tool_definitions.repository.tools.execute_command_tool import (
+    execute_unix_command,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,7 @@ async def _execute_and_track_command(
     command_info = {
         "command": command,
         "purpose": purpose,
-        "success": data.get("success", False)
+        "success": data.get("success", False),
     }
 
     return data, command_info

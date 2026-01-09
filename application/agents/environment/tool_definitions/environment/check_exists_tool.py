@@ -8,15 +8,14 @@ import os
 from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
+
+# Hooks removed - UI will auto-detect environment operations
+from application.services.environment_management_service import (
+    get_environment_management_service,
+)
 from common.exception.exceptions import InvalidTokenException
 
-from application.agents.shared.hooks import (
-    creates_hook,
-    create_cloud_window_hook,
-    wrap_response_with_hook,
-)
-from application.services.environment_management_service import get_environment_management_service
-from ..common.utils.utils import require_authenticated_user, handle_tool_errors
+from ..common.utils.utils import handle_tool_errors, require_authenticated_user
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +39,11 @@ def _construct_environment_url(user_id: str, env_name: str) -> str:
 
 
 def _create_environment_hook(
-        conversation_id: Optional[str],
-        url: str,
-        status: str,
-        message: str,
-        tool_context: ToolContext,
+    conversation_id: Optional[str],
+    url: str,
+    status: str,
+    message: str,
+    tool_context: ToolContext,
 ) -> Optional[dict]:
     """Create and store cloud window hook.
 
@@ -61,17 +60,12 @@ def _create_environment_hook(
     if not conversation_id:
         return None
 
-    hook = create_cloud_window_hook(
-        conversation_id=conversation_id,
-        environment_url=url,
-        environment_status=status,
-        message=message,
-    )
-    tool_context.state["last_tool_hook"] = hook
-    return hook
+    # Hook functionality removed - cloud window hooks are no longer used
+    # hook = create_cloud_window_hook(...)
+    # tool_context.state["last_tool_hook"] = hook
+    return None
 
 
-@creates_hook("cloud_window")
 @require_authenticated_user
 @handle_tool_errors
 async def check_environment_exists(tool_context: ToolContext, env_name: str) -> str:
@@ -97,7 +91,7 @@ async def check_environment_exists(tool_context: ToolContext, env_name: str) -> 
         )
 
     # Get context info
-    user_id = tool_context.state.get("user_id")
+    user_id = tool_context.state.get("user_id", "guest")
     conversation_id = tool_context.state.get("conversation_id")
 
     # Construct URL
@@ -105,7 +99,9 @@ async def check_environment_exists(tool_context: ToolContext, env_name: str) -> 
 
     # Check environment API
     # Note: Import is at module level to satisfy IDE, but tests patch common.utils.utils.send_get_request
-    from common.utils.utils import send_get_request  # noqa: F401 (imported for usage below)
+    from common.utils.utils import (  # noqa: F401 (imported for usage below)
+        send_get_request,
+    )
 
     try:
         await send_get_request(api_url=url, path="api/v1", token="guest_token")
@@ -131,13 +127,5 @@ async def check_environment_exists(tool_context: ToolContext, env_name: str) -> 
         message = f"No Cyoda environment found at {url}. You can deploy one using deploy_cyoda_environment()."
         hook_message = "No environment found. Deploy one from the Cloud panel."
 
-    result = {"exists": exists, "url": url, "message": message}
-
-    # Create hook
-    hook = _create_environment_hook(conversation_id, url, status, hook_message, tool_context)
-
-    # Return response with hook if available
-    if hook:
-        return wrap_response_with_hook(message, hook)
-
-    return json.dumps(result)
+    # Return plain message - UI will auto-detect environment operations
+    return message

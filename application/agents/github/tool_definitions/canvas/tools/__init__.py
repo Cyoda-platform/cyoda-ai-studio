@@ -1,9 +1,8 @@
-"""Canvas tools for GitHub agent."""
+"""Canvas tools for GitHub agent.
+
+Canvas tool has been removed - UI auto-detects canvas resources from tool calls.
+"""
 
 from __future__ import annotations
 
-from .open_canvas_tab_tool import open_canvas_tab
-
-__all__ = [
-    "open_canvas_tab",
-]
+__all__ = []

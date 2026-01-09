@@ -5,13 +5,14 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from common.constants import CACHE_TTL_SECONDS
-from .models import CacheResult
+
 from .constants import (
+    CACHE_ALL_USERS,
     CACHE_KEY_PREFIX,
     CACHE_KEY_SEPARATOR,
-    CACHE_ALL_USERS,
     FIELD_DATE,
 )
+from .models import CacheResult
 
 logger = logging.getLogger(__name__)
 

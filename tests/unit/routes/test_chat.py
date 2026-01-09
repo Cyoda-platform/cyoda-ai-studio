@@ -6,14 +6,15 @@ streaming, canvas questions, and chat transfer functionality.
 """
 
 import json
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
 from quart import Quart
 from quart.testing import QuartClient
 
-from application.routes.chat import chat_bp
 from application.entity.conversation import Conversation
+from application.routes.chat import chat_bp
 from application.services.service_factory import ServiceFactory
 
 
@@ -35,13 +36,13 @@ def client(app):
 def mock_service_factory():
     """Mock service factory across all endpoint modules."""
     patches = [
-        patch('application.routes.chat_endpoints.helpers.get_service_factory'),
-        patch('application.routes.chat_endpoints.list_and_create.get_chat_service'),
-        patch('application.routes.chat_endpoints.crud.get_chat_service'),
-        patch('application.routes.chat_endpoints.stream.get_chat_service'),
-        patch('application.routes.chat_endpoints.workflow.get_chat_service'),
-        patch('application.routes.chat_endpoints.helpers.get_repository'),
-        patch('application.routes.chat_endpoints.helpers.get_cyoda_assistant'),
+        patch("application.routes.chat_endpoints.helpers.get_service_factory"),
+        patch("application.routes.chat_endpoints.list_and_create.get_chat_service"),
+        patch("application.routes.chat_endpoints.crud.get_chat_service"),
+        patch("application.routes.chat_endpoints.stream.get_chat_service"),
+        patch("application.routes.chat_endpoints.workflow.get_chat_service"),
+        patch("application.routes.chat_endpoints.helpers.get_repository"),
+        patch("application.routes.chat_endpoints.helpers.get_cyoda_assistant"),
     ]
     mocks = [p.start() for p in patches]
 
@@ -72,10 +73,12 @@ def mock_service_factory():
 def mock_auth():
     """Mock authentication across all endpoint modules."""
     patches = [
-        patch('application.routes.chat_endpoints.list_and_create.get_authenticated_user'),
-        patch('application.routes.chat_endpoints.crud.get_authenticated_user'),
-        patch('application.routes.chat_endpoints.stream.get_authenticated_user'),
-        patch('application.routes.common.auth.get_authenticated_user'),
+        patch(
+            "application.routes.chat_endpoints.list_and_create.get_authenticated_user"
+        ),
+        patch("application.routes.chat_endpoints.crud.get_authenticated_user"),
+        patch("application.routes.chat_endpoints.stream.get_authenticated_user"),
+        patch("application.routes.common.auth.get_authenticated_user"),
     ]
     mocks = [p.start() for p in patches]
     for mock in mocks:
@@ -89,10 +92,12 @@ def mock_auth():
 def mock_superuser_auth():
     """Mock superuser authentication across all endpoint modules."""
     patches = [
-        patch('application.routes.chat_endpoints.list_and_create.get_authenticated_user'),
-        patch('application.routes.chat_endpoints.crud.get_authenticated_user'),
-        patch('application.routes.chat_endpoints.stream.get_authenticated_user'),
-        patch('application.routes.common.auth.get_authenticated_user'),
+        patch(
+            "application.routes.chat_endpoints.list_and_create.get_authenticated_user"
+        ),
+        patch("application.routes.chat_endpoints.crud.get_authenticated_user"),
+        patch("application.routes.chat_endpoints.stream.get_authenticated_user"),
+        patch("application.routes.common.auth.get_authenticated_user"),
     ]
     mocks = [p.start() for p in patches]
     for mock in mocks:
@@ -106,10 +111,12 @@ def mock_superuser_auth():
 def mock_guest_auth():
     """Mock guest authentication across all endpoint modules."""
     patches = [
-        patch('application.routes.chat_endpoints.list_and_create.get_authenticated_user'),
-        patch('application.routes.chat_endpoints.crud.get_authenticated_user'),
-        patch('application.routes.chat_endpoints.stream.get_authenticated_user'),
-        patch('application.routes.common.auth.get_authenticated_user'),
+        patch(
+            "application.routes.chat_endpoints.list_and_create.get_authenticated_user"
+        ),
+        patch("application.routes.chat_endpoints.crud.get_authenticated_user"),
+        patch("application.routes.chat_endpoints.stream.get_authenticated_user"),
+        patch("application.routes.common.auth.get_authenticated_user"),
     ]
     mocks = [p.start() for p in patches]
     for mock in mocks:
@@ -137,16 +144,26 @@ class TestListChats:
     @pytest.mark.asyncio
     async def test_list_chats_success(self, client, mock_auth, mock_service_factory):
         """Test successful chat listing."""
-        mock_service_factory.chat_service.list_conversations = AsyncMock(return_value={
-            "chats": [
-                {"technical_id": "conv_1", "name": "Chat 1", "description": "Desc 1"},
-                {"technical_id": "conv_2", "name": "Chat 2", "description": "Desc 2"},
-            ],
-            "limit": 100,
-            "next_cursor": None,
-            "has_more": False,
-            "cached": False,
-        })
+        mock_service_factory.chat_service.list_conversations = AsyncMock(
+            return_value={
+                "chats": [
+                    {
+                        "technical_id": "conv_1",
+                        "name": "Chat 1",
+                        "description": "Desc 1",
+                    },
+                    {
+                        "technical_id": "conv_2",
+                        "name": "Chat 2",
+                        "description": "Desc 2",
+                    },
+                ],
+                "limit": 100,
+                "next_cursor": None,
+                "has_more": False,
+                "cached": False,
+            }
+        )
 
         response = await client.get("/api/v1/chats")
         assert response.status_code == 200
@@ -156,17 +173,26 @@ class TestListChats:
         assert data["has_more"] is False
 
     @pytest.mark.asyncio
-    async def test_list_chats_with_pagination(self, client, mock_auth, mock_service_factory):
+    async def test_list_chats_with_pagination(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test chat listing with pagination."""
-        mock_service_factory.chat_service.list_conversations = AsyncMock(return_value={
-            "chats": [{"technical_id": f"conv_{i}", "name": f"Chat {i}"} for i in range(10)],
-            "limit": 10,
-            "next_cursor": "2024-01-01T00:00:00Z",
-            "has_more": True,
-            "cached": False,
-        })
+        mock_service_factory.chat_service.list_conversations = AsyncMock(
+            return_value={
+                "chats": [
+                    {"technical_id": f"conv_{i}", "name": f"Chat {i}"}
+                    for i in range(10)
+                ],
+                "limit": 10,
+                "next_cursor": "2024-01-01T00:00:00Z",
+                "has_more": True,
+                "cached": False,
+            }
+        )
 
-        response = await client.get("/api/v1/chats?limit=10&point_in_time=2024-01-01T00:00:00Z")
+        response = await client.get(
+            "/api/v1/chats?limit=10&point_in_time=2024-01-01T00:00:00Z"
+        )
         assert response.status_code == 200
 
         data = await response.get_json()
@@ -174,15 +200,21 @@ class TestListChats:
         assert data["next_point_in_time"] == "2024-01-01T00:00:00Z"
 
     @pytest.mark.asyncio
-    async def test_list_chats_superuser_all(self, client, mock_superuser_auth, mock_service_factory):
+    async def test_list_chats_superuser_all(
+        self, client, mock_superuser_auth, mock_service_factory
+    ):
         """Test superuser listing all chats."""
-        mock_service_factory.chat_service.list_conversations = AsyncMock(return_value={
-            "chats": [{"technical_id": "conv_1", "name": "Chat 1", "user_id": "user_1"}],
-            "limit": 100,
-            "next_cursor": None,
-            "has_more": False,
-            "cached": False,
-        })
+        mock_service_factory.chat_service.list_conversations = AsyncMock(
+            return_value={
+                "chats": [
+                    {"technical_id": "conv_1", "name": "Chat 1", "user_id": "user_1"}
+                ],
+                "limit": 100,
+                "next_cursor": None,
+                "has_more": False,
+                "cached": False,
+            }
+        )
 
         response = await client.get("/api/v1/chats?super=true")
         assert response.status_code == 200
@@ -198,15 +230,19 @@ class TestListChats:
         assert response.status_code == 500
 
     @pytest.mark.asyncio
-    async def test_list_chats_limit_validation(self, client, mock_auth, mock_service_factory):
+    async def test_list_chats_limit_validation(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test limit parameter validation."""
-        mock_service_factory.chat_service.list_conversations = AsyncMock(return_value={
-            "chats": [],
-            "limit": 1000,
-            "next_cursor": None,
-            "has_more": False,
-            "cached": False,
-        })
+        mock_service_factory.chat_service.list_conversations = AsyncMock(
+            return_value={
+                "chats": [],
+                "limit": 1000,
+                "next_cursor": None,
+                "has_more": False,
+                "cached": False,
+            }
+        )
 
         response = await client.get("/api/v1/chats?limit=5000")
         assert response.status_code == 200
@@ -215,15 +251,19 @@ class TestListChats:
         assert data["limit"] == 1000  # Should be capped at 1000
 
     @pytest.mark.asyncio
-    async def test_list_chats_invalid_limit(self, client, mock_auth, mock_service_factory):
+    async def test_list_chats_invalid_limit(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test invalid limit parameter."""
-        mock_service_factory.chat_service.list_conversations = AsyncMock(return_value={
-            "chats": [],
-            "limit": 100,
-            "next_cursor": None,
-            "has_more": False,
-            "cached": False,
-        })
+        mock_service_factory.chat_service.list_conversations = AsyncMock(
+            return_value={
+                "chats": [],
+                "limit": 100,
+                "next_cursor": None,
+                "has_more": False,
+                "cached": False,
+            }
+        )
 
         response = await client.get("/api/v1/chats?limit=invalid")
         assert response.status_code == 200
@@ -234,13 +274,15 @@ class TestListChats:
     @pytest.mark.asyncio
     async def test_list_chats_cached(self, client, mock_auth, mock_service_factory):
         """Test cached response."""
-        mock_service_factory.chat_service.list_conversations = AsyncMock(return_value={
-            "chats": [{"technical_id": "conv_1", "name": "Chat 1"}],
-            "limit": 100,
-            "next_cursor": None,
-            "has_more": False,
-            "cached": True,
-        })
+        mock_service_factory.chat_service.list_conversations = AsyncMock(
+            return_value={
+                "chats": [{"technical_id": "conv_1", "name": "Chat 1"}],
+                "limit": 100,
+                "next_cursor": None,
+                "has_more": False,
+                "cached": True,
+            }
+        )
 
         response = await client.get("/api/v1/chats")
         assert response.status_code == 200
@@ -253,7 +295,9 @@ class TestCreateChat:
     """Tests for POST /chats endpoint."""
 
     @pytest.mark.asyncio
-    async def test_create_chat_success(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_create_chat_success(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test successful chat creation."""
         mock_service_factory.chat_service.create_conversation = AsyncMock(
             return_value=sample_conversation
@@ -261,7 +305,7 @@ class TestCreateChat:
 
         response = await client.post(
             "/api/v1/chats",
-            json={"name": "Test Chat", "description": "Test Description"}
+            json={"name": "Test Chat", "description": "Test Description"},
         )
         assert response.status_code == 201
 
@@ -279,14 +323,13 @@ class TestCreateChat:
         assert "name is required" in str(data).lower()
 
     @pytest.mark.asyncio
-    async def test_create_chat_guest_limit(self, client, mock_guest_auth, mock_service_factory):
+    async def test_create_chat_guest_limit(
+        self, client, mock_guest_auth, mock_service_factory
+    ):
         """Test guest user chat creation limit."""
         mock_service_factory.chat_service.count_user_chats = AsyncMock(return_value=2)
 
-        response = await client.post(
-            "/api/v1/chats",
-            json={"name": "Test Chat"}
-        )
+        response = await client.post("/api/v1/chats", json={"name": "Test Chat"})
         assert response.status_code == 403
 
         data = await response.get_json()
@@ -294,7 +337,9 @@ class TestCreateChat:
         assert "maximum" in str(data).lower()
 
     @pytest.mark.asyncio
-    async def test_create_chat_form_data(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_create_chat_form_data(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test chat creation with form data."""
         mock_service_factory.chat_service.create_conversation = AsyncMock(
             return_value=sample_conversation
@@ -302,7 +347,7 @@ class TestCreateChat:
 
         response = await client.post(
             "/api/v1/chats",
-            form={"name": "Test Chat", "description": "Test Description"}
+            form={"name": "Test Chat", "description": "Test Description"},
         )
         assert response.status_code == 201
 
@@ -311,7 +356,9 @@ class TestGetChat:
     """Tests for GET /chats/<id> endpoint."""
 
     @pytest.mark.asyncio
-    async def test_get_chat_success(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_get_chat_success(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test successful chat retrieval."""
         # sample_conversation has messages property
         mock_service_factory.chat_service.get_conversation = AsyncMock(
@@ -319,10 +366,16 @@ class TestGetChat:
         )
         mock_service_factory.chat_service.validate_ownership = MagicMock()
 
-        with patch('application.routes.chat_endpoints.crud.get_repository') as mock_repo:
+        with patch(
+            "application.routes.chat_endpoints.crud.get_repository"
+        ) as mock_repo:
             mock_repo.return_value = MagicMock()
-            with patch.object(sample_conversation, 'populate_messages_from_edge_messages', new_callable=AsyncMock):
-                with patch.object(sample_conversation, 'get_dialogue', return_value=[]):
+            with patch.object(
+                sample_conversation,
+                "populate_messages_from_edge_messages",
+                new_callable=AsyncMock,
+            ):
+                with patch.object(sample_conversation, "get_dialogue", return_value=[]):
                     response = await client.get("/api/v1/chats/conv_123")
                     assert response.status_code == 200
 
@@ -333,13 +386,17 @@ class TestGetChat:
     @pytest.mark.asyncio
     async def test_get_chat_not_found(self, client, mock_auth, mock_service_factory):
         """Test chat not found."""
-        mock_service_factory.chat_service.get_conversation = AsyncMock(return_value=None)
+        mock_service_factory.chat_service.get_conversation = AsyncMock(
+            return_value=None
+        )
 
         response = await client.get("/api/v1/chats/nonexistent")
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_get_chat_access_denied(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_get_chat_access_denied(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test access denied for unauthorized user."""
         sample_conversation.user_id = "other_user"
         mock_service_factory.chat_service.get_conversation = AsyncMock(
@@ -353,7 +410,9 @@ class TestGetChat:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_get_chat_with_workflow_data(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_get_chat_with_workflow_data(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test chat retrieval with workflow information."""
         sample_conversation.repository_name = "test-repo"
         sample_conversation.repository_owner = "test-owner"
@@ -366,10 +425,16 @@ class TestGetChat:
         )
         mock_service_factory.chat_service.validate_ownership = MagicMock()
 
-        with patch('application.routes.chat_endpoints.crud.get_repository') as mock_repo:
+        with patch(
+            "application.routes.chat_endpoints.crud.get_repository"
+        ) as mock_repo:
             mock_repo.return_value = MagicMock()
-            with patch.object(sample_conversation, 'populate_messages_from_edge_messages', new_callable=AsyncMock):
-                with patch.object(sample_conversation, 'get_dialogue', return_value=[]):
+            with patch.object(
+                sample_conversation,
+                "populate_messages_from_edge_messages",
+                new_callable=AsyncMock,
+            ):
+                with patch.object(sample_conversation, "get_dialogue", return_value=[]):
                     response = await client.get("/api/v1/chats/conv_123")
                     assert response.status_code == 200
 
@@ -382,7 +447,9 @@ class TestGetChat:
                     assert "entities" in chat_body
 
     @pytest.mark.asyncio
-    async def test_get_chat_superuser_access(self, client, mock_superuser_auth, mock_service_factory, sample_conversation):
+    async def test_get_chat_superuser_access(
+        self, client, mock_superuser_auth, mock_service_factory, sample_conversation
+    ):
         """Test superuser can access any chat."""
         sample_conversation.user_id = "other_user"
         mock_service_factory.chat_service.get_conversation = AsyncMock(
@@ -390,10 +457,16 @@ class TestGetChat:
         )
         mock_service_factory.chat_service.validate_ownership = MagicMock()
 
-        with patch('application.routes.chat_endpoints.crud.get_repository') as mock_repo:
+        with patch(
+            "application.routes.chat_endpoints.crud.get_repository"
+        ) as mock_repo:
             mock_repo.return_value = MagicMock()
-            with patch.object(sample_conversation, 'populate_messages_from_edge_messages', new_callable=AsyncMock):
-                with patch.object(sample_conversation, 'get_dialogue', return_value=[]):
+            with patch.object(
+                sample_conversation,
+                "populate_messages_from_edge_messages",
+                new_callable=AsyncMock,
+            ):
+                with patch.object(sample_conversation, "get_dialogue", return_value=[]):
                     response = await client.get("/api/v1/chats/conv_123?super=true")
                     assert response.status_code == 200
 
@@ -402,7 +475,9 @@ class TestUpdateChat:
     """Tests for PUT /chats/<id> endpoint."""
 
     @pytest.mark.asyncio
-    async def test_update_chat_success(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_update_chat_success(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test successful chat update."""
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -414,23 +489,29 @@ class TestUpdateChat:
 
         response = await client.put(
             "/api/v1/chats/conv_123",
-            json={"chat_name": "Updated Name", "chat_description": "Updated Description"}
+            json={
+                "chat_name": "Updated Name",
+                "chat_description": "Updated Description",
+            },
         )
         assert response.status_code == 200
 
     @pytest.mark.asyncio
     async def test_update_chat_not_found(self, client, mock_auth, mock_service_factory):
         """Test update non-existent chat."""
-        mock_service_factory.chat_service.get_conversation = AsyncMock(return_value=None)
+        mock_service_factory.chat_service.get_conversation = AsyncMock(
+            return_value=None
+        )
 
         response = await client.put(
-            "/api/v1/chats/nonexistent",
-            json={"chat_name": "Updated"}
+            "/api/v1/chats/nonexistent", json={"chat_name": "Updated"}
         )
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_update_chat_access_denied(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_update_chat_access_denied(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test update access denied for unauthorized user."""
         sample_conversation.user_id = "other_user"
         mock_service_factory.chat_service.get_conversation = AsyncMock(
@@ -441,13 +522,14 @@ class TestUpdateChat:
         )
 
         response = await client.put(
-            "/api/v1/chats/conv_123",
-            json={"chat_name": "Updated"}
+            "/api/v1/chats/conv_123", json={"chat_name": "Updated"}
         )
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_update_chat_name_only(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_update_chat_name_only(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test updating only chat name."""
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -458,13 +540,14 @@ class TestUpdateChat:
         )
 
         response = await client.put(
-            "/api/v1/chats/conv_123",
-            json={"chat_name": "New Name"}
+            "/api/v1/chats/conv_123", json={"chat_name": "New Name"}
         )
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_update_chat_description_only(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_update_chat_description_only(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test updating only chat description."""
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -475,8 +558,7 @@ class TestUpdateChat:
         )
 
         response = await client.put(
-            "/api/v1/chats/conv_123",
-            json={"chat_description": "New Description"}
+            "/api/v1/chats/conv_123", json={"chat_description": "New Description"}
         )
         assert response.status_code == 200
 
@@ -485,7 +567,9 @@ class TestDeleteChat:
     """Tests for DELETE /chats/<id> endpoint."""
 
     @pytest.mark.asyncio
-    async def test_delete_chat_success(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_delete_chat_success(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test successful chat deletion."""
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -499,13 +583,17 @@ class TestDeleteChat:
     @pytest.mark.asyncio
     async def test_delete_chat_not_found(self, client, mock_auth, mock_service_factory):
         """Test delete non-existent chat."""
-        mock_service_factory.chat_service.get_conversation = AsyncMock(return_value=None)
+        mock_service_factory.chat_service.get_conversation = AsyncMock(
+            return_value=None
+        )
 
         response = await client.delete("/api/v1/chats/nonexistent")
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_delete_chat_access_denied(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_delete_chat_access_denied(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test delete access denied for unauthorized user."""
         sample_conversation.user_id = "other_user"
         mock_service_factory.chat_service.get_conversation = AsyncMock(
@@ -519,7 +607,9 @@ class TestDeleteChat:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_delete_chat_superuser(self, client, mock_superuser_auth, mock_service_factory, sample_conversation):
+    async def test_delete_chat_superuser(
+        self, client, mock_superuser_auth, mock_service_factory, sample_conversation
+    ):
         """Test superuser can delete any chat."""
         sample_conversation.user_id = "other_user"
         mock_service_factory.chat_service.get_conversation = AsyncMock(
@@ -536,12 +626,15 @@ class TestStreamChatMessage:
     """Tests for POST /chats/<id>/stream endpoint."""
 
     @pytest.mark.asyncio
-    async def test_stream_chat_message_success(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_chat_message_success(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test successful message streaming."""
+
         async def mock_stream():
             yield "event: start\ndata: {}\n\n"
-            yield "event: content\ndata: {\"chunk\": \"Hello\"}\n\n"
-            yield "event: done\ndata: {\"response\": \"Hello\"}\n\n"
+            yield 'event: content\ndata: {"chunk": "Hello"}\n\n'
+            yield 'event: done\ndata: {"response": "Hello"}\n\n'
 
         mock_service_factory.chat_stream_service.prepare_stream = AsyncMock(
             return_value=(sample_conversation, "Test message", MagicMock())
@@ -551,36 +644,39 @@ class TestStreamChatMessage:
         )
 
         response = await client.post(
-            "/api/v1/chats/conv_123/stream",
-            json={"message": "Test message"}
+            "/api/v1/chats/conv_123/stream", json={"message": "Test message"}
         )
         assert response.status_code == 200
         assert "text/event-stream" in response.content_type
 
     @pytest.mark.asyncio
-    async def test_stream_chat_message_no_message(self, client, mock_auth, mock_service_factory):
+    async def test_stream_chat_message_no_message(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test streaming without message."""
-        response = await client.post(
-            "/api/v1/chats/conv_123/stream",
-            json={}
-        )
+        response = await client.post("/api/v1/chats/conv_123/stream", json={})
         assert response.status_code == 200
         content = await response.get_data(as_text=True)
         assert "error" in content.lower()
 
     @pytest.mark.asyncio
-    async def test_stream_chat_message_with_files(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_chat_message_with_files(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test streaming with file uploads."""
         # Skip file upload test - Quart test client file handling is complex
         # This functionality is tested via integration tests
         pytest.skip("File upload testing requires integration test setup")
 
     @pytest.mark.asyncio
-    async def test_stream_with_context(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_with_context(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test stream with context parameter."""
+
         async def mock_stream():
             yield "event: start\ndata: {}\n\n"
-            yield "event: done\ndata: {\"response\": \"OK\"}\n\n"
+            yield 'event: done\ndata: {"response": "OK"}\n\n'
 
         mock_service_factory.chat_stream_service.prepare_stream = AsyncMock(
             return_value=(sample_conversation, "Test message", MagicMock())
@@ -591,15 +687,14 @@ class TestStreamChatMessage:
 
         response = await client.post(
             "/api/v1/chats/conv_123/stream",
-            json={
-                "message": "Test message",
-                "context": {"key": "value"}
-            }
+            json={"message": "Test message", "context": {"key": "value"}},
         )
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_stream_access_denied(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_access_denied(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test stream access denied for unauthorized user."""
         sample_conversation.user_id = "other_user"
         mock_service_factory.chat_service.get_conversation = AsyncMock(
@@ -610,19 +705,21 @@ class TestStreamChatMessage:
         )
 
         response = await client.post(
-            "/api/v1/chats/conv_123/stream",
-            json={"message": "Test"}
+            "/api/v1/chats/conv_123/stream", json={"message": "Test"}
         )
         assert response.status_code == 200
         content = await response.get_data(as_text=True)
         assert "access denied" in content.lower() or "permission" in content.lower()
 
     @pytest.mark.asyncio
-    async def test_stream_empty_message(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_empty_message(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test stream with empty message."""
+
         async def mock_stream():
             yield "event: start\ndata: {}\n\n"
-            yield "event: done\ndata: {\"response\": \"OK\"}\n\n"
+            yield 'event: done\ndata: {"response": "OK"}\n\n'
 
         mock_service_factory.chat_stream_service.prepare_stream = AsyncMock(
             return_value=(sample_conversation, "", MagicMock())
@@ -632,33 +729,38 @@ class TestStreamChatMessage:
         )
 
         response = await client.post(
-            "/api/v1/chats/conv_123/stream",
-            json={"message": ""}
+            "/api/v1/chats/conv_123/stream", json={"message": ""}
         )
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_stream_conversation_not_found(self, client, mock_auth, mock_service_factory):
+    async def test_stream_conversation_not_found(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test stream on non-existent conversation."""
-        mock_service_factory.chat_service.get_conversation = AsyncMock(return_value=None)
+        mock_service_factory.chat_service.get_conversation = AsyncMock(
+            return_value=None
+        )
 
         response = await client.post(
-            "/api/v1/chats/nonexistent/stream",
-            json={"message": "Test"}
+            "/api/v1/chats/nonexistent/stream", json={"message": "Test"}
         )
         assert response.status_code == 200
         content = await response.get_data(as_text=True)
         assert "chat not found" in content.lower()
 
     @pytest.mark.asyncio
-    async def test_stream_with_multiple_content_chunks(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_with_multiple_content_chunks(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test stream with multiple content chunks."""
+
         async def mock_stream():
             yield "event: start\ndata: {}\n\n"
-            yield "event: content\ndata: {\"chunk\": \"Hello \"}\n\n"
-            yield "event: content\ndata: {\"chunk\": \"world\"}\n\n"
-            yield "event: content\ndata: {\"chunk\": \"!\"}\n\n"
-            yield "event: done\ndata: {\"response\": \"Hello world!\"}\n\n"
+            yield 'event: content\ndata: {"chunk": "Hello "}\n\n'
+            yield 'event: content\ndata: {"chunk": "world"}\n\n'
+            yield 'event: content\ndata: {"chunk": "!"}\n\n'
+            yield 'event: done\ndata: {"response": "Hello world!"}\n\n'
 
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -667,17 +769,29 @@ class TestStreamChatMessage:
             return_value=sample_conversation
         )
 
-        with patch('application.routes.chat_endpoints.helpers.get_cyoda_assistant_instance') as mock_assistant:
+        with patch(
+            "application.routes.chat_endpoints.helpers.get_cyoda_assistant_instance"
+        ) as mock_assistant:
             mock_assistant.return_value = MagicMock()
-            with patch('application.routes.chat_endpoints.stream.StreamingService') as mock_streaming:
-                mock_streaming.stream_agent_response = MagicMock(return_value=mock_stream())
-                with patch('application.routes.chat_endpoints.helpers.get_edge_message_persistence_service') as mock_persistence:
-                    mock_persistence.return_value.save_message_as_edge_message = AsyncMock(return_value="msg_123")
-                    mock_persistence.return_value.save_response_with_history = AsyncMock(return_value="resp_123")
+            with patch(
+                "application.routes.chat_endpoints.stream.StreamingService"
+            ) as mock_streaming:
+                mock_streaming.stream_agent_response = MagicMock(
+                    return_value=mock_stream()
+                )
+                with patch(
+                    "application.routes.chat_endpoints.helpers.get_edge_message_persistence_service"
+                ) as mock_persistence:
+                    mock_persistence.return_value.save_message_as_edge_message = (
+                        AsyncMock(return_value="msg_123")
+                    )
+                    mock_persistence.return_value.save_response_with_history = (
+                        AsyncMock(return_value="resp_123")
+                    )
 
                     response = await client.post(
                         "/api/v1/chats/conv_123/stream",
-                        json={"message": "Test message"}
+                        json={"message": "Test message"},
                     )
                     assert response.status_code == 200
                     content = await response.get_data(as_text=True)
@@ -685,12 +799,15 @@ class TestStreamChatMessage:
                     assert "Hello" in content
 
     @pytest.mark.asyncio
-    async def test_stream_with_hook_in_response(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_with_hook_in_response(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test stream with hook data in done event."""
+
         async def mock_stream():
             yield "event: start\ndata: {}\n\n"
-            yield "event: content\ndata: {\"chunk\": \"Response\"}\n\n"
-            yield "event: done\ndata: {\"response\": \"Response\", \"hook\": {\"type\": \"entity_config\"}}\n\n"
+            yield 'event: content\ndata: {"chunk": "Response"}\n\n'
+            yield 'event: done\ndata: {"response": "Response", "hook": {"type": "entity_config"}}\n\n'
 
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -699,28 +816,42 @@ class TestStreamChatMessage:
             return_value=sample_conversation
         )
 
-        with patch('application.routes.chat_endpoints.helpers.get_cyoda_assistant_instance') as mock_assistant:
+        with patch(
+            "application.routes.chat_endpoints.helpers.get_cyoda_assistant_instance"
+        ) as mock_assistant:
             mock_assistant.return_value = MagicMock()
-            with patch('application.routes.chat_endpoints.stream.StreamingService') as mock_streaming:
-                mock_streaming.stream_agent_response = MagicMock(return_value=mock_stream())
-                with patch('application.routes.chat_endpoints.helpers.get_edge_message_persistence_service') as mock_persistence:
-                    mock_persistence.return_value.save_message_as_edge_message = AsyncMock(return_value="msg_123")
-                    mock_persistence.return_value.save_response_with_history = AsyncMock(return_value="resp_123")
+            with patch(
+                "application.routes.chat_endpoints.stream.StreamingService"
+            ) as mock_streaming:
+                mock_streaming.stream_agent_response = MagicMock(
+                    return_value=mock_stream()
+                )
+                with patch(
+                    "application.routes.chat_endpoints.helpers.get_edge_message_persistence_service"
+                ) as mock_persistence:
+                    mock_persistence.return_value.save_message_as_edge_message = (
+                        AsyncMock(return_value="msg_123")
+                    )
+                    mock_persistence.return_value.save_response_with_history = (
+                        AsyncMock(return_value="resp_123")
+                    )
 
                     response = await client.post(
-                        "/api/v1/chats/conv_123/stream",
-                        json={"message": "Test"}
+                        "/api/v1/chats/conv_123/stream", json={"message": "Test"}
                     )
                     assert response.status_code == 200
                     content = await response.get_data(as_text=True)
                     assert "hook" in content
 
     @pytest.mark.asyncio
-    async def test_stream_with_adk_session_id(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_with_adk_session_id(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test stream with ADK session ID in response."""
+
         async def mock_stream():
             yield "event: start\ndata: {}\n\n"
-            yield "event: done\ndata: {\"response\": \"OK\", \"adk_session_id\": \"session_123\"}\n\n"
+            yield 'event: done\ndata: {"response": "OK", "adk_session_id": "session_123"}\n\n'
 
         sample_conversation.adk_session_id = None
         mock_service_factory.chat_service.get_conversation = AsyncMock(
@@ -728,20 +859,29 @@ class TestStreamChatMessage:
         )
         mock_service_factory.chat_service.validate_ownership = MagicMock()
 
-        with patch('application.routes.chat_endpoints.stream.StreamingService') as mock_streaming:
+        with patch(
+            "application.routes.chat_endpoints.stream.StreamingService"
+        ) as mock_streaming:
             mock_streaming.stream_agent_response = MagicMock(return_value=mock_stream())
-            with patch('application.routes.chat_endpoints.helpers.get_edge_message_persistence_service') as mock_persistence:
-                mock_persistence.return_value.save_message_as_edge_message = AsyncMock(return_value="msg_123")
-                mock_persistence.return_value.save_response_with_history = AsyncMock(return_value="resp_123")
+            with patch(
+                "application.routes.chat_endpoints.helpers.get_edge_message_persistence_service"
+            ) as mock_persistence:
+                mock_persistence.return_value.save_message_as_edge_message = AsyncMock(
+                    return_value="msg_123"
+                )
+                mock_persistence.return_value.save_response_with_history = AsyncMock(
+                    return_value="resp_123"
+                )
 
                 response = await client.post(
-                    "/api/v1/chats/conv_123/stream",
-                    json={"message": "Test"}
+                    "/api/v1/chats/conv_123/stream", json={"message": "Test"}
                 )
                 assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_stream_superuser_access(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_superuser_access(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test stream access for superuser on other user's chat."""
         sample_conversation.user_id = "other_user"
         mock_auth.return_value = ("superuser_123", True)
@@ -751,23 +891,33 @@ class TestStreamChatMessage:
 
         async def mock_stream():
             yield "event: start\ndata: {}\n\n"
-            yield "event: done\ndata: {\"response\": \"OK\"}\n\n"
+            yield 'event: done\ndata: {"response": "OK"}\n\n'
 
-        with patch('application.routes.chat_endpoints.stream.StreamingService') as mock_streaming:
+        with patch(
+            "application.routes.chat_endpoints.stream.StreamingService"
+        ) as mock_streaming:
             mock_streaming.stream_agent_response = MagicMock(return_value=mock_stream())
-            with patch('application.routes.chat_endpoints.helpers.get_edge_message_persistence_service') as mock_persistence:
-                mock_persistence.return_value.save_message_as_edge_message = AsyncMock(return_value="msg_123")
-                mock_persistence.return_value.save_response_with_history = AsyncMock(return_value="resp_123")
+            with patch(
+                "application.routes.chat_endpoints.helpers.get_edge_message_persistence_service"
+            ) as mock_persistence:
+                mock_persistence.return_value.save_message_as_edge_message = AsyncMock(
+                    return_value="msg_123"
+                )
+                mock_persistence.return_value.save_response_with_history = AsyncMock(
+                    return_value="resp_123"
+                )
 
                 response = await client.post(
-                    "/api/v1/chats/conv_123/stream",
-                    json={"message": "Test"}
+                    "/api/v1/chats/conv_123/stream", json={"message": "Test"}
                 )
                 assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_stream_with_streaming_error(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_with_streaming_error(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test stream error handling during streaming."""
+
         async def mock_stream_with_error():
             yield "event: start\ndata: {}\n\n"
             raise ValueError("Streaming error")
@@ -777,29 +927,41 @@ class TestStreamChatMessage:
         )
         mock_service_factory.chat_service.validate_ownership = MagicMock()
 
-        with patch('application.routes.chat_endpoints.stream.StreamingService') as mock_streaming:
-            mock_streaming.stream_agent_response = MagicMock(return_value=mock_stream_with_error())
-            with patch('application.routes.chat_endpoints.helpers.get_edge_message_persistence_service') as mock_persistence:
-                mock_persistence.return_value.save_message_as_edge_message = AsyncMock(return_value="msg_123")
-                mock_persistence.return_value.save_response_with_history = AsyncMock(return_value="resp_123")
+        with patch(
+            "application.routes.chat_endpoints.stream.StreamingService"
+        ) as mock_streaming:
+            mock_streaming.stream_agent_response = MagicMock(
+                return_value=mock_stream_with_error()
+            )
+            with patch(
+                "application.routes.chat_endpoints.helpers.get_edge_message_persistence_service"
+            ) as mock_persistence:
+                mock_persistence.return_value.save_message_as_edge_message = AsyncMock(
+                    return_value="msg_123"
+                )
+                mock_persistence.return_value.save_response_with_history = AsyncMock(
+                    return_value="resp_123"
+                )
 
                 response = await client.post(
-                    "/api/v1/chats/conv_123/stream",
-                    json={"message": "Test"}
+                    "/api/v1/chats/conv_123/stream", json={"message": "Test"}
                 )
                 assert response.status_code == 200
                 content = await response.get_data(as_text=True)
                 assert "error" in content.lower()
 
     @pytest.mark.asyncio
-    async def test_stream_with_various_event_types(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_stream_with_various_event_types(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test stream with various event types (start, agent, tool, content, done)."""
+
         async def mock_stream():
             yield "event: start\ndata: {}\n\n"
-            yield "event: agent\ndata: {\"agent\": \"test_agent\"}\n\n"
-            yield "event: tool\ndata: {\"tool\": \"test_tool\"}\n\n"
-            yield "event: content\ndata: {\"chunk\": \"Response\"}\n\n"
-            yield "event: done\ndata: {\"response\": \"Response\"}\n\n"
+            yield 'event: agent\ndata: {"agent": "test_agent"}\n\n'
+            yield 'event: tool\ndata: {"tool": "test_tool"}\n\n'
+            yield 'event: content\ndata: {"chunk": "Response"}\n\n'
+            yield 'event: done\ndata: {"response": "Response"}\n\n'
 
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -808,17 +970,28 @@ class TestStreamChatMessage:
             return_value=sample_conversation
         )
 
-        with patch('application.routes.chat_endpoints.helpers.get_cyoda_assistant_instance') as mock_assistant:
+        with patch(
+            "application.routes.chat_endpoints.helpers.get_cyoda_assistant_instance"
+        ) as mock_assistant:
             mock_assistant.return_value = MagicMock()
-            with patch('application.routes.chat_endpoints.stream.StreamingService') as mock_streaming:
-                mock_streaming.stream_agent_response = MagicMock(return_value=mock_stream())
-                with patch('application.routes.chat_endpoints.helpers.get_edge_message_persistence_service') as mock_persistence:
-                    mock_persistence.return_value.save_message_as_edge_message = AsyncMock(return_value="msg_123")
-                    mock_persistence.return_value.save_response_with_history = AsyncMock(return_value="resp_123")
+            with patch(
+                "application.routes.chat_endpoints.stream.StreamingService"
+            ) as mock_streaming:
+                mock_streaming.stream_agent_response = MagicMock(
+                    return_value=mock_stream()
+                )
+                with patch(
+                    "application.routes.chat_endpoints.helpers.get_edge_message_persistence_service"
+                ) as mock_persistence:
+                    mock_persistence.return_value.save_message_as_edge_message = (
+                        AsyncMock(return_value="msg_123")
+                    )
+                    mock_persistence.return_value.save_response_with_history = (
+                        AsyncMock(return_value="resp_123")
+                    )
 
                     response = await client.post(
-                        "/api/v1/chats/conv_123/stream",
-                        json={"message": "Test"}
+                        "/api/v1/chats/conv_123/stream", json={"message": "Test"}
                     )
                     assert response.status_code == 200
                     content = await response.get_data(as_text=True)
@@ -835,7 +1008,9 @@ class TestCanvasQuestions:
     @pytest.mark.asyncio
     async def test_canvas_question_entity_json(self, client, mock_auth):
         """Test entity JSON generation."""
-        with patch('application.routes.chat_endpoints.canvas.google_adk_service') as mock_adk:
+        with patch(
+            "application.routes.chat_endpoints.canvas.google_adk_service"
+        ) as mock_adk:
             mock_adk.is_configured.return_value = False
 
             response = await client.post(
@@ -843,8 +1018,8 @@ class TestCanvasQuestions:
                 json={
                     "question": "Create a user entity",
                     "response_type": "entity_json",
-                    "context": {}
-                }
+                    "context": {},
+                },
             )
             assert response.status_code == 200
 
@@ -856,8 +1031,7 @@ class TestCanvasQuestions:
     async def test_canvas_question_missing_question(self, client, mock_auth):
         """Test canvas question without question field."""
         response = await client.post(
-            "/api/v1/chats/canvas-questions",
-            json={"response_type": "text"}
+            "/api/v1/chats/canvas-questions", json={"response_type": "text"}
         )
         assert response.status_code == 400
 
@@ -866,17 +1040,16 @@ class TestCanvasQuestions:
         """Test canvas question with invalid response type."""
         response = await client.post(
             "/api/v1/chats/canvas-questions",
-            json={
-                "question": "Test",
-                "response_type": "invalid_type"
-            }
+            json={"question": "Test", "response_type": "invalid_type"},
         )
         assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_canvas_question_workflow_json(self, client, mock_auth):
         """Test workflow JSON generation."""
-        with patch('application.routes.chat_endpoints.canvas.google_adk_service') as mock_adk:
+        with patch(
+            "application.routes.chat_endpoints.canvas.google_adk_service"
+        ) as mock_adk:
             mock_adk.is_configured.return_value = False
 
             response = await client.post(
@@ -884,8 +1057,8 @@ class TestCanvasQuestions:
                 json={
                     "question": "Create approval workflow",
                     "response_type": "workflow_json",
-                    "context": {}
-                }
+                    "context": {},
+                },
             )
             assert response.status_code == 200
 
@@ -896,7 +1069,9 @@ class TestCanvasQuestions:
     @pytest.mark.asyncio
     async def test_canvas_question_text_type(self, client, mock_auth):
         """Test text response type."""
-        with patch('application.routes.chat_endpoints.canvas.google_adk_service') as mock_adk:
+        with patch(
+            "application.routes.chat_endpoints.canvas.google_adk_service"
+        ) as mock_adk:
             mock_adk.is_configured.return_value = False
 
             response = await client.post(
@@ -904,8 +1079,8 @@ class TestCanvasQuestions:
                 json={
                     "question": "What is Cyoda?",
                     "response_type": "text",
-                    "context": {}
-                }
+                    "context": {},
+                },
             )
             assert response.status_code == 200
 
@@ -916,7 +1091,9 @@ class TestCanvasQuestions:
     @pytest.mark.asyncio
     async def test_canvas_question_app_config_json(self, client, mock_auth):
         """Test app config JSON generation."""
-        with patch('application.routes.chat_endpoints.canvas.google_adk_service') as mock_adk:
+        with patch(
+            "application.routes.chat_endpoints.canvas.google_adk_service"
+        ) as mock_adk:
             mock_adk.is_configured.return_value = False
 
             response = await client.post(
@@ -924,8 +1101,8 @@ class TestCanvasQuestions:
                 json={
                     "question": "Create app config",
                     "response_type": "app_config_json",
-                    "context": {"app_name": "TestApp"}
-                }
+                    "context": {"app_name": "TestApp"},
+                },
             )
             assert response.status_code == 200
 
@@ -936,7 +1113,9 @@ class TestCanvasQuestions:
     @pytest.mark.asyncio
     async def test_canvas_question_environment_json(self, client, mock_auth):
         """Test environment JSON generation."""
-        with patch('application.routes.chat_endpoints.canvas.google_adk_service') as mock_adk:
+        with patch(
+            "application.routes.chat_endpoints.canvas.google_adk_service"
+        ) as mock_adk:
             mock_adk.is_configured.return_value = False
 
             response = await client.post(
@@ -944,8 +1123,8 @@ class TestCanvasQuestions:
                 json={
                     "question": "Create environment",
                     "response_type": "environment_json",
-                    "context": {}
-                }
+                    "context": {},
+                },
             )
             assert response.status_code == 200
 
@@ -956,7 +1135,9 @@ class TestCanvasQuestions:
     @pytest.mark.asyncio
     async def test_canvas_question_requirement_json(self, client, mock_auth):
         """Test requirement JSON generation."""
-        with patch('application.routes.chat_endpoints.canvas.google_adk_service') as mock_adk:
+        with patch(
+            "application.routes.chat_endpoints.canvas.google_adk_service"
+        ) as mock_adk:
             mock_adk.is_configured.return_value = False
 
             response = await client.post(
@@ -964,8 +1145,8 @@ class TestCanvasQuestions:
                 json={
                     "question": "Create requirement",
                     "response_type": "requirement_json",
-                    "context": {}
-                }
+                    "context": {},
+                },
             )
             assert response.status_code == 200
 
@@ -977,8 +1158,7 @@ class TestCanvasQuestions:
     async def test_canvas_question_missing_response_type(self, client, mock_auth):
         """Test canvas question without response_type field."""
         response = await client.post(
-            "/api/v1/chats/canvas-questions",
-            json={"question": "Test question"}
+            "/api/v1/chats/canvas-questions", json={"question": "Test question"}
         )
         assert response.status_code == 400
 
@@ -987,18 +1167,21 @@ class TestTransferChats:
     """Tests for POST /chats/transfer endpoint."""
 
     @pytest.mark.asyncio
-    async def test_transfer_chats_success(self, client, mock_auth, mock_service_factory):
+    async def test_transfer_chats_success(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test successful chat transfer."""
         mock_service_factory.chat_service.transfer_guest_chats = AsyncMock(
             return_value=3
         )
 
-        with patch('application.routes.chat_endpoints.workflow.get_user_info_from_token') as mock_token:
+        with patch(
+            "application.routes.chat_endpoints.workflow.get_user_info_from_token"
+        ) as mock_token:
             mock_token.return_value = ("guest.12345", False)
 
             response = await client.post(
-                "/api/v1/chats/transfer",
-                json={"guest_token": "mock_jwt_token"}
+                "/api/v1/chats/transfer", json={"guest_token": "mock_jwt_token"}
             )
             assert response.status_code == 200
 
@@ -1009,18 +1192,14 @@ class TestTransferChats:
     async def test_transfer_chats_to_guest(self, client, mock_guest_auth):
         """Test transfer to guest user (should fail)."""
         response = await client.post(
-            "/api/v1/chats/transfer",
-            json={"guest_token": "mock_token"}
+            "/api/v1/chats/transfer", json={"guest_token": "mock_token"}
         )
         assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_transfer_chats_missing_token(self, client, mock_auth):
         """Test transfer without guest token."""
-        response = await client.post(
-            "/api/v1/chats/transfer",
-            json={}
-        )
+        response = await client.post("/api/v1/chats/transfer", json={})
         assert response.status_code == 400
 
     @pytest.mark.asyncio
@@ -1028,12 +1207,13 @@ class TestTransferChats:
         """Test transfer with invalid token."""
         from common.utils.jwt_utils import TokenValidationError
 
-        with patch('application.routes.chat_endpoints.workflow.get_user_info_from_token') as mock_token:
+        with patch(
+            "application.routes.chat_endpoints.workflow.get_user_info_from_token"
+        ) as mock_token:
             mock_token.side_effect = TokenValidationError("Invalid token")
 
             response = await client.post(
-                "/api/v1/chats/transfer",
-                json={"guest_token": "invalid_token"}
+                "/api/v1/chats/transfer", json={"guest_token": "invalid_token"}
             )
             assert response.status_code == 400  # Invalid guest token returns 400
 
@@ -1042,7 +1222,9 @@ class TestApproveAndRollback:
     """Tests for approve and rollback endpoints."""
 
     @pytest.mark.asyncio
-    async def test_approve_success(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_approve_success(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test successful approval."""
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -1055,15 +1237,21 @@ class TestApproveAndRollback:
         assert "message" in data
 
     @pytest.mark.asyncio
-    async def test_approve_chat_not_found(self, client, mock_auth, mock_service_factory):
+    async def test_approve_chat_not_found(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test approve on non-existent chat."""
-        mock_service_factory.chat_service.get_conversation = AsyncMock(return_value=None)
+        mock_service_factory.chat_service.get_conversation = AsyncMock(
+            return_value=None
+        )
 
         response = await client.post("/api/v1/chats/nonexistent/approve")
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_rollback_success(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_rollback_success(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test successful rollback."""
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -1076,9 +1264,13 @@ class TestApproveAndRollback:
         assert "message" in data
 
     @pytest.mark.asyncio
-    async def test_rollback_chat_not_found(self, client, mock_auth, mock_service_factory):
+    async def test_rollback_chat_not_found(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test rollback on non-existent chat."""
-        mock_service_factory.chat_service.get_conversation = AsyncMock(return_value=None)
+        mock_service_factory.chat_service.get_conversation = AsyncMock(
+            return_value=None
+        )
 
         response = await client.post("/api/v1/chats/nonexistent/rollback")
         assert response.status_code == 404
@@ -1088,7 +1280,9 @@ class TestDownloadFile:
     """Tests for file download endpoint."""
 
     @pytest.mark.asyncio
-    async def test_download_file_success(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_download_file_success(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test successful file download."""
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -1099,9 +1293,13 @@ class TestDownloadFile:
         assert "attachment" in response.headers.get("Content-Disposition", "")
 
     @pytest.mark.asyncio
-    async def test_download_file_chat_not_found(self, client, mock_auth, mock_service_factory):
+    async def test_download_file_chat_not_found(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test file download for non-existent chat."""
-        mock_service_factory.chat_service.get_conversation = AsyncMock(return_value=None)
+        mock_service_factory.chat_service.get_conversation = AsyncMock(
+            return_value=None
+        )
 
         response = await client.get("/api/v1/chats/nonexistent/files/blob_123")
         assert response.status_code == 404
@@ -1112,8 +1310,10 @@ class TestHelperFunctions:
 
     def test_get_canvas_schema_entity(self):
         """Test entity JSON schema generation."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
         schema = service.get_schema("entity_json")
@@ -1123,8 +1323,10 @@ class TestHelperFunctions:
 
     def test_get_canvas_schema_workflow(self):
         """Test workflow JSON schema generation."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
         schema = service.get_schema("workflow_json")
@@ -1134,8 +1336,10 @@ class TestHelperFunctions:
 
     def test_get_canvas_schema_app_config(self):
         """Test app config JSON schema generation."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
         schema = service.get_schema("app_config_json")
@@ -1144,8 +1348,10 @@ class TestHelperFunctions:
 
     def test_get_canvas_schema_generic(self):
         """Test generic schema generation for unknown types."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
         schema = service.get_schema("unknown_type")
@@ -1154,8 +1360,10 @@ class TestHelperFunctions:
 
     def test_build_canvas_prompt_entity(self):
         """Test entity prompt building."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
         prompt = service.build_prompt("entity_json", "Create user entity", {})
@@ -1164,8 +1372,10 @@ class TestHelperFunctions:
 
     def test_build_canvas_prompt_workflow(self):
         """Test workflow prompt building."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
         prompt = service.build_prompt("workflow_json", "Create approval workflow", {})
@@ -1174,18 +1384,24 @@ class TestHelperFunctions:
 
     def test_build_canvas_prompt_app_config(self):
         """Test app config prompt building."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
-        prompt = service.build_prompt("app_config_json", "Create app", {"app_name": "MyApp"})
+        prompt = service.build_prompt(
+            "app_config_json", "Create app", {"app_name": "MyApp"}
+        )
         assert "MyApp" in prompt
         assert "entities" in prompt.lower()
 
     def test_build_canvas_prompt_with_context(self):
         """Test prompt building with context."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
         context = {"key": "value", "nested": {"data": "test"}}
@@ -1194,8 +1410,10 @@ class TestHelperFunctions:
 
     def test_generate_mock_canvas_response_entity(self):
         """Test mock entity response generation."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
         response = service.generate_mock_response("entity_json", "Create user", {})
@@ -1205,30 +1423,40 @@ class TestHelperFunctions:
 
     def test_generate_mock_canvas_response_workflow(self):
         """Test mock workflow response generation."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
-        response = service.generate_mock_response("workflow_json", "Create workflow", {})
+        response = service.generate_mock_response(
+            "workflow_json", "Create workflow", {}
+        )
         assert response["name"] == "MockWorkflow"
         assert "draft" in response["states"]
         assert len(response["transitions"]) > 0
 
     def test_generate_mock_canvas_response_app_config(self):
         """Test mock app config response generation."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
-        response = service.generate_mock_response("app_config_json", "Create app", {"app_name": "TestApp"})
+        response = service.generate_mock_response(
+            "app_config_json", "Create app", {"app_name": "TestApp"}
+        )
         assert response["app_name"] == "TestApp"
         assert "entities" in response
         assert "workflows" in response
 
     def test_generate_mock_canvas_response_generic(self):
         """Test mock generic response generation."""
-        from application.services.openai.canvas_question_service import CanvasQuestionService
         from application.services import GoogleADKService
+        from application.services.openai.canvas_question_service import (
+            CanvasQuestionService,
+        )
 
         service = CanvasQuestionService(GoogleADKService())
         response = service.generate_mock_response("unknown_type", "Test", {})
@@ -1245,7 +1473,7 @@ class TestRateLimiting:
         # This test verifies that rate limit decorators are present
         # Actual rate limit testing would require real Redis/rate limiter
         from application.routes.chat import chat_bp
-        
+
         # Just verify endpoints are registered
         assert chat_bp.name == "chat"
 
@@ -1258,7 +1486,9 @@ class TestAuthErrorHandling:
         """Test token expiry returns 401."""
         from common.utils.jwt_utils import TokenExpiredError
 
-        with patch('application.routes.chat_endpoints.list_and_create.get_authenticated_user') as mock_auth:
+        with patch(
+            "application.routes.chat_endpoints.list_and_create.get_authenticated_user"
+        ) as mock_auth:
             mock_auth.side_effect = TokenExpiredError("Token has expired")
 
             response = await client.get("/api/v1/chats")
@@ -1272,13 +1502,12 @@ class TestAuthErrorHandling:
         """Test token expiry in create_chat returns 401."""
         from common.utils.jwt_utils import TokenExpiredError
 
-        with patch('application.routes.chat_endpoints.list_and_create.get_authenticated_user') as mock_auth:
+        with patch(
+            "application.routes.chat_endpoints.list_and_create.get_authenticated_user"
+        ) as mock_auth:
             mock_auth.side_effect = TokenExpiredError("Token has expired")
 
-            response = await client.post(
-                "/api/v1/chats",
-                json={"name": "Test Chat"}
-            )
+            response = await client.post("/api/v1/chats", json={"name": "Test Chat"})
             assert response.status_code == 401
 
     @pytest.mark.asyncio
@@ -1286,7 +1515,9 @@ class TestAuthErrorHandling:
         """Test token validation error returns 401."""
         from common.utils.jwt_utils import TokenValidationError
 
-        with patch('application.routes.chat_endpoints.crud.get_authenticated_user') as mock_auth:
+        with patch(
+            "application.routes.chat_endpoints.crud.get_authenticated_user"
+        ) as mock_auth:
             mock_auth.side_effect = TokenValidationError("Invalid token")
 
             response = await client.get("/api/v1/chats/conv_123")
@@ -1300,12 +1531,13 @@ class TestAuthErrorHandling:
         """Test token expiry in update_chat returns 401."""
         from common.utils.jwt_utils import TokenExpiredError
 
-        with patch('application.routes.chat_endpoints.crud.get_authenticated_user') as mock_auth:
+        with patch(
+            "application.routes.chat_endpoints.crud.get_authenticated_user"
+        ) as mock_auth:
             mock_auth.side_effect = TokenExpiredError("Token has expired")
 
             response = await client.put(
-                "/api/v1/chats/conv_123",
-                json={"chat_name": "Updated"}
+                "/api/v1/chats/conv_123", json={"chat_name": "Updated"}
             )
             assert response.status_code == 401
 
@@ -1314,7 +1546,9 @@ class TestAuthErrorHandling:
         """Test token expiry in delete_chat returns 401."""
         from common.utils.jwt_utils import TokenExpiredError
 
-        with patch('application.routes.chat_endpoints.crud.get_authenticated_user') as mock_auth:
+        with patch(
+            "application.routes.chat_endpoints.crud.get_authenticated_user"
+        ) as mock_auth:
             mock_auth.side_effect = TokenExpiredError("Token has expired")
 
             response = await client.delete("/api/v1/chats/conv_123")
@@ -1352,21 +1586,23 @@ class TestErrorHandling:
         )
 
         response = await client.post(
-            "/api/v1/chats/conv_123/stream",
-            json={"message": "Test"}
+            "/api/v1/chats/conv_123/stream", json={"message": "Test"}
         )
         assert response.status_code == 200
         content = await response.get_data(as_text=True)
         assert "error" in content.lower()
 
     @pytest.mark.asyncio
-    async def test_stream_conversation_not_found(self, client, mock_auth, mock_service_factory):
+    async def test_stream_conversation_not_found(
+        self, client, mock_auth, mock_service_factory
+    ):
         """Test conversation not found in stream endpoint."""
-        mock_service_factory.chat_service.get_conversation = AsyncMock(return_value=None)
+        mock_service_factory.chat_service.get_conversation = AsyncMock(
+            return_value=None
+        )
 
         response = await client.post(
-            "/api/v1/chats/nonexistent/stream",
-            json={"message": "Test"}
+            "/api/v1/chats/nonexistent/stream", json={"message": "Test"}
         )
         assert response.status_code == 200
         content = await response.get_data(as_text=True)
@@ -1379,14 +1615,13 @@ class TestErrorHandling:
             side_effect=Exception("Database error")
         )
 
-        response = await client.post(
-            "/api/v1/chats",
-            json={"name": "Test Chat"}
-        )
+        response = await client.post("/api/v1/chats", json={"name": "Test Chat"})
         assert response.status_code == 500
 
     @pytest.mark.asyncio
-    async def test_update_chat_exception(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_update_chat_exception(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test exception handling in update_chat."""
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation
@@ -1397,13 +1632,14 @@ class TestErrorHandling:
         )
 
         response = await client.put(
-            "/api/v1/chats/conv_123",
-            json={"chat_name": "Updated"}
+            "/api/v1/chats/conv_123", json={"chat_name": "Updated"}
         )
         assert response.status_code == 500
 
     @pytest.mark.asyncio
-    async def test_delete_chat_exception(self, client, mock_auth, mock_service_factory, sample_conversation):
+    async def test_delete_chat_exception(
+        self, client, mock_auth, mock_service_factory, sample_conversation
+    ):
         """Test exception handling in delete_chat."""
         mock_service_factory.chat_service.get_conversation = AsyncMock(
             return_value=sample_conversation

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from application.services.core.file_system_service import FileSystemService
+
 from .models import SearchMatch
 from .resource_scanner import ResourceScanner
 
@@ -20,7 +21,9 @@ JAVA_RESOURCES_PATH = os.getenv("JAVA_RESOURCES_PATH", "src/main/resources")
 # Search constants
 SEARCH_TYPE_CONTENT = "content"
 SEARCH_TYPE_FILENAME = "filename"
-FIND_CONTENT_CMD = "find . -name '{file_pattern}' -type f -exec grep -l -E '{pattern}' {{}} \\;"
+FIND_CONTENT_CMD = (
+    "find . -name '{file_pattern}' -type f -exec grep -l -E '{pattern}' {{}} \\;"
+)
 FIND_FILES_CMD = "find . -name '{pattern}' -type f"
 GREP_LINES_CMD = "grep -n -E '{pattern}' '{clean}'"
 GREP_PARSE_ERROR = "Error parsing grep output"
@@ -39,7 +42,9 @@ class RepositoryAnalysisService:
         self, resources_dir: Path, resource_type: str, repo_path_obj: Path
     ) -> List[Dict[str, Any]]:
         """Wrapper for scanner.scan_versioned_resources (for test compatibility)."""
-        return self.scanner.scan_versioned_resources(resources_dir, resource_type, repo_path_obj)
+        return self.scanner.scan_versioned_resources(
+            resources_dir, resource_type, repo_path_obj
+        )
 
     def detect_project_type(self, repo_path: str) -> Dict[str, str]:
         """Detect project type (Python or Java) and return resource paths."""
@@ -75,13 +80,19 @@ class RepositoryAnalysisService:
         loop = asyncio.get_event_loop()
 
         entities = await loop.run_in_executor(
-            None, self.scanner.scan_versioned_resources,
-            repo_path_obj / paths["entities_path"], "entity", repo_path_obj
+            None,
+            self.scanner.scan_versioned_resources,
+            repo_path_obj / paths["entities_path"],
+            "entity",
+            repo_path_obj,
         )
 
         workflows = await loop.run_in_executor(
-            None, self.scanner.scan_versioned_resources,
-            repo_path_obj / paths["workflows_path"], "workflow", repo_path_obj
+            None,
+            self.scanner.scan_versioned_resources,
+            repo_path_obj / paths["workflows_path"],
+            "workflow",
+            repo_path_obj,
         )
 
         def _read_reqs():
@@ -92,12 +103,15 @@ class RepositoryAnalysisService:
                     if f.is_file() and self.scanner.is_textual_file(f.name):
                         try:
                             with open(f, "r", encoding="utf-8") as file:
-                                reqs.append({
-                                    "name": f.stem,
-                                    "path": str(f.relative_to(repo_path_obj)),
-                                    "content": file.read()
-                                })
-                        except Exception: pass
+                                reqs.append(
+                                    {
+                                        "name": f.stem,
+                                        "path": str(f.relative_to(repo_path_obj)),
+                                        "content": file.read(),
+                                    }
+                                )
+                        except Exception:
+                            pass
             return reqs
 
         requirements = await loop.run_in_executor(None, _read_reqs)
@@ -107,7 +121,7 @@ class RepositoryAnalysisService:
             "repository": {"owner": owner, "name": name, "branch": branch},
             "entities": entities,
             "workflows": workflows,
-            "requirements": requirements
+            "requirements": requirements,
         }
 
     async def _search_content(
@@ -130,26 +144,30 @@ class RepositoryAnalysisService:
         if not (res["success"] and res["stdout"]):
             return matches_list
 
-        files = res["stdout"].strip().split('\n')
+        files = res["stdout"].strip().split("\n")
         for f in files:
             if not f:
                 continue
 
-            clean = f.lstrip('./') if f.startswith('./') else f
+            clean = f.lstrip("./") if f.startswith("./") else f
             grep_cmd = GREP_LINES_CMD.format(pattern=pattern, clean=clean)
-            grep_res = await self.fs_service.execute_unix_command(grep_cmd, repo_path_obj)
+            grep_res = await self.fs_service.execute_unix_command(
+                grep_cmd, repo_path_obj
+            )
 
             file_matches = []
             if grep_res["success"] and grep_res["stdout"]:
-                for line in grep_res["stdout"].split('\n'):
+                for line in grep_res["stdout"].split("\n"):
                     if line.strip():
-                        parts = line.split(':', 2)
+                        parts = line.split(":", 2)
                         if len(parts) >= 3:
                             try:
-                                file_matches.append({
-                                    "line_number": int(parts[0]),
-                                    "content": parts[2].strip()
-                                })
+                                file_matches.append(
+                                    {
+                                        "line_number": int(parts[0]),
+                                        "content": parts[2].strip(),
+                                    }
+                                )
                             except ValueError:
                                 logger.debug(GREP_PARSE_ERROR)
 
@@ -176,11 +194,11 @@ class RepositoryAnalysisService:
         if not (res["success"] and res["stdout"]):
             return matches_list
 
-        for f in res["stdout"].strip().split('\n'):
+        for f in res["stdout"].strip().split("\n"):
             if not f:
                 continue
 
-            clean = f.lstrip('./')
+            clean = f.lstrip("./")
             try:
                 size = (repo_path_obj / clean).stat().st_size
             except OSError:
@@ -225,10 +243,7 @@ class RepositoryAnalysisService:
             matches = await self._search_filenames(repo_path_obj, pattern)
 
         # Step 3: Build summary
-        summary = {
-            "total_matches": len(matches),
-            "search_completed": True
-        }
+        summary = {"total_matches": len(matches), "search_completed": True}
 
         # Step 4: Return formatted results
         results = {
@@ -237,7 +252,7 @@ class RepositoryAnalysisService:
             "file_pattern": file_pattern,
             "repository_path": repo_path,
             "matches": [m.model_dump() for m in matches],
-            "summary": summary
+            "summary": summary,
         }
 
         logger.info(SEARCH_COMPLETED_LOG)
@@ -284,5 +299,6 @@ class RepositoryAnalysisService:
         return f"{JAVA_RESOURCES_PATH}/workflow/{folder}/version_{version}/{workflow_name}.json"
 
     def get_requirements_path(self, requirements_name: str, project_type: str) -> str:
-        if project_type == "python": return f"{PYTHON_RESOURCES_PATH}/functional_requirements/{requirements_name}.md"
+        if project_type == "python":
+            return f"{PYTHON_RESOURCES_PATH}/functional_requirements/{requirements_name}.md"
         return f"{JAVA_RESOURCES_PATH}/functional_requirements/{requirements_name}.md"

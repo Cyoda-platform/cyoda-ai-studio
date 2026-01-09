@@ -12,38 +12,39 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Set
 
-from common.config.config import CLI_PROVIDER, AUGMENT_MODEL, CLAUDE_MODEL, GEMINI_MODEL
 from application.agents.shared.prompt_loader import load_template
 from application.services.github.operations_service import GitHubOperationsService
+from common.config.config import AUGMENT_MODEL, CLAUDE_MODEL, CLI_PROVIDER, GEMINI_MODEL
 from services.services import get_task_service
+
+from .cli.monitor import (
+    PROCESS_CHECK_INTERVAL,
+    PROGRESS_UPDATE_CAP,
+    _build_completion_metadata,
+    _check_process_running,
+    _handle_failure_completion,
+    _handle_success_completion,
+    _perform_final_commit,
+    _perform_initial_commit,
+    _perform_periodic_commit,
+    _unregister_process,
+    _update_progress_status,
+)
+from .cli.utils import (
+    _create_output_log_file,
+    _create_prompt_file,
+    _extract_repo_metadata,
+    _finalize_output_file,
+    _register_process_and_create_task,
+    _start_subprocess,
+    _write_log_header,
+)
 
 # Re-export from cli modules for backward compatibility
 from .cli.validation import (
     _validate_cli_inputs,
-    _validate_script_path,
     _validate_cli_provider_config,
-)
-from .cli.utils import (
-    _create_prompt_file,
-    _create_output_log_file,
-    _write_log_header,
-    _start_subprocess,
-    _finalize_output_file,
-    _register_process_and_create_task,
-    _extract_repo_metadata,
-)
-from .cli.monitor import (
-    _perform_initial_commit,
-    _check_process_running,
-    _perform_periodic_commit,
-    _update_progress_status,
-    _unregister_process,
-    _perform_final_commit,
-    _build_completion_metadata,
-    _handle_success_completion,
-    _handle_failure_completion,
-    PROCESS_CHECK_INTERVAL,
-    PROGRESS_UPDATE_CAP,
+    _validate_script_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,9 +66,9 @@ AUGGIE_CLI_SCRIPT = os.getenv("AUGMENT_CLI_SCRIPT", str(_DEFAULT_AUGGIE_SCRIPT))
 
 # Constants for monitoring
 DEFAULT_CODEGEN_TIMEOUT = 3600  # 1 hour
-DEFAULT_BUILD_TIMEOUT = 1800    # 30 minutes
-CODEGEN_COMMIT_INTERVAL = 30    # seconds
-BUILD_COMMIT_INTERVAL = 60      # seconds
+DEFAULT_BUILD_TIMEOUT = 1800  # 30 minutes
+CODEGEN_COMMIT_INTERVAL = 30  # seconds
+BUILD_COMMIT_INTERVAL = 60  # seconds
 
 
 class GitHubCLIService:
@@ -113,7 +114,7 @@ class GitHubCLIService:
         language: str,
         user_id: str,
         conversation_id: str,
-        repo_auth_config: Dict[str, Any]
+        repo_auth_config: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Start code generation process.
 
@@ -130,7 +131,9 @@ class GitHubCLIService:
             Dictionary with task_id, pid, and output_file
         """
         # Step 1: Validate inputs
-        _validate_cli_inputs(repository_path, branch_name, language, user_request=user_request)
+        _validate_cli_inputs(
+            repository_path, branch_name, language, user_request=user_request
+        )
 
         # Step 2: Get and validate CLI configuration
         script_path, cli_model = self._get_cli_config()
@@ -144,18 +147,20 @@ class GitHubCLIService:
 
         # Step 4: Setup process manager
         from application.agents.shared.process_manager import get_process_manager
+
         process_manager = get_process_manager()
         if not await process_manager.can_start_process():
             raise RuntimeError("Maximum concurrent CLI processes reached")
 
         # Step 5: Create and configure output log file
-        output_file, output_fd = _create_output_log_file(CLI_PROVIDER, branch_name, "codegen")
+        output_file, output_fd = _create_output_log_file(
+            CLI_PROVIDER, branch_name, "codegen"
+        )
         _write_log_header(output_fd, branch_name, "codegen", cli_model)
 
         # Step 6: Start subprocess
         process = await _start_subprocess(
-            script_path, prompt_file, cli_model,
-            repository_path, branch_name, output_fd
+            script_path, prompt_file, cli_model, repository_path, branch_name, output_fd
         )
 
         # Step 7: Finalize log file
@@ -164,13 +169,19 @@ class GitHubCLIService:
         # Step 8: Register process and create task
         try:
             task_id = await _register_process_and_create_task(
-                process.pid, get_task_service(),
-                user_id, "code_generation",
+                process.pid,
+                get_task_service(),
+                user_id,
+                "code_generation",
                 f"Generate code: {user_request[:50]}...",
                 f"Generating code: {user_request[:200]}...",
-                branch_name, language, user_request,
-                conversation_id, repository_path, repo_auth_config,
-                final_output_file
+                branch_name,
+                language,
+                user_request,
+                conversation_id,
+                repository_path,
+                repo_auth_config,
+                final_output_file,
             )
         except RuntimeError as e:
             # Terminate process if registration fails
@@ -194,7 +205,7 @@ class GitHubCLIService:
                 commit_interval=CODEGEN_COMMIT_INTERVAL,
                 conversation_id=conversation_id,
                 repository_name=repository_name,
-                repository_owner=repository_owner
+                repository_owner=repository_owner,
             )
         )
 
@@ -203,7 +214,7 @@ class GitHubCLIService:
         return {
             "task_id": task_id,
             "pid": process.pid,
-            "output_file": final_output_file
+            "output_file": final_output_file,
         }
 
     async def _load_build_prompt_template(self, language: str) -> str:
@@ -240,7 +251,7 @@ class GitHubCLIService:
         language: str,
         user_id: str,
         conversation_id: str,
-        repo_auth_config: Dict[str, Any]
+        repo_auth_config: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Start application build process.
 
@@ -257,7 +268,9 @@ class GitHubCLIService:
             Dictionary with task_id, pid, and output_file
         """
         # Step 1: Validate inputs
-        _validate_cli_inputs(repository_path, branch_name, language, requirements=requirements)
+        _validate_cli_inputs(
+            repository_path, branch_name, language, requirements=requirements
+        )
 
         # Step 2: Get and validate CLI configuration
         script_path, cli_model = self._get_cli_config()
@@ -271,18 +284,26 @@ class GitHubCLIService:
 
         # Step 4: Setup process manager
         from application.agents.shared.process_manager import get_process_manager
+
         process_manager = get_process_manager()
         if not await process_manager.can_start_process():
             raise RuntimeError("Maximum concurrent CLI processes reached")
 
         # Step 5: Create and configure output log file
-        output_file, output_fd = _create_output_log_file(CLI_PROVIDER, branch_name, "build")
+        output_file, output_fd = _create_output_log_file(
+            CLI_PROVIDER, branch_name, "build"
+        )
         _write_log_header(output_fd, branch_name, "build")
 
         # Step 6: Start subprocess (cwd = repository_path for builds)
         process = await _start_subprocess(
-            script_path, prompt_file, cli_model,
-            repository_path, branch_name, output_fd, repository_path
+            script_path,
+            prompt_file,
+            cli_model,
+            repository_path,
+            branch_name,
+            output_fd,
+            repository_path,
         )
 
         # Step 7: Finalize log file
@@ -291,13 +312,19 @@ class GitHubCLIService:
         # Step 8: Register process and create task
         try:
             task_id = await _register_process_and_create_task(
-                process.pid, get_task_service(),
-                user_id, "application_build",
+                process.pid,
+                get_task_service(),
+                user_id,
+                "application_build",
                 f"Build {language} app: {branch_name}",
                 f"Building app: {requirements[:200]}...",
-                branch_name, language, requirements,
-                conversation_id, repository_path, repo_auth_config,
-                final_output_file
+                branch_name,
+                language,
+                requirements,
+                conversation_id,
+                repository_path,
+                repo_auth_config,
+                final_output_file,
             )
         except RuntimeError as e:
             # Terminate process if registration fails
@@ -321,7 +348,7 @@ class GitHubCLIService:
                 commit_interval=BUILD_COMMIT_INTERVAL,
                 conversation_id=conversation_id,
                 repository_name=repository_name,
-                repository_owner=repository_owner
+                repository_owner=repository_owner,
             )
         )
         self._track_background_task(monitoring_task)
@@ -329,7 +356,7 @@ class GitHubCLIService:
         return {
             "task_id": task_id,
             "pid": process.pid,
-            "output_file": final_output_file
+            "output_file": final_output_file,
         }
 
     async def _monitor_cli_process(
@@ -345,7 +372,7 @@ class GitHubCLIService:
         commit_interval: int = 30,
         conversation_id: Optional[str] = None,
         repository_name: Optional[str] = None,
-        repository_owner: Optional[str] = None
+        repository_owner: Optional[str] = None,
     ) -> None:
         """Monitor CLI process with periodic commits and task updates.
 
@@ -390,8 +417,14 @@ class GitHubCLIService:
                 # Periodic commit if interval reached
                 if time_since_last_push >= commit_interval:
                     await _perform_periodic_commit(
-                        self.git_service, repository_path, branch_name, repo_auth_config,
-                        elapsed_time, task_id, task_service, pid
+                        self.git_service,
+                        repository_path,
+                        branch_name,
+                        repo_auth_config,
+                        elapsed_time,
+                        task_id,
+                        task_service,
+                        pid,
                     )
                     last_push_time = current_time
 
@@ -411,9 +444,19 @@ class GitHubCLIService:
         from .cli.monitor import _determine_and_handle_process_result
 
         await _determine_and_handle_process_result(
-            process, task_id, pid, elapsed_time, timeout_seconds,
-            self.git_service, repository_path, branch_name, repo_auth_config,
-            task_service, conversation_id, repository_name, repository_owner
+            process,
+            task_id,
+            pid,
+            elapsed_time,
+            timeout_seconds,
+            self.git_service,
+            repository_path,
+            branch_name,
+            repo_auth_config,
+            task_service,
+            conversation_id,
+            repository_name,
+            repository_owner,
         )
 
     async def _handle_success_completion(
@@ -425,13 +468,19 @@ class GitHubCLIService:
         task_service: Any,
         conversation_id: Optional[str] = None,
         repository_name: Optional[str] = None,
-        repository_owner: Optional[str] = None
+        repository_owner: Optional[str] = None,
     ) -> None:
         """Wrapper for _handle_success_completion function (for test compatibility)."""
         return await _handle_success_completion(
-            self.git_service, task_id, repository_path, branch_name,
-            repo_auth_config, task_service, conversation_id,
-            repository_name, repository_owner
+            self.git_service,
+            task_id,
+            repository_path,
+            branch_name,
+            repo_auth_config,
+            task_service,
+            conversation_id,
+            repository_name,
+            repository_owner,
         )
 
     async def _handle_failure_completion(
@@ -440,7 +489,7 @@ class GitHubCLIService:
         return_code: Optional[int],
         elapsed_time: float,
         timeout_seconds: int,
-        task_service: Any
+        task_service: Any,
     ) -> None:
         """Wrapper for _handle_failure_completion function (for test compatibility)."""
         return await _handle_failure_completion(
@@ -448,9 +497,9 @@ class GitHubCLIService:
         )
 
     def _track_background_task(self, task: asyncio.Task) -> None:
-        background_tasks: Set[Any] = getattr(asyncio, '_background_tasks', set())
-        if not hasattr(asyncio, '_background_tasks'):
-            setattr(asyncio, '_background_tasks', background_tasks)
+        background_tasks: Set[Any] = getattr(asyncio, "_background_tasks", set())
+        if not hasattr(asyncio, "_background_tasks"):
+            setattr(asyncio, "_background_tasks", background_tasks)
         background_tasks.add(task)
         task.add_done_callback(background_tasks.discard)
 

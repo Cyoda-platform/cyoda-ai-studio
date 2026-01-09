@@ -1,0 +1,58 @@
+{
+  "eval_set_id": "github_scenario_build_an_application_based_on_the_docs_in_this_bra",
+  "name": "github_scenario_build_an_application_based_on_the_docs_in_this_bra",
+  "description": "Test case for: As a user, I want to build an application based on the docs in this branch ...",
+  "eval_cases": [
+    {
+      "eval_id": "gh_build_app_from_docs",
+      "conversation": [
+        {
+          "invocation_id": "e-1d53f57c-de68-49e1-9262-85254a6c3432",
+          "user_content": {
+            "parts": [
+              {
+                "text": "build an application based on the docs in this branch ..."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nSince you asked to build an application from the docs in that branch, the first decision is the repository strategy: which language template to use (Python or Java), whether to use a Cyoda public template or your private repo, and whether to create a new branch or use an existing branch. Choosing the right combination lets me initialize the repo and branch so we can continue to design and generate artifacts reliably.\n\nIf you want to start from Cyoda's standard template (recommended for quick builds), choose a Public repo option. If you want to use your organization\u2019s repository, choose a Private repo option (we'll request the repo URL and installation details after you pick Private). Choose \"My Existing Branch\" if you already have a branch you want me to use; choose \"New Branch\" if you'd like me to create one for you.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767901727.3306153
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767901727.3306184
+    }
+  ],
+  "creation_timestamp": 1767901727.3306198
+}
