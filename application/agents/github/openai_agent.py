@@ -23,7 +23,6 @@ from application.agents.github.tools import (
     get_repository_diff,
     get_requirements_path,
     get_workflow_path,
-    open_canvas_tab,
     pull_repository_changes,
     save_file_to_repository,
 )
@@ -71,7 +70,6 @@ def create_openai_github_agent() -> Agent:
         commit_and_push_changes,
         pull_repository_changes,
         get_repository_diff,
-        open_canvas_tab,
     ]
     openai_tools = adapt_adk_tools_list(adk_tools)
 

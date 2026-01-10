@@ -13,6 +13,7 @@ Agent = _openai_agents.Agent
 
 from application.agents.cyoda_data_agent.tools import (
     create_entity,
+    find_all_entities,
     get_entity,
     search_entities,
 )
@@ -36,6 +37,7 @@ def create_openai_cyoda_data_agent() -> Agent:
     adk_tools = [
         get_entity,
         search_entities,
+        find_all_entities,
         create_entity,
     ]
     openai_tools = adapt_adk_tools_list(adk_tools)

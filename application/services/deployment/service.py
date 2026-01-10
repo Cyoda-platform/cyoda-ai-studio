@@ -44,12 +44,12 @@ class DeploymentService:
     @staticmethod
     def _normalize_for_keyspace(name: str) -> str:
         """Normalize a name for use in Cassandra keyspace (alphanumeric + underscores only)."""
-        return re.sub(r"[^a-z0-9_]", "_", name.lower())
+        return re.sub(r"[^a-z0-9_]", "_", name.lower()).strip("_")
 
     @staticmethod
     def _normalize_for_namespace(name: str) -> str:
         """Normalize a name for use in Kubernetes namespace (alphanumeric + hyphens only)."""
-        return re.sub(r"[^a-z0-9-]", "-", name.lower())
+        return re.sub(r"[^a-z0-9-]", "-", name.lower()).strip("-")
 
     async def deploy_cyoda_environment(
         self,

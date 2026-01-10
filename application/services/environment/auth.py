@@ -42,7 +42,10 @@ class CloudManagerAuthService:
             raise Exception(f"Failed to decode Cloud Manager credentials: {e}")
 
         # Authenticate
-        host = self.cloud_manager_host or "cloud-manager-cyoda.kube3.cyoda.org"
+        # Use CLOUD_MANAGER_AUTH_HOST if set, otherwise default to cloud-manager-cyoda.<CLIENT_HOST>
+        client_host = os.getenv("CLIENT_HOST", "kube3.cyoda.org")
+        default_auth_host = f"cloud-manager-cyoda.{client_host}"
+        host = os.getenv("CLOUD_MANAGER_AUTH_HOST", default_auth_host)
         auth_url = f"{self.protocol}://{host}/api/auth/login"
 
         auth_payload = {

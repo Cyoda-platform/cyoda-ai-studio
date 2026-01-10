@@ -113,7 +113,10 @@ class CloudManagerService:
         }
 
         # Use separate auth host (cloud-manager-cyoda) for authentication
-        auth_host = "cloud-manager-cyoda.kube3.cyoda.org"
+        # Default to cloud-manager-cyoda.<CLIENT_HOST> if CLOUD_MANAGER_AUTH_HOST not set
+        client_host = os.getenv("CLIENT_HOST", "kube3.cyoda.org")
+        default_auth_host = f"cloud-manager-cyoda.{client_host}"
+        auth_host = os.getenv("CLOUD_MANAGER_AUTH_HOST", default_auth_host)
         auth_base_url = f"https://{auth_host}"
 
         try:

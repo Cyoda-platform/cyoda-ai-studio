@@ -7,6 +7,14 @@ tool_definitions/ following the modular architecture pattern.
 
 from __future__ import annotations
 
+from google.adk.tools.tool_context import ToolContext
+
+# Make ToolContext available for type hint evaluation by Google ADK
+# This is needed because 'from __future__ import annotations' makes all annotations strings,
+# and typing.get_type_hints() needs to resolve ToolContext in the module's globals
+# Must be done BEFORE any function definitions so it's in the module's namespace
+__all__ = ["ToolContext"]
+
 # Batch tools
 from .tool_definitions.batch.tools.create_multiple_entities_tool import (
     create_multiple_entities,
@@ -50,25 +58,27 @@ from .tool_definitions.statistics.tools.get_entity_statistics_tool import (
 )
 
 # Export all tools
-__all__ = [
-    # Search
-    "get_entity",
-    "search_entities",
-    "find_all_entities",
-    # Statistics
-    "get_entity_statistics",
-    "get_entity_statistics_by_state",
-    "get_entity_statistics_for_model",
-    "get_entity_statistics_by_state_for_model",
-    # CRUD
-    "create_entity",
-    "update_entity",
-    "delete_entity",
-    "get_entity_changes_metadata",
-    "delete_all_entities",
-    "execute_workflow_transition",
-    # Batch
-    "create_multiple_entities",
-    "update_multiple_entities",
-    "save_multiple_entities",
-]
+__all__.extend(
+    [
+        # Search
+        "get_entity",
+        "search_entities",
+        "find_all_entities",
+        # Statistics
+        "get_entity_statistics",
+        "get_entity_statistics_by_state",
+        "get_entity_statistics_for_model",
+        "get_entity_statistics_by_state_for_model",
+        # CRUD
+        "create_entity",
+        "update_entity",
+        "delete_entity",
+        "get_entity_changes_metadata",
+        "delete_all_entities",
+        "execute_workflow_transition",
+        # Batch
+        "create_multiple_entities",
+        "update_multiple_entities",
+        "save_multiple_entities",
+    ]
+)

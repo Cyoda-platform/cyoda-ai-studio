@@ -144,3 +144,41 @@ async def find_all_entities(
     except Exception as e:
         logger.exception(f"Failed to find all entities: {e}")
         return {"success": False, "error": str(e)}
+
+
+async def create_entity(
+    tool_context: ToolContext,
+    client_id: str,
+    client_secret: str,
+    cyoda_host: str,
+    entity_model: str,
+    entity_data: dict[str, Any],
+) -> dict[str, Any]:
+    """Create a new entity in user's Cyoda environment.
+
+    Args:
+        tool_context: Google ADK tool context
+        client_id: Cyoda client ID
+        client_secret: Cyoda client secret
+        cyoda_host: Cyoda host (e.g., 'client-123.eu.cyoda.net' or full URL)
+        entity_model: Entity model type
+        entity_data: Entity data to create
+
+    Returns:
+        Created entity or error information
+    """
+    try:
+        logger.info(f"Creating {entity_model} in {cyoda_host} with client {client_id}")
+        container = UserServiceContainer(
+            client_id=client_id,
+            client_secret=client_secret,
+            cyoda_host=cyoda_host,
+        )
+        entity_service = container.get_entity_service()
+        result = await entity_service.save(
+            entity_data, entity_model, entity_version="1"
+        )
+        return {"success": True, "data": result}
+    except Exception as e:
+        logger.exception(f"Failed to create entity: {e}")
+        return {"success": False, "error": str(e)}

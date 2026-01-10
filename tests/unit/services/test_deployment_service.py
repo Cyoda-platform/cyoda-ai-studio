@@ -52,6 +52,25 @@ class TestDeploymentService:
         assert DeploymentService._normalize_for_keyspace("My-App") == "my_app"
         assert DeploymentService._normalize_for_keyspace("valid_name") == "valid_name"
 
+    def test_normalize_for_keyspace_trailing_special_chars(self):
+        """Test keyspace normalization strips trailing underscores."""
+        assert DeploymentService._normalize_for_keyspace("mcp-cyoda_") == "mcp_cyoda"
+        assert DeploymentService._normalize_for_keyspace("test-name_") == "test_name"
+        assert DeploymentService._normalize_for_keyspace("app-name-") == "app_name"
+        assert DeploymentService._normalize_for_keyspace("trailing---") == "trailing"
+
+    def test_normalize_for_keyspace_leading_special_chars(self):
+        """Test keyspace normalization strips leading underscores."""
+        assert DeploymentService._normalize_for_keyspace("-leading") == "leading"
+        assert DeploymentService._normalize_for_keyspace("---test") == "test"
+        assert DeploymentService._normalize_for_keyspace("-app_name") == "app_name"
+
+    def test_normalize_for_keyspace_both_ends(self):
+        """Test keyspace normalization strips underscores from both ends."""
+        assert DeploymentService._normalize_for_keyspace("-middle-") == "middle"
+        assert DeploymentService._normalize_for_keyspace("---test---") == "test"
+        assert DeploymentService._normalize_for_keyspace("-app_name-") == "app_name"
+
     def test_normalize_for_namespace(self):
         """Test namespace normalization (alphanumeric + hyphens)."""
         assert (
@@ -64,6 +83,25 @@ class TestDeploymentService:
         )
         assert DeploymentService._normalize_for_namespace("My_App") == "my-app"
         assert DeploymentService._normalize_for_namespace("valid-name") == "valid-name"
+
+    def test_normalize_for_namespace_trailing_special_chars(self):
+        """Test namespace normalization strips trailing hyphens."""
+        assert DeploymentService._normalize_for_namespace("mcp-cyoda_") == "mcp-cyoda"
+        assert DeploymentService._normalize_for_namespace("test-name_") == "test-name"
+        assert DeploymentService._normalize_for_namespace("app_name_") == "app-name"
+        assert DeploymentService._normalize_for_namespace("trailing___") == "trailing"
+
+    def test_normalize_for_namespace_leading_special_chars(self):
+        """Test namespace normalization strips leading hyphens."""
+        assert DeploymentService._normalize_for_namespace("_leading") == "leading"
+        assert DeploymentService._normalize_for_namespace("___test") == "test"
+        assert DeploymentService._normalize_for_namespace("_app-name") == "app-name"
+
+    def test_normalize_for_namespace_both_ends(self):
+        """Test namespace normalization strips hyphens from both ends."""
+        assert DeploymentService._normalize_for_namespace("_middle_") == "middle"
+        assert DeploymentService._normalize_for_namespace("___test___") == "test"
+        assert DeploymentService._normalize_for_namespace("_app-name_") == "app-name"
 
     @pytest.mark.asyncio
     async def test_deploy_cyoda_environment_success(self, deployment_service):
@@ -162,11 +200,12 @@ class TestDeploymentService:
                 env_name="very-long-environment-name",  # 28 chars
             )
 
-            # Verify namespace contains truncated name (10 chars)
+            # Verify namespace contains truncated name (10 chars, trailing hyphen stripped)
             call_args = mock_client.post.call_args
             payload = call_args[1]["json"]
-            assert "very-long-" in payload["user_defined_namespace"]
-            assert len("very-long-") == 10
+            # "very-long-environment-name"[:10] = "very-long-" -> strip trailing hyphen -> "very-long"
+            assert "very-long" in payload["user_defined_namespace"]
+            assert payload["user_defined_namespace"] == "client-user-very-long"
 
     @pytest.mark.asyncio
     async def test_deploy_cyoda_environment_missing_build_id(self, deployment_service):
@@ -357,16 +396,20 @@ class TestDeploymentService:
                 cyoda_client_secret="client-secret",
             )
 
-            # Verify truncation in namespaces
+            # Verify truncation in namespaces (trailing hyphens are stripped)
             call_args = mock_client.post.call_args
             payload = call_args[1]["json"]
             app_namespace = payload["app_namespace"]
             cyoda_namespace = payload["cyoda_namespace"]
 
-            # Should contain truncated names (10 chars each)
-            assert "very-long-" in app_namespace
-            assert "very-long-" in cyoda_namespace
-            assert "extremely-" in app_namespace
+            # Should contain truncated names (10 chars each, trailing hyphens stripped)
+            # "very-long-environment-name"[:10] = "very-long-" -> "very-long"
+            # "extremely-long-application-name"[:10] = "extremely-" -> "extremely"
+            assert "very-long" in app_namespace
+            assert "very-long" in cyoda_namespace
+            assert "extremely" in app_namespace
+            assert cyoda_namespace == "client-user-very-long"
+            assert app_namespace == "client-1-user-very-long-extremely"
 
     @pytest.mark.asyncio
     async def test_deploy_user_application_missing_build_id(self, deployment_service):

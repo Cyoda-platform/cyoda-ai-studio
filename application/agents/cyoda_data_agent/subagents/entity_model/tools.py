@@ -7,6 +7,14 @@ tool_definitions/ following the modular architecture pattern.
 
 from __future__ import annotations
 
+from google.adk.tools.tool_context import ToolContext
+
+# Make ToolContext available for type hint evaluation by Google ADK
+# This is needed because 'from __future__ import annotations' makes all annotations strings,
+# and typing.get_type_hints() needs to resolve ToolContext in the module's globals
+# Must be done BEFORE any function definitions so it's in the module's namespace
+__all__ = ["ToolContext"]
+
 # Configuration tools
 from .tool_definitions.config.tools.set_model_change_level_tool import (
     set_model_change_level,
@@ -43,18 +51,20 @@ from .tool_definitions.workflow.tools.import_entity_workflows_tool import (
 )
 
 # Export all tools
-__all__ = [
-    # Model management
-    "list_entity_models",
-    "lock_entity_model",
-    "unlock_entity_model",
-    # Model I/O
-    "export_model_metadata",
-    "import_entity_model",
-    "delete_entity_model",
-    # Workflow
-    "export_entity_workflows",
-    "import_entity_workflows",
-    # Configuration
-    "set_model_change_level",
-]
+__all__.extend(
+    [
+        # Model management
+        "list_entity_models",
+        "lock_entity_model",
+        "unlock_entity_model",
+        # Model I/O
+        "export_model_metadata",
+        "import_entity_model",
+        "delete_entity_model",
+        # Workflow
+        "export_entity_workflows",
+        "import_entity_workflows",
+        # Configuration
+        "set_model_change_level",
+    ]
+)
