@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import functools
 import logging
-from typing import Callable
+from typing import Any, Callable, Dict, List, Optional, Union
+
+from google.adk.tools.tool_context import ToolContext
 
 from ...common.formatters.entity_formatters import format_entity_error
 

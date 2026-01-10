@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
-__all__ = ["root_agent"]
+from google.adk.tools.tool_context import ToolContext
+
+# Make ToolContext available for type hint evaluation
+__all__ = ["ToolContext", "root_agent"]
 
 from application.agents.cyoda_data_agent.agent import root_agent
