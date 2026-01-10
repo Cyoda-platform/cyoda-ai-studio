@@ -87,66 +87,42 @@ class TestGitHubServicesIntegration:
         self, git_service, temp_repo
     ):
         """Test commit detects canvas resources (entities, workflows)."""
-        # Create entity file
-        entity_dir = (
-            Path(temp_repo)
-            / "application"
-            / "resources"
-            / "entity"
-            / "customer"
-            / "version_1"
-        )
-        entity_dir.mkdir(parents=True, exist_ok=True)
-        entity_file = entity_dir / "customer.json"
-        entity_file.write_text('{"id": "CUST-001"}')
 
-        # Create workflow file
-        workflow_dir = (
-            Path(temp_repo)
-            / "application"
-            / "resources"
-            / "workflow"
-            / "process"
-            / "version_1"
-        )
-        workflow_dir.mkdir(parents=True, exist_ok=True)
-        workflow_file = workflow_dir / "process.json"
-        workflow_file.write_text('{"name": "Process"}')
+        # Mock all git operations to prevent touching real repository
+        async def mock_git_cmd(cmd, **kwargs):
+            if cmd[0] == "status":
+                return {
+                    "returncode": 0,
+                    "stdout": "A application/resources/entity/customer/version_1/customer.json\n"
+                    "A application/resources/workflow/process/version_1/process.json",
+                    "stderr": "",
+                }
+            elif cmd[0] == "commit":
+                return {
+                    "returncode": 0,
+                    "stdout": "[main abc123] Add entities and workflows",
+                    "stderr": "",
+                }
+            elif cmd[0] in ["config", "add", "push"]:
+                return {"returncode": 0, "stdout": "", "stderr": ""}
+            return {"returncode": 0, "stdout": "", "stderr": ""}
 
-        # Mock subprocess to avoid actual git push to non-existent remote
         with patch(
-            "asyncio.create_subprocess_exec", new_callable=AsyncMock
-        ) as mock_proc:
-            # Create a mock process
-            mock_process = MagicMock()
-            mock_process.communicate = AsyncMock(return_value=(b"", b""))
-            mock_process.returncode = 0
-            mock_proc.return_value = mock_process
+            "application.services.github.operations_service.service.commit_operations.run_git_cmd",
+            AsyncMock(side_effect=mock_git_cmd),
+        ):
+            with patch("os.chdir"):
+                with patch("os.getcwd", return_value="/fake/dir"):
+                    result = await git_service.commit_and_push(
+                        repository_path="/fake/test/repo",
+                        commit_message="Add entities and workflows",
+                        branch_name="main",
+                        repo_auth_config={},
+                    )
 
-            result = await git_service.commit_and_push(
-                repository_path=temp_repo,
-                commit_message="Add entities and workflows",
-                branch_name="main",
-                repo_auth_config={},
-            )
-
-            assert result["success"]
-            assert "canvas_resources" in result
-            # Should detect entity and workflow files
-            canvas_resources = result.get("canvas_resources")
-            # Canvas resources might be None or empty if detection didn't find anything
-            if canvas_resources:
-                assert isinstance(canvas_resources, dict)
-                # At least one of these should have detected files
-                has_resources = (
-                    canvas_resources.get("entities")
-                    or canvas_resources.get("workflows")
-                    or canvas_resources.get("requirements")
-                )
-                # If detection worked, we should find something
-                # (test might fail if detect_canvas_resources has different logic)
-            # At minimum, verify the structure is correct
-            assert isinstance(result["changed_files"], list)
+                    assert result["success"]
+                    assert "canvas_resources" in result
+                    assert isinstance(result["changed_files"], list)
 
     @pytest.mark.asyncio
     async def test_file_system_service_saves_and_executes(self, fs_service, temp_repo):
@@ -241,53 +217,38 @@ class TestServiceErrorHandling:
     @pytest.mark.asyncio
     async def test_commit_handles_nothing_to_commit(self, git_service):
         """Test commit gracefully handles 'nothing to commit' scenario."""
-        temp_dir = tempfile.mkdtemp()
-        try:
-            # Initialize repo with a commit
-            import subprocess
 
-            subprocess.run(
-                ["git", "init"], cwd=temp_dir, check=True, capture_output=True
-            )
-            subprocess.run(
-                ["git", "config", "user.name", "Test"], cwd=temp_dir, check=True
-            )
-            subprocess.run(
-                ["git", "config", "user.email", "test@test.com"],
-                cwd=temp_dir,
-                check=True,
-            )
+        # Mock all git operations to prevent touching real repository
+        async def mock_git_cmd(cmd, **kwargs):
+            if cmd[0] == "status":
+                return {"returncode": 0, "stdout": "", "stderr": ""}
+            elif cmd[0] == "commit":
+                # Simulate nothing to commit
+                return {
+                    "returncode": 1,
+                    "stdout": "nothing to commit, working tree clean",
+                    "stderr": "",
+                }
+            elif cmd[0] in ["config", "add"]:
+                return {"returncode": 0, "stdout": "", "stderr": ""}
+            return {"returncode": 0, "stdout": "", "stderr": ""}
 
-            readme = Path(temp_dir) / "README.md"
-            readme.write_text("# Test")
-            subprocess.run(["git", "add", "."], cwd=temp_dir, check=True)
-            subprocess.run(["git", "commit", "-m", "Initial"], cwd=temp_dir, check=True)
-
-            # Try to commit again without changes (mock push to avoid needing remote)
-            with patch.object(git_service, "_run_git_cmd", AsyncMock()) as mock_git:
-
-                async def git_cmd_side_effect(cmd, **kwargs):
-                    if cmd[0] == "push":
-                        return {"returncode": 0, "stdout": "", "stderr": ""}
-                    return await GitHubOperationsService._run_git_cmd(
-                        git_service, cmd, **kwargs
+        with patch(
+            "application.services.github.operations_service.service.commit_operations.run_git_cmd",
+            AsyncMock(side_effect=mock_git_cmd),
+        ):
+            with patch("os.chdir"):
+                with patch("os.getcwd", return_value="/fake/dir"):
+                    result = await git_service.commit_and_push(
+                        repository_path="/fake/test/repo",
+                        commit_message="No changes",
+                        branch_name="main",
+                        repo_auth_config={},
                     )
 
-                mock_git.side_effect = git_cmd_side_effect
-
-                result = await git_service.commit_and_push(
-                    repository_path=temp_dir,
-                    commit_message="No changes",
-                    branch_name="main",
-                    repo_auth_config={},
-                )
-
-                assert result["success"]
-                assert "No changes" in result["message"]
-                assert len(result["changed_files"]) == 0
-
-        finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
+                    assert result["success"]
+                    assert "No changes" in result["message"]
+                    assert len(result["changed_files"]) == 0
 
     @pytest.mark.asyncio
     async def test_ensure_repository_handles_timeout(self, git_service):
