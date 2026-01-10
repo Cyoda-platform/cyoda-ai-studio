@@ -312,63 +312,48 @@ class TestServiceErrorHandling:
     @pytest.mark.asyncio
     async def test_commit_retries_push_on_failure(self, git_service):
         """Test commit retries push operation on failure."""
-        temp_dir = tempfile.mkdtemp()
-        try:
-            import subprocess
+        push_call_count = [0]
 
-            subprocess.run(
-                ["git", "init"], cwd=temp_dir, check=True, capture_output=True
-            )
-            subprocess.run(
-                ["git", "config", "user.name", "Test"], cwd=temp_dir, check=True
-            )
-            subprocess.run(
-                ["git", "config", "user.email", "test@test.com"],
-                cwd=temp_dir,
-                check=True,
-            )
-
-            test_file = Path(temp_dir) / "test.txt"
-            test_file.write_text("content")
-
-            push_call_count = [0]
-            original_subprocess = asyncio.create_subprocess_exec
-
-            async def mock_subprocess(*args, **kwargs):
-                # Check if this is a push command
-                if len(args) > 0 and "push" in str(args):
-                    push_call_count[0] += 1
-                    # Create a mock process
-                    mock_process = MagicMock()
-                    if push_call_count[0] == 1:
-                        # First push attempt fails
-                        mock_process.communicate = AsyncMock(
-                            return_value=(b"", b"error: failed to push")
-                        )
-                        mock_process.returncode = 1
-                    else:
-                        # Second push attempt succeeds
-                        mock_process.communicate = AsyncMock(return_value=(b"", b""))
-                        mock_process.returncode = 0
-                    return mock_process
+        # Mock all git operations to prevent touching real repository
+        async def mock_git_cmd(cmd, **kwargs):
+            if cmd[0] == "push":
+                push_call_count[0] += 1
+                if push_call_count[0] == 1:
+                    # First push attempt fails
+                    raise Exception("error: failed to push")
                 else:
-                    # For non-push commands, call real subprocess
-                    return await original_subprocess(*args, **kwargs)
+                    # Second push attempt succeeds
+                    return {"returncode": 0, "stdout": "", "stderr": ""}
+            elif cmd[0] == "status":
+                return {"returncode": 0, "stdout": "M test.txt", "stderr": ""}
+            elif cmd[0] == "commit":
+                return {
+                    "returncode": 0,
+                    "stdout": "[main abc123] Test commit",
+                    "stderr": "",
+                }
+            elif cmd[0] in ["config", "add"]:
+                return {"returncode": 0, "stdout": "", "stderr": ""}
+            elif cmd[0] == "remote":
+                return {"returncode": 0, "stdout": "", "stderr": ""}
+            return {"returncode": 0, "stdout": "", "stderr": ""}
 
-            with patch("asyncio.create_subprocess_exec", side_effect=mock_subprocess):
-                result = await git_service.commit_and_push(
-                    repository_path=temp_dir,
-                    commit_message="Test commit",
-                    branch_name="main",
-                    repo_auth_config={},
-                )
+        with patch(
+            "application.services.github.operations_service.service.commit_operations.run_git_cmd",
+            AsyncMock(side_effect=mock_git_cmd),
+        ):
+            with patch("os.chdir"):
+                with patch("os.getcwd", return_value="/fake/dir"):
+                    result = await git_service.commit_and_push(
+                        repository_path="/fake/test/repo",
+                        commit_message="Test commit",
+                        branch_name="main",
+                        repo_auth_config={},
+                    )
 
-                # Should have retried and succeeded
-                assert push_call_count[0] >= 1
-                assert result["success"]
-
-        finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
+                    # Should have retried and succeeded
+                    assert push_call_count[0] >= 1
+                    assert result["success"]
 
 
 class TestMonitoringIntegration:
