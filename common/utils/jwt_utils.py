@@ -32,10 +32,21 @@ class JWTConfig:
         self.guest_token_expiry_weeks = 50  # 50 weeks for guest tokens
         self.user_token_expiry_hours = 24  # 24 hours for user tokens
 
+        # Auth0 configuration for validating external tokens
+        self.auth0_domain = os.getenv("AUTH0_DOMAIN")
+        self.auth0_audience = os.getenv("AUTH0_AUDIENCE")
+        self.auth0_algorithms = ["RS256"]  # Auth0 uses RS256
+
         if self.secret_key == "dev-secret-key-change-in-production":
             logger.warning(
                 "Using default AUTH_SECRET_KEY! "
                 "Set AUTH_SECRET_KEY environment variable in production!"
+            )
+
+        if not self.auth0_domain or not self.auth0_audience:
+            logger.warning(
+                "AUTH0_DOMAIN or AUTH0_AUDIENCE not set. "
+                "Auth0 token validation will fail. Only guest tokens will work."
             )
 
 
@@ -184,13 +195,63 @@ def extract_bearer_token(auth_header: str) -> str:
     return parts[1]
 
 
+def validate_auth0_token(token: str) -> dict:
+    """
+    Validate an Auth0 JWT token using Auth0's public keys.
+
+    Args:
+        token: JWT token string from Auth0
+
+    Returns:
+        dict: Decoded token payload
+
+    Raises:
+        TokenExpiredError: If token has expired
+        TokenValidationError: If token is invalid or Auth0 is not configured
+    """
+    if not _config.auth0_domain or not _config.auth0_audience:
+        raise TokenValidationError(
+            "Auth0 not configured. Set AUTH0_DOMAIN and AUTH0_AUDIENCE environment variables."
+        )
+
+    try:
+        # Fetch Auth0's JWKS (JSON Web Key Set)
+        jwks_url = f"https://{_config.auth0_domain}/.well-known/jwks.json"
+        jwks_client = jwt.PyJWKClient(jwks_url)
+
+        # Get the signing key from the token header
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+
+        # Validate and decode the token
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=_config.auth0_algorithms,
+            audience=_config.auth0_audience,
+            issuer=f"https://{_config.auth0_domain}/",
+        )
+
+        return payload
+
+    except ExpiredSignatureError:
+        logger.warning("Auth0 token has expired")
+        raise TokenExpiredError("Token has expired")
+
+    except InvalidTokenError as e:
+        logger.warning(f"Invalid Auth0 token: {e}")
+        raise TokenValidationError(f"Invalid Auth0 token: {e}")
+
+    except Exception as e:
+        logger.error(f"Error validating Auth0 token: {e}")
+        raise TokenValidationError(f"Error validating Auth0 token: {e}")
+
+
 def get_user_info_from_token(token: str) -> Tuple[str, bool]:
     """
     Extract user ID and superuser status from a JWT token.
 
-    For guest tokens (user_id starts with 'guest.'), validates the signature.
-    For other tokens, only extracts the payload without verification
-    (assumes external auth provider has already validated).
+    For guest tokens (user_id starts with 'guest.'), validates signature with AUTH_SECRET_KEY.
+    For Auth0 tokens, validates signature using Auth0's public keys via AUTH0_DOMAIN.
 
     Args:
         token: JWT token string
@@ -199,25 +260,34 @@ def get_user_info_from_token(token: str) -> Tuple[str, bool]:
         tuple: (user_id, is_superuser)
 
     Raises:
-        TokenValidationError: If token is invalid
+        TokenValidationError: If token is invalid or signature verification fails
         TokenExpiredError: If token has expired
     """
     # First decode without verification to check if it's a guest token
     try:
-        payload = jwt.decode(token, options={"verify_signature": False})
+        unverified_payload = jwt.decode(token, options={"verify_signature": False})
     except InvalidTokenError as e:
         raise TokenValidationError(f"Invalid token format: {e}")
 
-    user_id = payload.get("caas_org_id")
-    if not user_id:
-        raise TokenValidationError("Token missing user_id (caas_org_id)")
+    # Check if this is a guest token
+    user_id = unverified_payload.get("caas_org_id") or unverified_payload.get("sub")
 
-    # For guest tokens, validate the signature
-    if user_id.startswith("guest."):
+    if user_id and user_id.startswith("guest."):
+        # Guest token: validate with our secret key
         payload = validate_token(token, verify_signature=True)
+        user_id = payload.get("caas_org_id")
+        is_superuser = payload.get("caas_cyoda_employee", False)
+    else:
+        # Auth0 token: validate with Auth0's public keys
+        payload = validate_auth0_token(token)
 
-    # Extract superuser status (defaults to False if not present)
-    is_superuser = payload.get("caas_cyoda_employee", False)
+        # Extract user_id from Auth0 token
+        # Auth0 typically uses 'sub' claim, but we check both
+        user_id = payload.get("caas_org_id") or payload.get("sub")
+        is_superuser = payload.get("caas_cyoda_employee", False)
+
+    if not user_id:
+        raise TokenValidationError("Token missing user_id")
 
     return user_id, is_superuser
 
