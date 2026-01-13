@@ -1,0 +1,430 @@
+# Cyoda Java Client Application - Codebase Patterns and Structure
+
+🚨 **CRITICAL: THIS IS AN INFORMATIONAL REFERENCE ONLY** 🚨
+
+This document describes the established patterns and structure of Cyoda Java client applications in this codebase.
+**Use this as a reference to understand how the codebase works and what patterns to follow.**
+
+**IMPORTANT RULES:**
+1. **Implement ONLY what the user requests** - Do not add extra features or components
+2. **Consult this reference** to understand how to implement the user's request correctly
+3. **Follow the patterns** described here when implementing the requested changes
+4. **Do not build complete applications** unless explicitly requested
+
+**Examples:**
+- ✅ User asks: "Add a Customer entity" → Create ONLY the entity (and its JSON definition)
+- ❌ User asks: "Add a Customer entity" → Do NOT also create processor, criterion, workflow, controller unless requested
+- ✅ User asks: "Add a Customer entity with workflow" → Create entity, JSON definition, and workflow
+- ✅ User asks: "Add validation to Customer" → Create ONLY the criterion/processor for validation
+
+## Project Structure Overview
+
+The codebase follows a Spring Boot architecture with clear separation of concerns:
+
+```
+src/main/java/com/java_template/
+├── Application.java                    # Main Spring Boot application
+├── common/                            # Framework code (DO NOT MODIFY)
+│   ├── service/EntityService.java
+│   ├── workflow/CyodaEntity.java
+│   ├── workflow/CyodaProcessor.java
+│   └── workflow/CyodaCriterion.java
+└── application/                       # Business logic (MODIFY HERE)
+    ├── controller/                    # REST endpoints
+    │   └── {EntityName}Controller.java
+    ├── entity/                        # Domain entities
+    │   └── {entity_name}/
+    │       └── version_1/
+    │           └── {EntityName}.java
+    ├── processor/                     # Workflow processors
+    │   └── {EntityName}Processor.java
+    └── criterion/                     # Workflow criteria
+        └── {EntityName}ValidationCriterion.java
+
+src/main/resources/
+├── workflow/                          # Workflow definitions
+│   └── {entity_name}/
+│       └── version_1/
+│           └── {EntityName}.json
+└── functional_requirements/          # Business requirements
+    └── {requirement_name}.md
+
+src/test/java/com/example/application/ # Reference examples (DO NOT MODIFY)
+```
+
+## Core Architecture Principles
+
+### 1. Interface-Based Design (No Reflection)
+- All entities implement `CyodaEntity` interface
+- All processors implement `CyodaProcessor` interface
+- All criteria implement `CyodaCriterion` interface
+- No Java reflection allowed
+
+### 2. Workflow-Driven Architecture
+- All business logic flows through Cyoda workflows
+- Entity state is managed by workflows (read-only in code)
+- Transitions trigger processors and criteria
+
+### 3. Thin Controllers Pattern
+- Controllers are pure proxies to EntityService
+- No business logic in controllers
+- Controllers only handle HTTP concerns
+
+## Entity Patterns
+
+### Entity Structure
+Entities in `application/entity/{entity_name}/version_1/{EntityName}.java`:
+
+```java
+package com.java_template.application.entity.{entity_name}.version_1;
+
+import com.java_template.common.workflow.CyodaEntity;
+import lombok.Data;
+import org.cyoda.cloud.api.event.ModelSpec;
+import org.cyoda.cloud.api.event.OperationSpecification;
+
+@Data
+public class EntityName implements CyodaEntity {
+    // Constants (REQUIRED)
+    public static final String ENTITY_NAME = EntityName.class.getSimpleName();
+    public static final Integer ENTITY_VERSION = 1;
+
+    // Business ID field (REQUIRED)
+    private String entityId;
+
+    // Business fields
+    private String fieldName;
+    private String optionalField;
+
+    // Nested classes for complex structures
+    @Data
+    public static class NestedData {
+        private String nestedField;
+    }
+
+    @Override
+    public OperationSpecification getModelKey() {
+        ModelSpec modelSpec = new ModelSpec();
+        modelSpec.setName(ENTITY_NAME);
+        modelSpec.setVersion(ENTITY_VERSION);
+        return new OperationSpecification.Entity(modelSpec, ENTITY_NAME);
+    }
+
+    @Override
+    public boolean isValid() {
+        return entityId != null && !entityId.trim().isEmpty();
+        // Add other required field validations
+    }
+}
+```
+
+### Key Entity Patterns
+- **Technical ID**: `entityResponse.getMetadata().getId()` (UUID, immutable, managed by Cyoda)
+- **Business ID**: Custom field (e.g., `entityId`, `customerId`)
+- **Entity State**: `entityResponse.getMetadata().getState()` (workflow-managed, read-only)
+
+### 🚨 CRITICAL: JSON Entity Definition Required
+
+**ALWAYS create a JSON entity definition** alongside the Java entity class:
+
+**Location**: `src/main/resources/entity/{entity_name}/version_1/{EntityName}.json`
+
+**Example** for a Customer entity:
+```json
+{
+  "customerId": "CUST-001",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1-555-0123"
+}
+```
+
+**Rules for JSON Entity Definitions:**
+- File name must match entity name with PascalCase (e.g., `Customer.json`, `OrderItem.json`)
+- Must be in `src/main/resources/entity/{entity_name}/version_1/` directory
+- JSON must be a concrete example instance, NOT a schema
+- Include all business fields with realistic example values
+- Do NOT include technical fields like `id`, `meta`, `state`
+- Use appropriate example values: strings, numbers, booleans, objects, arrays
+- Example values should match the field types defined in the Java entity class
+- Use camelCase for field names (matching Java conventions)
+
+**When to create JSON entity definitions:**
+- ✅ ALWAYS when creating a new entity
+- ✅ ALWAYS when adding fields to an existing entity
+- ✅ ALWAYS when modifying entity structure
+
+### Important: State vs Status
+- If requirements mention "state" or "status", map to entity metadata state
+- State is workflow-managed and cannot be changed manually
+- Only read state via `getMetadata().getState()`, never set it
+
+## Workflow Patterns
+
+### Workflow Structure
+Workflows in `src/main/resources/workflow/{entity_name}/version_1/{EntityName}.json`:
+
+```json
+{
+  "version": "1.0",
+  "name": "EntityName",
+  "desc": "Entity lifecycle workflow",
+  "initialState": "initial",
+  "active": true,
+  "states": {
+    "initial": {
+      "transitions": [
+        {
+          "name": "create_entity",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "update_entity",
+          "next": "active",
+          "manual": true,
+          "processors": [
+            {
+              "name": "EntityNameProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+### Workflow Rules
+- **Initial state**: Use `"initial"` as the initial state (not "none" - reserved keyword)
+- **Automatic transition**: First transition from initial state must be `"manual": false`
+- **Loop transitions**: Transitions to self or previous states must be `"manual": true`
+- **Processor names**: Must match Spring component class names exactly (case-sensitive)
+- **Naming**: Workflow name must match entity name (PascalCase)
+
+### Transition Patterns
+- **With transition**: Moves entity to specified state
+- **Without transition**: Loops back to same state
+- **Manual transitions**: Used for updates (must be explicitly triggered)
+- **Automatic transitions**: Used for creation (triggered automatically)
+
+## Processor Patterns
+
+### Processor Structure
+Processors in `application/processor/{EntityName}Processor.java`:
+
+```java
+package com.java_template.application.processor;
+
+import com.java_template.common.service.EntityService;
+import com.java_template.common.workflow.CyodaEventContext;
+import com.java_template.common.workflow.CyodaProcessor;
+import com.java_template.application.entity.{entity_name}.version_1.EntityName;
+import org.springframework.stereotype.Component;
+
+@Component
+public class EntityNameProcessor implements CyodaProcessor {
+
+    private final EntityService entityService;
+
+    public EntityNameProcessor(EntityService entityService) {
+        this.entityService = entityService;
+    }
+
+    @Override
+    public void process(CyodaEventContext context) {
+        // Get current entity (read-only)
+        EntityName entity = context.getEntity(EntityName.class);
+
+        // Access other entities via EntityService
+        // EntityWithMetadata<OtherEntity> other = entityService.getByBusinessId(...);
+
+        // Business logic here
+        // ...
+
+        // Modify current entity
+        entity.setFieldName("new value");
+
+        // Update context (will be saved automatically)
+        context.setEntity(entity);
+    }
+}
+```
+
+### Processor Rules
+- **Current entity**: Read-only via EntityService (will be updated automatically via context)
+- **Other entities**: Can get/update/delete via EntityService
+- **Updates**: Use manual transitions only (never automatic)
+- **Spring Component**: Must be annotated with `@Component`
+- **Dependency Injection**: Use constructor injection for EntityService
+
+### EntityService Interface
+```java
+// Get entity by technical ID
+EntityWithMetadata<EntityName> entity = entityService.getById(
+    technicalId,
+    EntityName.ENTITY_NAME,
+    EntityName.ENTITY_VERSION
+);
+
+// Get entity by business ID
+EntityWithMetadata<EntityName> entity = entityService.getByBusinessId(
+    businessId,
+    EntityName.ENTITY_NAME,
+    EntityName.ENTITY_VERSION
+);
+
+// Update entity (with manual transition)
+EntityWithMetadata<EntityName> result = entityService.update(
+    entity.getData(),
+    "update_entity"
+);
+
+// Update entity (loop back to same state)
+EntityWithMetadata<EntityName> result = entityService.update(
+    entity.getData()
+);  // No transition = loop back
+
+// Search entities
+List<QueryCondition> conditions = new ArrayList<>();
+SimpleCondition condition = new SimpleCondition()
+    .withJsonPath("$.fieldName")
+    .withOperation(Operation.EQUALS)
+    .withValue(objectMapper.valueToTree(value));
+conditions.add(condition);
+
+GroupCondition groupCondition = new GroupCondition()
+    .withOperator(GroupCondition.Operator.AND)
+    .withConditions(conditions);
+
+List<EntityWithMetadata<EntityName>> results = entityService.search(
+    EntityName.ENTITY_NAME,
+    EntityName.ENTITY_VERSION,
+    groupCondition
+);
+```
+
+## Controller Patterns
+
+### Controller Structure
+Controllers in `application/controller/{EntityName}Controller.java`:
+
+```java
+package com.java_template.application.controller;
+
+import com.java_template.common.service.EntityService;
+import com.java_template.application.entity.{entity_name}.version_1.EntityName;
+import org.springframework.web.bind.annotation.*;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/ui/{entity_name}")
+public class EntityNameController {
+
+    private final EntityService entityService;
+
+    public EntityNameController(EntityService entityService) {
+        this.entityService = entityService;
+    }
+
+    @PostMapping
+    public Map<String, String> createEntity(@RequestBody EntityName entity) {
+        EntityWithMetadata<EntityName> result = entityService.create(entity);
+        return Map.of("id", result.getMetadata().getId());
+    }
+
+    @PutMapping("/{id}")
+    public Map<String, String> updateEntity(
+        @PathVariable String id,
+        @RequestBody EntityName entity
+    ) {
+        EntityWithMetadata<EntityName> result = entityService.update(
+            entity,
+            "update_entity"
+        );
+        return Map.of("id", result.getMetadata().getId());
+    }
+
+    @GetMapping("/{id}")
+    public EntityName getEntity(@PathVariable String id) {
+        EntityWithMetadata<EntityName> result = entityService.getById(
+            id,
+            EntityName.ENTITY_NAME,
+            EntityName.ENTITY_VERSION
+        );
+        return result.getData();
+    }
+}
+```
+
+### Controller Rules
+- **Thin proxies**: No business logic, only EntityService calls
+- **Entity constants**: Use `ENTITY_NAME`/`ENTITY_VERSION` instead of hardcoded strings
+- **Return technical IDs**: Always return technical ID in responses
+- **REST mapping**: Use `/ui/{entity_name}/**` endpoints
+- **Accept entities**: Use `@RequestBody EntityName` not `Map<String, Object>`
+
+## Build and Validation
+
+### Required Build Steps
+```bash
+# Generate Cyoda API classes
+./gradlew build
+
+# Compile after each change
+./gradlew clean compileJava
+
+# Run tests
+./gradlew test
+```
+
+### Build Rules
+- **Compile early and often**: After each component implementation
+- **Generated sources**: Ensure `build/generated-sources/js2p/org/cyoda/cloud/api/event` exists
+- **Fix errors immediately**: Don't proceed with compilation errors
+
+## Reference Implementation
+
+The `src/test/java/com/example/application/` directory contains complete working examples:
+- **Entity**: Example entity implementation
+- **Processor**: Example processor implementation
+- **Criterion**: Example criterion implementation
+- **Controller**: Example controller implementation
+
+**Always reference these examples when implementing new features.**
+
+## Important Constraints
+
+### DO NOT MODIFY
+- `src/main/java/com/java_template/common/` - Framework code only
+- `src/test/java/com/example/application/` - Reference examples only
+
+### ALWAYS COMPILE
+- After each component: `./gradlew clean compileJava`
+- Before testing: `./gradlew build`
+
+### ALWAYS REVIEW
+- Functional requirements in `src/main/resources/functional_requirements/`
+- Reference patterns in `src/test/java/com/example/application/`
+
+## Summary
+
+This codebase follows a Spring Boot architecture with:
+- **Entities** implementing CyodaEntity interface
+- **Workflows** for state management (JSON definitions)
+- **Processors** implementing CyodaProcessor interface
+- **Criteria** implementing CyodaCriterion interface
+- **Controllers** as thin REST proxies
+
+All components follow established patterns from reference examples and must compile successfully with Gradle.

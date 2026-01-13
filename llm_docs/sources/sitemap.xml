@@ -1,0 +1,547 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+
+<url>
+  <loc>https://docs.cyoda.net/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/getting-started/introduction/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/getting-started/quickstart/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/guides/cyoda-design-principles/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/guides/provision-environment/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/guides/workflow-config-guide/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/guides/authentication-authorization/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/guides/api-saving-and-getting-data/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/guides/sql-and-trino/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/concepts/edbms/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/concepts/event-driven-architecture/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/concepts/cpl-overview/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/architecture/cyoda-cloud-architecture/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/cloud/status/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/cloud/service-details/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/cloud/entitlements/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/cloud/roadmap/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/base-event/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/cloud-event-type/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/condition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/condition/function-condition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/condition/group-condition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/condition/lifecycle-condition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/condition/operation/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/condition/query-condition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/condition/simple-condition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/data-format/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/data-payload/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/entity-change-meta/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/entity-metadata/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/error-code/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/externalized-function-config/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/model-converter-type/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/model-info/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/model-spec/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/scheduled-transition-config/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/conf/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/conf/externalized-processor-definition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/conf/processor-definition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/conf/scheduled-transition-processor-definition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/conf/state-definition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/conf/transition-definition/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/conf/workflow-configuration/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/processor-info/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/transition-info/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/common/statemachine/workflow-info/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-create-collection-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-create-payload/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-create-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-delete-all-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-delete-all-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-delete-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-delete-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-transaction-info/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-transaction-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-transition-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-transition-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-update-collection-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-update-payload/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/entity/entity-update-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-delete-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-delete-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-export-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-export-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-get-all-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-get-all-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-import-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-import-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-transition-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/model/entity-model-transition-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/processing/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/processing/calculation-member-greet-event/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/processing/calculation-member-join-event/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/processing/calculation-member-keep-alive-event/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/processing/entity-criteria-calculation-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/processing/entity-criteria-calculation-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/processing/entity-processor-calculation-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/processing/entity-processor-calculation-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/processing/event-ack-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-changes-metadata-get-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-changes-metadata-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-get-all-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-get-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-search-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-snapshot-search-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-snapshot-search-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-stats-by-state-get-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-stats-by-state-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-stats-get-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/entity-stats-response/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/search-snapshot-status/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/snapshot-cancel-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/snapshot-get-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/schemas/search/snapshot-get-status-request/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/imprint/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/cookies/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/privacy/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/terms/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/api-reference/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://docs.cyoda.net/legal/</loc>
+  <lastmod>2025-12-03T22:05:26+00:00</lastmod>
+  <priority>0.51</priority>
+</url>
+
+
+</urlset>

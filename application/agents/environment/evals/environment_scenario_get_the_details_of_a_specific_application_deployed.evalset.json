@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_get_the_details_of_a_specific_application_deployed",
+  "name": "environment_scenario_get_the_details_of_a_specific_application_deployed",
+  "description": "Test case for: As a user, I want to get the details of a specific application deployed in a Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_get_app_details",
+      "conversation": [
+        {
+          "invocation_id": "e-9439b8db-5523-4a3b-a7c1-d586a732af72",
+          "user_content": {
+            "parts": [
+              {
+                "text": "get the details of a specific application deployed in a Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I can fetch that \u2014 I just need the environment and app name first.\n\n- Which environment? (e.g., `dev`, `staging`, `prod`)\n- Which application name (exact app namespace)?\n\nOnce you provide those I will run check_environment_exists() and then return the app details (and highlight Build ID / Status / URLs).\n\n[options-single-choice: Provide Environment & App Name, List Environments, Cancel]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8047125
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8047128
+    }
+  ],
+  "creation_timestamp": 1767903917.804713
+}

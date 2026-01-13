@@ -1,0 +1,58 @@
+{
+  "eval_set_id": "github_scenario_add_a_processor_to_validate_email_format_in_custom",
+  "name": "github_scenario_add_a_processor_to_validate_email_format_in_custom",
+  "description": "Test case for: As a user, I want to add a processor to validate email format in Customer entity.",
+  "eval_cases": [
+    {
+      "eval_id": "gh_add_email_validator",
+      "conversation": [
+        {
+          "invocation_id": "e-7bb59da4-5d6f-4f81-a817-23d5d8273821",
+          "user_content": {
+            "parts": [
+              {
+                "text": "add a processor to validate email format in Customer entity."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI see you want to add a processor that validates email format on the Customer entity. Before I can modify entity files or add processors, we need to initialize or connect to the target repository and branch so changes are tracked and committed. Please select how you'd like to set up the repository so I can proceed.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767901727.3285568
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767901727.3285577
+    }
+  ],
+  "creation_timestamp": 1767901727.3285584
+}

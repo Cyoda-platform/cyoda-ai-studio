@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_troubleshoot_an_application_deployed_in_a_cyoda_en",
+  "name": "environment_scenario_troubleshoot_an_application_deployed_in_a_cyoda_en",
+  "description": "Test case for: As a user, I want to troubleshoot an application deployed in a Cyoda environment by checking the logs.",
+  "eval_cases": [
+    {
+      "eval_id": "env_troubleshoot_app",
+      "conversation": [
+        {
+          "invocation_id": "e-a79b9344-41a6-403d-9190-ca6485a07814",
+          "user_content": {
+            "parts": [
+              {
+                "text": "troubleshoot an application deployed in a Cyoda environment by checking the logs."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I can help \u2014 I\u2019ll start by running check_environment_exists(env_name) before fetching logs.\n\nWhich environment and application should I check? Provide:\n- Environment (e.g., `dev`, `staging`, `prod`)\n- Application name (e.g., `my-calculator`)\n- If this was a recent deployment, optionally provide the deployment start time (ISO) or say \u201crecent\u201d so I use a since_timestamp.\n\n[options-single-choice: Provide Environment & App, List Environments, Cancel]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8048322
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8048327
+    }
+  ],
+  "creation_timestamp": 1767903917.8048327
+}

@@ -1,0 +1,58 @@
+{
+  "eval_set_id": "github_scenario_view_edit_the_customer_entity_in_the_canvas",
+  "name": "github_scenario_view_edit_the_customer_entity_in_the_canvas",
+  "description": "Test case for: As a user I want to view/edit the Customer entity in the canvas.",
+  "eval_cases": [
+    {
+      "eval_id": "gh_view_customer_entity",
+      "conversation": [
+        {
+          "invocation_id": "e-56087f42-f51e-4bbb-8f79-75881df1dc3a",
+          "user_content": {
+            "parts": [
+              {
+                "text": "view/edit the Customer entity in the canvas."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI see you want to view/edit the Customer entity in Canvas. Before we can open the repository and the Canvas editor, we need to initialize a branch for the work so all changes are tracked in the repo (this is the GitOps way: design \u2192 build \u2192 environment \u2192 deploy, all driven from the repo).\n\nChoose the repository strategy that matches your project and access model. Once you pick one, I\u2019ll initialize the branch and guide you to the Canvas view for the Customer entity.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767901727.3314428
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767901727.331444
+    }
+  ],
+  "creation_timestamp": 1767901727.3314447
+}

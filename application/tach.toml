@@ -1,0 +1,67 @@
+interfaces = []
+exclude = [
+    "**/*__pycache__",
+    "**/*egg-info",
+    "**/docs",
+    "**/tests",
+    "**/venv",
+]
+source_roots = [
+    ".",
+]
+
+[[modules ]]
+path = "config"
+depends_on = []
+
+[[modules ]]
+path = "models"
+depends_on = []
+
+[[modules ]]
+path = "utils"
+depends_on = []
+
+[[modules ]]
+path = "agents"
+depends_on = []
+
+[[modules ]]
+path = "tests"
+depends_on = []
+
+[[modules ]]
+path = "services"
+depends_on = ["agents"]
+
+[[modules ]]
+path = "common"
+depends_on = []
+
+[[modules ]]
+path = "repositories"
+depends_on = []
+
+[[modules ]]
+path = "routes"
+depends_on = []
+
+[[modules ]]
+path = "processor"
+depends_on = []
+
+[[modules ]]
+path = "resources"
+depends_on = []
+
+[[modules ]]
+path = "entity"
+depends_on = []
+
+[[modules ]]
+path = "app"
+depends_on = ["agents"]
+
+[[modules ]]
+path = "criterion"
+depends_on = []

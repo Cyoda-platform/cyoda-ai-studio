@@ -1,0 +1,116 @@
+{
+  "eval_set_id": "coordinator",
+  "name": "coordinator",
+  "eval_cases": [
+    {
+      "eval_id": "coord_general_1",
+      "conversation": [
+        {
+          "invocation_id": "e-35d35a33-a15f-472c-b3b6-88c8e1424538",
+          "user_content": {
+            "parts": [
+              {
+                "text": "hi"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Hi \u2014 I'm the Cyoda Coordinator. How can I help today? \n\nTell me whether you need:\n- environment/deployment help,\n- local setup or run-locally instructions,\n- an explanation of a concept or best practice, or\n- help building or generating a component or app."
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": []
+          },
+          "creation_timestamp": 1767718037.217596
+        },
+        {
+          "invocation_id": "e-b4360655-62af-4c57-ae22-399d323e5256",
+          "user_content": {
+            "parts": [
+              {
+                "text": "i want to deploy my application"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Got it \u2014 I can help deploy your application. I need a few details first.\n\nPlease provide:\n- Environment name (dev / staging / prod)\n- Repository URL (HTTPS)\n- Branch (default: main)\n- Application name (what you want it called in Cyoda)\n- Is the repo public? (yes / no)\n- Do you already have CYODA_CLIENT_ID and CYODA_CLIENT_SECRET, or should I issue credentials for this environment?\n\nOnce you reply with those, I will run check_environment_exists() and proceed with deployment steps.\n\n[options-single-choice: Provide Deployment Details, List Environments, I need credentials]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767718053.574812
+        }
+      ],
+      "session_input": {
+        "app_name": "coordinator",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767718173.613345
+    },
+    {
+      "eval_id": "coord_general_2",
+      "conversation": [
+        {
+          "invocation_id": "e-7e6d0958-52ba-4f61-b7d3-ab1981e301f5",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Develop an enterprise-grade payment processing system with multi-currency support, advanced fraud detection mechanisms, PCI DSS compliance, settlement management, transaction validation, and comprehensive audit trails"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nYou're planning an enterprise-grade payment processing system (multi-currency support, advanced fraud detection, PCI DSS compliance, settlement management, validation, and audit trails). Before designing the architecture or generating code, we need to pick a repository strategy so every requirement, design, and configuration is tracked and reproducible.\n\nA few quick considerations to help decide:\n- Language: Python often speeds iteration and has rich fintech/fraud libraries; Java can be preferable for strict JVM ecosystems, enterprise teams, and long-running services.\n- Visibility: Given the security and compliance needs of a payments platform, a private repository is usually recommended to limit exposure.\n- Branching: Creating a new branch from a standard Cyoda template keeps the baseline consistent; using an existing branch can be useful if you already have project history you want to extend.\n\nSelect which repository strategy you'd like to use and we'll proceed with initialization.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767718601.324704
+        }
+      ],
+      "session_input": {
+        "app_name": "coordinator",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767718662.6092508
+    }
+  ],
+  "creation_timestamp": 1767718163.9711468
+}

@@ -1,0 +1,77 @@
+🚨 **CRITICAL: INFORMATIONAL REFERENCE ONLY** 🚨
+
+* **Action Policy:** Implement ONLY what is requested. (If asked for an Entity, do NOT build the Controller).
+* **Reference Source:** Always mirror patterns found in `src/test/java/com/example/application/`.
+* **Modification Policy:** Never touch `com/java_template/common/`.
+---
+
+## 📂 Codebase Map
+
+* **Entities:** `application/entity/{name}/version_1/{Name}.java`
+* **Processors:** `application/processor/{Name}Processor.java`
+* **Workflow:** `src/main/resources/workflow/{name}/version_1/{Name}.json`
+* **Controllers:** `application/controller/{Name}Controller.java` (Prefix: `/ui/**`)
+
+---
+
+## 🏛 Core Pattern Language
+
+### 1. The Entity (The Data Model)
+
+* **Rule:** Implement `CyodaEntity`. No reflection. Use Lombok `@Data`.
+* **Constants:** `ENTITY_NAME` and `ENTITY_VERSION` are mandatory.
+* **Companion JSON:** **Required.** A concrete example instance must exist in `src/main/resources/entity/`.
+
+### 2. The Workflow (The Engine)
+
+* **State Machine:** Defined entirely in JSON.
+* **Initial State:** Can be any valid state name (e.g., `"initial"`, `"CREATED"`, `"initial_state"`, etc.).
+* **🚨 THE CROSS-CHECK RULE**: Open your Java Processor and Workflow JSON. The `"name"` string in the JSON **must match** the `@Component` class name exactly.
+The workflow configuration schema is defined in:
+```
+src/main/resources/schema/common/statemachine/conf/WorkflowConfiguration.json
+```
+This schema defines the structure for workflow definitions, including states, transitions, processors, and criteria.
+
+### 3. The Processor (The Logic)
+
+* **Context:** Data is read via `context.getEntity(Entity.class)`.
+* **Automatic Save:** Modifications to the entity in the `process` method are saved by Cyoda upon return.
+* **Constraint:** You cannot call `entityService.update()` on the *current* entity within its own processor.
+
+### 4. The Controller (The Thin Proxy)
+
+* **Rule:** 0% Business Logic. 100% Request Delegation.
+* **Update Protocol:** Transitions must be explicit.
+* `entityService.update(data, "transition_name")` → Moves state.
+* `entityService.update(data)` → Loops in current state.
+
+---
+
+## ⚠️ Anti-Patterns & Red Flags
+
+| ❌ Forbidden Pattern | ✅ Required Pattern |
+| --- | --- |
+| Adding a `status` field to the Java class | Reading `getMetadata().getState()` |
+| Using Java Reflection for mapping | Using Interface-based implementation |
+| Setting Workflow to `"initialState": "none"` | Setting Workflow to any valid state name (e.g., `"initial"`, `"CREATED"`) |
+| Hardcoded version strings in logic | Using `Entity.ENTITY_VERSION` constant |
+| Creating "Automatic" transitions for updates | Using `"manual": true` for all update transitions |
+
+---
+
+## 🛠 Required Workflow Validation
+
+Before submitting any code, you must execute the following to ensure the "Cross-Check" is valid:
+
+```bash
+# 1. Clean and Build (Generates necessary API classes)
+./gradlew build
+
+# 2. Compile Check (Catches type errors and invalid interfaces)
+./gradlew clean compileJava
+
+# 3. Workflow Sync Check (Validates JSON names match Java Classes)
+./gradlew validateWorkflowImplementations
+
+```

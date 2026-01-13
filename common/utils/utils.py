@@ -453,6 +453,8 @@ async def send_request(
     data: Optional[Any] = None,
     json: Optional[Any] = None,
 ) -> Any:
+    from common.exception.exceptions import InvalidTokenException
+
     async with httpx.AsyncClient(timeout=150.0) as client:
         method = method.upper()
         if method == "GET":
@@ -468,11 +470,18 @@ async def send_request(
                 content = None
         elif method == "POST":
             response = await client.post(url, headers=headers, data=data, json=json)
-            content = (
-                response.json()
-                if "application/json" in response.headers.get("Content-Type", "")
-                else response.text
-            )
+            content_type = response.headers.get("Content-Type", "")
+
+            # Handle NDJSON responses (newline-delimited JSON)
+            if "application/x-ndjson" in content_type:
+                import json as json_module
+
+                lines = response.text.strip().split("\n")
+                content = [json_module.loads(line) for line in lines if line.strip()]
+            elif "application/json" in content_type:
+                content = response.json()
+            else:
+                content = response.text
         elif method == "PUT":
             response = await client.put(url, headers=headers, data=data, json=json)
             content = (
@@ -489,6 +498,10 @@ async def send_request(
             )
         else:
             raise ValueError("Unsupported HTTP method")
+
+        # Raise InvalidTokenException for 401 status codes
+        if response.status_code == 401:
+            raise InvalidTokenException(f"Unauthorized access to {url}")
 
         return {"status": response.status_code, "json": content}
 
@@ -660,6 +673,14 @@ def custom_serializer(obj: Any) -> Any:
     if isinstance(obj, queue.Queue):
         # Convert queue to list
         return list(obj.queue)
+    if isinstance(obj, set):
+        # Convert set to list
+        return list(obj)
+    if isinstance(obj, bytes):
+        # Convert bytes to base64 string for JSON serialization
+        import base64
+
+        return base64.b64encode(obj).decode("utf-8")
     if not isinstance(obj, dict):
         # Convert the object to a dictionary. Customize as needed.
         return obj.__dict__

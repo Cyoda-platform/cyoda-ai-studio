@@ -1,0 +1,59 @@
+{
+  "eval_set_id": "what_is_cyoda",
+  "name": "what_is_cyoda",
+  "eval_cases": [
+    {
+      "eval_id": "qa_what_is_cyoda",
+      "conversation": [
+        {
+          "invocation_id": "e-77fbe9d9-50ed-4125-ba1a-6809cc1b905d",
+          "user_content": {
+            "parts": [
+              {
+                "text": "what is cyoda"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Cyoda is an enterprise platform for building and running entity-driven, event\u2011driven applications. It provides:\n- Entity modeling and schemas (CRUD, transactions, snapshots).\n- Workflow/state\u2011machine support and configurable processors.\n- Event pipelines and integrations (APIs, SQL/Trino, processing).\n- Cloud services for entitlement, provisioning and multi\u2011tenant deployments.\n- A documentation\u2011first API and schema reference for automation and integrations.\n\nQuick docs:\n- Intro / getting started: https://docs.cyoda.net/getting-started/introduction/\n- Architecture overview: https://docs.cyoda.net/architecture/cyoda-cloud-architecture/\n- API reference: https://docs.cyoda.net/api-reference/\n- Guides (workflows, auth, data APIs): https://docs.cyoda.net/guides/\n\nWould you like to:\n[options-single-choice: Read the Introduction, View the API Reference]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "qa_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "filename": "cyoda-docs-llms.txt"
+                },
+                "name": "read_documentation",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767716999.818957
+        }
+      ],
+      "session_input": {
+        "app_name": "qa",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767717078.5262659
+    }
+  ],
+  "creation_timestamp": 1767717052.8216293
+}

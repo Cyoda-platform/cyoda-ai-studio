@@ -11,8 +11,5 @@ UPDATE_TRANSITION = "update_transition"
 # Scheduler constants
 SCHEDULER_STATUS_WAITING = "waiting"
 
-# Default model name
-DEFAULT_MODEL_NAME = "gpt-4o-mini"
-
 # Scheduled actions
 SCHEDULE_ENTITIES_FLOW = "schedule_entities_flow"

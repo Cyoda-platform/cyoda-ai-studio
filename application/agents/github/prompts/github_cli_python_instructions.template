@@ -1,0 +1,77 @@
+🚨 **CRITICAL: INFORMATIONAL REFERENCE ONLY** 🚨
+
+* **Implement ONLY what is requested.** (If asked for an Entity, don't build the Processor).
+* **Pattern matching is mandatory.** Use `example_application/` as the source of truth.
+* **No "Golden Hammer."** Do not build complete apps unless explicitly told.
+
+---
+
+## 📂 Structural Blueprint
+
+### 1. The Directory Hierarchy
+
+* `application/entity/`: Pydantic data models.
+* `application/resources/entity/`: **Required** JSON instance examples.
+* `application/resources/workflow/`: Lifecycle logic (State Machine).
+* `application/processor/` & `application/criterion/`: Business logic & guards.
+* `application/routes/`: Quart Blueprints (IO only).
+
+---
+
+## 🛠 Component Patterns
+
+### A. The Entity (Data & Examples)
+
+Every Python entity **must** have a companion JSON instance.
+
+**Python (`.py`) Pattern:**
+
+* Inherit `CyodaEntity`.
+* Mandatory Class Constants: `ENTITY_NAME` and `ENTITY_VERSION`.
+* Status mapping: Always use `entity.meta.state` for "status" requirements.
+
+**Example JSON (`.json`) Pattern:**
+
+* **Location:** `application/resources/entity/{name}/version_1/{PascalName}.json`.
+* **Content:** A real-world instance, not a schema. No technical fields (`id`, `meta`).
+
+### B. The Workflow (Lifecycle)
+
+Workflows are the "engine" of the entity.
+
+* **Initial State:** Can be any valid state name (e.g., `"initial_state"`, `"CREATED"`, `"initial"`, etc.).
+* **Version:** Optional field. If provided, can be any string value.
+* **Transition Types:**
+* `"manual": false` (Auto): Use only for the very first step from the initial state.
+* `"manual": true`: Use for all user-triggered updates or loops.
+
+* **Processors:** The `name` string in JSON must match the Python class name exactly.
+
+### C. The Processor (Logic)
+* **Constraint:** You cannot use `entityService.update()` on the `entity` passed into the `process` method. Return it instead; Cyoda handles the save.
+* **Utility:** Use `cast_entity(entity, EntityClass)` immediately for IDE/Mypy support.
+* **External Interaction:** Only use `entityService` to fetch or modify *other* entities.
+
+### D. The Route (Interface)
+* **Rule:** Routes are "dumb."
+* **Logic:** If a route contains an `if` statement involving business logic, move that logic to a `Processor` or `Criterion`.
+* **ID Handling:** Always return the technical UUID (`result.id`) to the client.
+---
+## ⚠️ Anti-Patterns to Avoid
+
+| ❌ Wrong Way | ✅ Correct Way |
+| --- | --- |
+| Hardcoding "Status" in Pydantic fields | Using `entity.meta.state` |
+| Updating self via `entity_service` in a Processor | Returning the modified entity dict |
+| Putting `__init__.py` in the project root | Deleting root `__init__.py` for Mypy |
+| Creating a `workflow_schema.json` copy | Referencing `example_application/.../workflow_schema.json` |
+| Using Automatic transitions for updates | Using Manual transitions for updates |
+---
+## ⚡ Execution Checklist
+
+When implementing any change, verify against these tools in order:
+
+1. **Format:** `black . && isort .`
+2. **Logic Check:** Compare your Processor name with the Workflow JSON entry.
+3. **Schema Check:** Ensure your Workflow JSON follows the reference schema.
+4. **Type Check:** `mypy .` (Must produce `Success: no issues found`).

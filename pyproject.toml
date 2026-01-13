@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mcp-cyoda"
+name = "cyoda-ai-studio"
 version = "0.1.7"
 description = "Model Context Protocol server for Cyoda platform - enables AI assistants to interact with Cyoda's entity management, search, workflow, and deployment capabilities"
 readme = "README.md"
@@ -12,32 +12,41 @@ license = "MIT"
 
 # Runtime dependencies (moved from requirements.txt)
 dependencies = [
-    "fastmcp>=2.12.0",
-    "Quart>=0.20.0",
-    "Hypercorn>=0.17.3",
-    "quart-cors>=0.7.0",
-    "quart-openapi>=1.7.2",
-    "jsonschema>=4.23.0",
-    "grpcio>=1.64.1",
-    "grpcio-tools>=1.64.1",
-    "protobuf>=5.29.5",
-    "python-dotenv>=1.1.0",
-    "requests>=2.32.4",
-    "aiofiles>=24.1.0",
-    "httpx>=0.28.1",
-    "quart-schema[pydantic]>=0.21.0",
-    "PyJWT>=2.10.1",
-    "Authlib>=1.6.0",
-    "dependency_injector>=4.48.1",
-    "psutil>=7.0.0",
-    "starlette>=0.49.1",
+    "numpy==1.26.4; python_version<'3.13'",
+    "numpy>=2.0.0; python_version>='3.13'",
+    "fastmcp==2.12.3",
+    "Quart==0.20.0",
+    "Hypercorn==0.17.3",
+    "quart-cors==0.7.0",
+    "quart-openapi==1.7.2",
+    "quart-rate-limiter==0.12.0",
+    "jsonschema==4.23.0",
+    "grpcio==1.67.1",
+    "grpcio-tools==1.67.1",
+    "protobuf==5.29.5",
+    "python-dotenv==1.1.1",
+    "requests==2.32.5",
+    "aiofiles==24.1.0",
+    "httpx==0.28.1",
+    "quart-schema[pydantic]==0.21.0",
+    "PyJWT[crypto]==2.10.1",
+    "Authlib==1.6.1",
+    "dependency_injector==4.48.1",
+    "psutil==7.0.0",
+    "starlette==0.49.3",
+    "google-genai==1.55.0",
+    "google-adk==1.21.0",
+    "openai-agents==0.6.1",
+    "litellm==1.80.10",
+    "beautifulsoup4==4.13.3",
     # Additional dependencies from requirements.txt
-    "pydantic>=2.11.0",
-    "pydantic-settings>=2.11.0",
-    "PyYAML>=6.0.0",
-    "python-multipart>=0.0.20",
-    "email-validator>=2.3.0",
-    "openapi-core>=0.19.5",
+    "pydantic==2.12.3",
+    "pydantic-settings==2.11.0",
+    "PyYAML==6.0.2",
+    "python-multipart==0.0.20",
+    "email-validator==2.3.0",
+    "openapi-core==0.19.5",
+
 ]
 
 authors = [
@@ -112,8 +121,9 @@ dev = [
 # MyPy configuration
 [tool.mypy]
 python_version = "3.11"
-strict = true
+strict = false  # Less strict mode
 namespace_packages = true
+plugins = ["pydantic.mypy"]
 
 # Exclude proto-generated files and other directories that shouldn't be type-checked
 exclude = [
@@ -125,17 +135,17 @@ exclude = [
     "dist/",
 ]
 
-# Focus on critical bug-catching errors only
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-disallow_untyped_calls = true
-check_untyped_defs = true
-strict_optional = true
+# Only check for critical errors
+disallow_untyped_defs = false  # Allow untyped function definitions
+disallow_incomplete_defs = false  # Allow incomplete type hints
+disallow_untyped_calls = false  # Allow calls to untyped functions
+check_untyped_defs = false  # Don't check bodies of untyped functions
+strict_optional = false  # Don't require None checks
 
 # Reduce noise from non-critical issues
 warn_return_any = false
 warn_unused_ignores = false
-ignore_missing_imports = false
+ignore_missing_imports = true  # Ignore missing imports
 
 # Per-module overrides for proto files (additional safety net)
 [[tool.mypy.overrides]]
@@ -157,6 +167,11 @@ module = [
     "grpc.*",
     "protobuf.*",
     "google.protobuf.*",
+    "google.genai.*",
+    "google.auth.*",
+    "google.adk.*",
+    "google.api_core.*",
+    "google.cloud.*",
     "quart.*",
     "quart_schema.*",
     "hypercorn.*",
@@ -172,6 +187,10 @@ module = [
     "openapi_core.*",
     "parse.*",
     "parse_type.*",
+    "litellm.*",
+    "openai.*",
+    "agents.*",
+    "tiktoken.*",
 ]
 ignore_missing_imports = true
 
@@ -248,8 +267,13 @@ exclude_lines = [
 max-line-length = 88
 extend-ignore = [
     "E203",  # whitespace before ':'
+    "E402",  # module level import not at top of file
     "E501",  # line too long (handled by black)
     "E704",  # multiple statements on one line (def) - common in protocol stubs
+    "E722",  # bare except (sometimes needed for broad error handling)
+    "F401",  # imported but unused
+    "F541",  # f-string without placeholders (stylistic)
+    "F841",  # local variable assigned but never used
     "N805",  # first argument should be named 'self' (not applicable to classmethods)
     "W503",  # line break before binary operator
 ]

@@ -1,0 +1,354 @@
+# Cyoda Python Client Application - Codebase Patterns and Structure
+
+🚨 **CRITICAL: THIS IS AN INFORMATIONAL REFERENCE ONLY** 🚨
+
+This document describes the established patterns and structure of Cyoda Python client applications in this codebase.
+**Use this as a reference to understand how the codebase works and what patterns to follow.**
+
+**IMPORTANT RULES:**
+1. **Implement ONLY what the user requests** - Do not add extra features or components
+2. **Consult this reference** to understand how to implement the user's request correctly
+3. **Follow the patterns** described here when implementing the requested changes
+4. **Do not build complete applications** unless explicitly requested
+
+**Examples:**
+- ✅ User asks: "Add a Customer entity" → Create ONLY the entity (and its JSON definition)
+- ❌ User asks: "Add a Customer entity" → Do NOT also create processor, criterion, workflow, routes unless requested
+- ✅ User asks: "Add a Customer entity with workflow" → Create entity, JSON definition, and workflow
+- ✅ User asks: "Add validation to Customer" → Create ONLY the criterion/processor for validation
+
+## Project Structure Overview
+
+The codebase follows a modular architecture with clear separation of concerns:
+
+```
+application/
+├── entity/                    # Entity definitions (data models)
+│   └── {entity_name}/
+│       └── version_1/
+│           └── {entity_name}.py
+├── processor/                 # Business logic processors
+│   └── {entity_name}_processor.py
+├── criterion/                 # Validation criteria
+│   └── {entity_name}_validation_criterion.py
+├── resources/
+│   ├── workflow/             # Workflow definitions
+│   │   └── {entity_name}/
+│   │       └── version_1/
+│   │           └── {EntityName}.json
+│   └── functional_requirements/  # Business requirements
+│       └── {requirement_name}.md
+└── routes/                   # API endpoints
+    └── {entity_name}_routes.py
+
+example_application/          # Reference implementation (DO NOT MODIFY)
+common/                       # Framework code (DO NOT MODIFY)
+```
+
+## Core Architecture Principles
+
+### 1. Interface-Based Design
+- All entities extend `CyodaEntity` base class from `common.entity.cyoda_entity`
+- All processors extend `CyodaProcessor` from `common.processor.base`
+- All criteria extend `CyodaCriterion` from `common.criterion.base`
+
+### 2. Workflow-Driven Architecture
+- All business logic flows through Cyoda workflows
+- Entity state is managed by workflows (read-only in code)
+- Transitions trigger processors and criteria
+
+### 3. Thin Routes Pattern
+- Routes are pure proxies to EntityService
+- No business logic in routes
+- Routes only handle HTTP concerns (request/response mapping)
+
+## Entity Patterns
+
+### Entity Structure
+Entities in `application/entity/{entity_name}/version_1/{entity_name}.py` follow this pattern:
+
+```python
+from pydantic import Field
+from common.entity.cyoda_entity import CyodaEntity
+
+class EntityName(CyodaEntity):
+    """Entity description."""
+
+    # Constants (REQUIRED)
+    ENTITY_NAME: str = "EntityName"
+    ENTITY_VERSION: int = 1
+
+    # Business ID field (REQUIRED)
+    entity_id: str = Field(..., description="Business identifier")
+
+    # Business fields
+    field_name: str = Field(..., description="Field description")
+    optional_field: str | None = Field(None, description="Optional field")
+
+    # Nested structures (if needed)
+    class NestedData(BaseModel):
+        nested_field: str
+```
+
+### Key Entity Patterns
+- **Technical ID**: `entity.id` (UUID, immutable, managed by Cyoda)
+- **Business ID**: Custom field (e.g., `entity_id`, `customer_id`)
+- **Entity State**: `entity.meta.state` (workflow-managed, read-only)
+- **Constants**: `ENTITY_NAME` and `ENTITY_VERSION` must match workflow name
+- **Validation**: Keep minimal - just enough for requirements
+
+### 🚨 CRITICAL: JSON Entity Definition Required
+
+**ALWAYS create a JSON entity definition** alongside the Python entity class:
+
+**Location**: `application/resources/entity/{entity_name}/version_1/{EntityName}.json`
+
+**Example** for a Customer entity:
+```json
+{
+  "customer_id": "CUST-001",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1-555-0123"
+}
+```
+
+**Rules for JSON Entity Definitions:**
+- File name must match entity name with PascalCase (e.g., `Customer.json`, `OrderItem.json`)
+- Must be in `application/resources/entity/{entity_name}/version_1/` directory
+- JSON must be a concrete example instance, NOT a schema
+- Include all business fields with realistic example values
+- Do NOT include technical fields like `id`, `meta`, `state`
+- Use appropriate example values: strings, numbers, booleans, objects, arrays
+- Example values should match the field types defined in the Python entity class
+
+**When to create JSON entity definitions:**
+- ✅ ALWAYS when creating a new entity
+- ✅ ALWAYS when adding fields to an existing entity
+- ✅ ALWAYS when modifying entity structure
+
+### Important: State vs Status
+- If requirements mention "state" or "status", map to `entity.meta.state`
+- State is workflow-managed and cannot be changed manually
+- Only read state, never set it directly
+
+## Workflow Patterns
+
+### Workflow Structure
+Workflows in `application/resources/workflow/{entity_name}/version_1/{EntityName}.json`:
+
+```json
+{
+  "version": "1.0",
+  "name": "EntityName",
+  "desc": "Entity lifecycle workflow",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_entity",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "update_entity",
+          "next": "active",
+          "manual": true,
+          "processors": [
+            {
+              "name": "EntityProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+### Workflow Rules
+- **Initial state**: Always use `"initial_state"` as the initial state
+- **Automatic transition**: First transition from initial_state must be `"manual": false`
+- **Loop transitions**: Transitions to self or previous states must be `"manual": true`
+- **Processor names**: Must match Python class names exactly (case-sensitive)
+- **Validation**: Must validate against `example_application/resources/workflow/workflow_schema.json`
+- **Naming**: Workflow name must match entity name (PascalCase)
+
+### Transition Patterns
+- **With transition**: Moves entity to specified state
+- **Without transition**: Loops back to same state
+- **Manual transitions**: Used for updates (must be explicitly triggered)
+- **Automatic transitions**: Used for creation (triggered automatically)
+
+## Processor Patterns
+
+### Processor Structure
+Processors in `application/processor/{entity_name}_processor.py`:
+
+```python
+from common.processor.base import CyodaProcessor
+from common.entity.cyoda_entity import cast_entity
+from services.services import get_entity_service
+
+class EntityProcessor(CyodaProcessor):
+    """Processor description."""
+
+    async def process(self, entity: dict) -> dict:
+        """Process entity logic."""
+        # Cast to typed entity
+        typed_entity = cast_entity(entity, EntityName)
+
+        # Access other entities via EntityService
+        entity_service = get_entity_service()
+
+        # Business logic here
+        # ...
+
+        # Return modified entity
+        return typed_entity.model_dump()
+```
+
+### Processor Rules
+- **Current entity**: Read-only via EntityService (will be updated automatically on return)
+- **Other entities**: Can get/update/delete via EntityService
+- **Updates**: Use manual transitions only (never automatic)
+- **Type safety**: Use `cast_entity()` for type-safe operations
+- **Arguments**: Only use `entity` parameter, ignore kwargs
+
+### EntityService Interface
+```python
+# Get entity by technical ID
+entity = await entity_service.get_by_id(entity_id, entity_class, entity_version)
+
+# Get entity by business ID
+entity = await entity_service.get_by_business_id(business_id, entity_class, entity_version)
+
+# Update entity (with manual transition)
+result = await entity_service.update(entity, transition="update_entity")
+
+# Update entity (loop back to same state)
+result = await entity_service.update(entity)  # No transition = loop back
+
+# Search entities
+results = await entity_service.search(entity_class, entity_version, conditions)
+```
+
+## Route Patterns
+
+### Route Structure
+Routes in `application/routes/{entity_name}_routes.py`:
+
+```python
+from quart import Blueprint, request
+from services.services import get_entity_service
+from application.entity.{entity_name}.version_1.{entity_name} import EntityName
+
+bp = Blueprint("{entity_name}", __name__, url_prefix="/ui/{entity_name}")
+
+@bp.route("/", methods=["POST"])
+async def create_entity():
+    """Create new entity."""
+    entity_service = get_entity_service()
+    data = await request.get_json()
+
+    # Parse to entity model
+    entity = EntityName(**data)
+
+    # Create via EntityService
+    result = await entity_service.create(entity)
+
+    # Return technical ID
+    return {"id": result.id}
+
+@bp.route("/<entity_id>", methods=["PUT"])
+async def update_entity(entity_id: str):
+    """Update entity."""
+    entity_service = get_entity_service()
+    data = await request.get_json()
+
+    # Get existing entity
+    existing = await entity_service.get_by_id(
+        entity_id,
+        EntityName.ENTITY_NAME,
+        str(EntityName.ENTITY_VERSION)
+    )
+
+    # Update fields
+    updated = existing.data.model_copy(update=data)
+
+    # Save with manual transition
+    result = await entity_service.update(updated, transition="update_entity")
+
+    return {"id": result.id}
+```
+
+### Route Rules
+- **Thin proxies**: No business logic, only EntityService calls
+- **Entity constants**: Use `ENTITY_NAME`/`ENTITY_VERSION` instead of hardcoded strings
+- **Return technical IDs**: Always return `result.id` in responses
+- **Type safety**: Parse requests to Pydantic models
+
+## Code Quality Standards
+
+### Required Checks
+- `mypy .` - Type checking (must pass)
+- `black .` - Code formatting
+- `isort .` - Import sorting
+- `flake8 .` - Linting
+- `bandit .` - Security checks
+
+### Best Practices
+- Follow PEP 8 style guide
+- Use type hints everywhere
+- Keep functions small and focused (KISS principle)
+- Minimize processors/criteria (1-3 per entity unless requirements specify more)
+- Reference `example_application/` for working examples
+
+## Reference Implementation
+
+The `example_application/` directory contains a complete working example:
+- **Entity**: `example_application/entity/example_entity.py`
+- **Processor**: `example_application/processor/example_entity_processor.py`
+- **Criterion**: `example_application/criterion/example_entity_validation_criterion.py`
+- **Workflow**: `example_application/resources/workflow/example_entity/version_1/ExampleEntity.json`
+- **Workflow Schema**: `example_application/resources/workflow/workflow_schema.json`
+
+**Always reference these examples when implementing new features.**
+
+## Important Constraints
+
+### DO NOT MODIFY
+- `common/` directory - Framework code only
+- `example_application/` directory - Reference implementation only
+
+### ALWAYS VALIDATE
+- Workflows against `example_application/resources/workflow/workflow_schema.json`
+- Code with mypy, black, isort, flake8, bandit
+
+### ALWAYS REVIEW
+- Functional requirements in `application/resources/functional_requirements/`
+- Reference patterns in `example_application/`
+
+## Summary
+
+This codebase follows a clean, modular architecture with:
+- **Entities** for data models
+- **Workflows** for state management
+- **Processors** for business logic
+- **Criteria** for validation
+- **Routes** as thin API proxies
+
+All components follow established patterns from `example_application/` and must validate against schema files and code quality tools.

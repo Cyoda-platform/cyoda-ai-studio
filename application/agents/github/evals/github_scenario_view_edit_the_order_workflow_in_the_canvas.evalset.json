@@ -1,0 +1,58 @@
+{
+  "eval_set_id": "github_scenario_view_edit_the_order_workflow_in_the_canvas",
+  "name": "github_scenario_view_edit_the_order_workflow_in_the_canvas",
+  "description": "Test case for: As a user I want to view/edit the Order workflow in the canvas.",
+  "eval_cases": [
+    {
+      "eval_id": "gh_view_order_workflow",
+      "conversation": [
+        {
+          "invocation_id": "e-f411c278-2b7c-471b-9735-999f713d9ae3",
+          "user_content": {
+            "parts": [
+              {
+                "text": "view/edit the Order workflow in the canvas."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nSince you want to view/edit the Order workflow in the Canvas, we'll need the repository and branch set up so the Canvas can load the workflow artifacts. Once the repo is configured I can open the workflow in the Canvas for viewing and make edits (or guide you through edits) while ensuring every change is persisted in the repo.\n\nPlease choose a repository strategy to proceed.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767901727.331924
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767901727.3319252
+    }
+  ],
+  "creation_timestamp": 1767901727.3319259
+}

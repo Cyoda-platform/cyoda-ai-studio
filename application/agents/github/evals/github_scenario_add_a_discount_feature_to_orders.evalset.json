@@ -1,0 +1,58 @@
+{
+  "eval_set_id": "github_scenario_add_a_discount_feature_to_orders",
+  "name": "github_scenario_add_a_discount_feature_to_orders",
+  "description": "Test case for: As a user, I want to add a discount feature to orders.",
+  "eval_cases": [
+    {
+      "eval_id": "gh_add_discount_feature",
+      "conversation": [
+        {
+          "invocation_id": "e-0bb2673f-9d60-4509-aacf-409aa83a65a3",
+          "user_content": {
+            "parts": [
+              {
+                "text": "add a discount feature to orders."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI see you want to add a discount feature to Orders. Before we design or implement anything, we'll initialize the repository and create the branch we'll work on. That lets us track the change (entities, workflows, processors, and tests) in source control from day one and drives the rest of the development lifecycle.\n\nQuick guidance as you decide:\n- Pick the project language (Python or Java) and whether you'll use a public Cyoda template or your private repo.  \n- Choose whether I should create a new branch for this work or use an existing branch you manage.  \n- If you select a private repo option, I\u2019ll ask for the Repo URL and the GitHub App Installation ID (if you need to install the app first, go to https://github.com/apps/cyoda-ai-assistant, click Install, and copy the ID from the URL).\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767901727.3293126
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767901727.3293135
+    }
+  ],
+  "creation_timestamp": 1767901727.329314
+}

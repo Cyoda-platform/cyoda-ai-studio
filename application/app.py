@@ -1,32 +1,157 @@
+import sys
+from pathlib import Path
+
+# Load environment variables FIRST, before any other imports
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Add project root to path (for IDE compatibility when running directly)
+# This ensures imports work whether running as module or directly
+project_root = Path(__file__).parent.parent.resolve()
+project_root_str = str(project_root)
+
+# Remove application directory from path if it's there and add project root
+if sys.path and Path(sys.path[0]).name == "application":
+    sys.path[0] = project_root_str
+elif project_root_str not in sys.path:
+    sys.path.insert(0, project_root_str)
+
 import asyncio
 import logging
+import os
+
+# Configure root logging to both stdout and a file for debugging/triage.
+# Default file is app-log.log in the application directory; override with APP_LOG_FILE.
+from logging.handlers import RotatingFileHandler
 from typing import Callable, Dict, Optional
 
-from quart import Quart, Response
+from quart import Quart, Response, jsonify, request
+from quart_rate_limiter import RateLimiter
 from quart_schema import QuartSchema, ResponseSchemaValidationError, hide
 
+# Apply Google ADK monkey patches early
+import application.agents.shared  # noqa: F401
+
+# Import blueprints for different route groups
+from application.routes import (
+    chat_bp,
+    labels_config_bp,
+    logs_bp,
+    metrics_bp,
+    tasks_bp,
+    token_bp,
+)
+from application.routes.agent_routes import agent_bp
+from application.routes.repository_routes import repository_bp
 from common.exception.exception_handler import (
     register_error_handlers as _register_error_handlers,
 )
 from services.services import get_grpc_client, initialize_services
 
-# Import blueprints for different route groups
+# Use absolute path to application directory for log file
+app_dir = Path(__file__).parent.resolve()
+log_file_name = os.getenv("APP_LOG_FILE", "app-log.log")
+log_file = str(app_dir / log_file_name)
+log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-logging.basicConfig(level=logging.INFO)
+# Ensure log file can be created
+try:
+    # Create rotating file handler (max 50MB, keep 5 backups)
+    file_handler = RotatingFileHandler(
+        log_file,
+        mode="a",
+        maxBytes=50 * 1024 * 1024,  # 50 MB
+        backupCount=5,
+        encoding="utf-8",
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter(log_format))
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format=log_format,
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            file_handler,
+        ],
+    )
+    print(f"✓ Logging initialized - writing to: {log_file}")
+except Exception as e:
+    # Fallback to stdout only if file logging fails
+    logging.basicConfig(
+        level=logging.INFO,
+        format=log_format,
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
+    print(f"⚠ Failed to set up file logging: {e}")
+    print(f"⚠ Logging to stdout only")
+
+# Enable LiteLLM debug mode if DEBUG_LITELLM is set
+if os.getenv("DEBUG_LITELLM", "false").lower() == "true":
+    import litellm
+
+    litellm._turn_on_debug()
+    logger = logging.getLogger(__name__)
+    logger.info("🔍 LiteLLM debug mode enabled")
+
+# Enable detailed debug logging for Google ADK internals so we see
+# any streaming timeouts/shutdowns or silent failures.
+adk_logger = logging.getLogger("google_adk")
+adk_logger.setLevel(logging.DEBUG)
+
+# Enable debug logging for OpenAI SDK if DEBUG_OPENAI is set
+if os.getenv("DEBUG_OPENAI", "false").lower() == "true":
+    try:
+        from agents import enable_verbose_stdout_logging
+
+        enable_verbose_stdout_logging()
+        logger = logging.getLogger(__name__)
+        logger.info("🔍 OpenAI SDK debug mode enabled")
+
+        # Also enable tracing logger
+        tracing_logger = logging.getLogger("openai.agents.tracing")
+        tracing_logger.setLevel(logging.DEBUG)
+        tracing_logger.addHandler(logging.StreamHandler(sys.stdout))
+    except ImportError:
+        logger = logging.getLogger(__name__)
+        logger.warning("DEBUG_OPENAI is set but OpenAI agents SDK is not installed")
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 
+# Extend Quart timeouts for long-lived SSE responses
+# RESPONSE_TIMEOUT controls how long Quart will wait to finish sending a response
+# before cancelling the handler task.
+# BODY_TIMEOUT controls how long to wait for the request body; kept for completeness.
+response_timeout = os.getenv("QUART_RESPONSE_TIMEOUT")
+body_timeout = os.getenv("QUART_BODY_TIMEOUT")
+
+if response_timeout is not None:
+    app.config["RESPONSE_TIMEOUT"] = int(response_timeout)
+else:
+    app.config["RESPONSE_TIMEOUT"] = 600  # 10 minutes
+
+if body_timeout is not None:
+    app.config["BODY_TIMEOUT"] = int(body_timeout)
+else:
+    app.config["BODY_TIMEOUT"] = 600
+
+# Initialize rate limiter
+RateLimiter(app)
+
 QuartSchema(
     app,
-    info={"title": "Cyoda Client Application", "version": "1.0.0"},
+    info={"title": "AI Assistant Application", "version": "1.0.0"},
     tags=[
         {
-            "name": "ExampleEntities",
-            "description": "ExampleEntity management endpoints",
+            "name": "Chat",
+            "description": "Chat conversation management endpoints",
         },
-        {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "Token", "description": "Token generation endpoints"},
+        {"name": "Tasks", "description": "Background task tracking endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -57,6 +182,16 @@ _register_error_handlers_typed: Callable[[Quart], None] = (  # type: ignore[assi
     _register_error_handlers
 )
 _register_error_handlers_typed(app)
+
+# Register blueprints
+app.register_blueprint(chat_bp, url_prefix="/api/v1/chats")
+app.register_blueprint(token_bp, url_prefix="/api/v1")
+app.register_blueprint(labels_config_bp, url_prefix="/api/v1/labels_config")
+app.register_blueprint(tasks_bp, url_prefix="/api/v1/tasks")
+app.register_blueprint(logs_bp)  # URL prefix already set in blueprint
+app.register_blueprint(metrics_bp)  # URL prefix already set in blueprint
+app.register_blueprint(repository_bp)  # URL prefix already set in blueprint
+app.register_blueprint(agent_bp)  # URL prefix already set in blueprint
 
 
 @app.route("/favicon.ico")
@@ -116,17 +251,86 @@ async def shutdown() -> None:
 async def add_cors_headers() -> None:
     @app.after_request
     async def apply_cors(response: Response) -> Response:
+        # Allow all origins (using JWT auth, not cookies, so credentials not needed)
         response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Methods"] = (
+            "GET, POST, PUT, DELETE, OPTIONS"
+        )
         response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
+
+
+# Handle OPTIONS preflight requests for CORS
+@app.route("/<path:path>", methods=["OPTIONS"])
+async def handle_options(path: str) -> tuple[Response, int]:
+    """Handle CORS preflight OPTIONS requests."""
+    response = jsonify({"status": "ok"})
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response, 200
 
 
 if __name__ == "__main__":
     import os
+    import sys
+
+    from hypercorn.asyncio import serve
+    from hypercorn.config import Config
 
     host = os.getenv("APP_HOST", "127.0.0.1")  # Default to localhost for security
     port = int(os.getenv("APP_PORT", "8000"))
     debug = os.getenv("APP_DEBUG", "false").lower() == "true"
-    app.run(use_reloader=False, debug=debug, host=host, port=port)
+    timeout = int(
+        os.getenv("APP_TIMEOUT", "600")
+    )  # 10 minutes default for long-running streams
+
+    # Configure Hypercorn with extended timeouts for SSE streaming
+    config = Config()
+    config.bind = [f"{host}:{port}"]
+
+    # Enable socket reuse to handle port conflicts from previous instances
+    config.reuse_port = True
+
+    # Critical timeouts for long-running SSE streams
+    config.keep_alive_timeout = timeout  # Keep-alive for SSE connections
+    config.shutdown_timeout = timeout  # Allow graceful shutdown of long streams
+    config.startup_timeout = timeout  # Allow slow startup
+    config.graceful_timeout = 30  # Graceful shutdown timeout
+
+    # CRITICAL: Set websocket_ping_interval to prevent connection drops
+    # Even though we're using SSE, not WebSocket, this affects keep-alive behavior
+    config.websocket_ping_interval = (
+        None  # Disable WebSocket ping (we use SSE heartbeat)
+    )
+
+    # Set h11 max incomplete event size (prevents early connection close)
+    # This is an internal h11 setting that Hypercorn uses
+    config.h11_max_incomplete_event_size = 16 * 1024 * 1024  # 16MB
+
+    # Optional: read_timeout (None = no timeout, which is fine for SSE)
+    # config.read_timeout = None  # Already None by default
+
+    if debug:
+        config.loglevel = "DEBUG"
+        config.accesslog = "-"  # Log to stdout
+        config.errorlog = "-"
+
+    logger.info(f"Starting Cyoda AI Studio on {host}:{port}")
+    logger.info(f"Timeouts configured:")
+    logger.info(f"  - keep_alive_timeout: {config.keep_alive_timeout}s")
+    logger.info(f"  - shutdown_timeout: {config.shutdown_timeout}s")
+    logger.info(f"  - startup_timeout: {config.startup_timeout}s")
+    logger.info(f"  - graceful_timeout: {config.graceful_timeout}s")
+    logger.info(f"  - read_timeout: {config.read_timeout}")
+    logger.info(f"  - websocket_ping_interval: {config.websocket_ping_interval}")
+    logger.info(
+        f"  - h11_max_incomplete_event_size: {config.h11_max_incomplete_event_size}"
+    )
+    logger.info(f"Debug mode: {debug}")
+
+    # Verify config is actually applied
+    logger.info(f"Config object: {config}")
+
+    # Run with Hypercorn (supports async and has proper timeout configuration)
+    asyncio.run(serve(app, config))

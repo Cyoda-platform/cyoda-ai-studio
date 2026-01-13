@@ -1,0 +1,57 @@
+{
+  "eval_set_id": "build_app_initial_request",
+  "name": "build_app_initial_request",
+  "eval_cases": [
+    {
+      "eval_id": "gh_initial_request",
+      "conversation": [
+        {
+          "invocation_id": "e-690b4d0d-7715-4405-8c50-61f06a9a80c8",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Develop an institutional trading platform with real-time market data feeds, advanced order management systems, comprehensive portfolio tracking, risk controls, regulatory compliance for equities and derivatives, and real-time P&L calculations"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI understand you're planning an institutional trading platform with real-time market data feeds, advanced order management, portfolio tracking, risk controls, regulatory compliance for equities and derivatives, and real-time P&L. Choosing the project language and repository strategy now determines the template and branch workflow I'll initialize so we have a reproducible, auditable starting point for design and development.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767647321.569783
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767647468.2686968
+    }
+  ],
+  "creation_timestamp": 1767647460.1478083
+}

@@ -1,0 +1,91 @@
+{
+  "version": "1.0",
+  "name": "BackgroundTask Workflow",
+  "desc": "Workflow for managing asynchronous background tasks",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "pending",
+          "manual": false
+        }
+      ]
+    },
+    "pending": {
+      "transitions": [
+        {
+          "name": "start",
+          "next": "running",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "running": {
+      "transitions": [
+        {
+          "name": "update_progress",
+          "next": "running",
+          "manual": true
+        },
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": true
+        },
+        {
+          "name": "fail",
+          "next": "failed",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "completed": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "failed": {
+      "transitions": [
+        {
+          "name": "retry",
+          "next": "pending",
+          "manual": true
+        },
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}

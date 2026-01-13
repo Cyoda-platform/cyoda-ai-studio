@@ -1,0 +1,58 @@
+{
+  "eval_set_id": "github_scenario_add_rest_endpoints_for_product_entity_with_get_pos",
+  "name": "github_scenario_add_rest_endpoints_for_product_entity_with_get_pos",
+  "description": "Test case for: As a user, I want to add REST endpoints for Product entity with GET, POST, PUT, DELETE operations.",
+  "eval_cases": [
+    {
+      "eval_id": "gh_add_product_endpoints",
+      "conversation": [
+        {
+          "invocation_id": "e-c9672ab6-56b9-42f9-8259-5f451c9edd2c",
+          "user_content": {
+            "parts": [
+              {
+                "text": "add REST endpoints for Product entity with GET, POST, PUT, DELETE operations."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI can add REST endpoints for a Product entity (GET, POST, PUT, DELETE). Before I create files and branches, we need to configure the repository so changes are tracked and pushed from the start. Since you're adding a REST API, this will influence language and template choices (Python vs Java) and whether we create a new branch or use an existing one.\n\nPlease choose how you'd like to set up the repository:\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767901727.3289194
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767901727.3289206
+    }
+  ],
+  "creation_timestamp": 1767901727.328921
+}

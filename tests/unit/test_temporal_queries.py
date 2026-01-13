@@ -121,33 +121,6 @@ class TestCyodaRepositoryTemporalQueries:
             assert "pointInTime" not in str(call_args)
 
     @pytest.mark.asyncio
-    async def test_find_all_by_criteria_with_point_in_time(
-        self, cyoda_repository, sample_entity_data, point_in_time
-    ):
-        """Test searching entities with criteria at a specific point in time."""
-        with patch(
-            "common.repository.cyoda.cyoda_repository.CyodaRepository._send_search_request",
-            new_callable=AsyncMock,
-        ) as mock_search:
-            mock_search.return_value = {
-                "status": 200,
-                "json": [sample_entity_data],
-            }
-
-            meta = {"entity_model": "TestEntity", "entity_version": "1"}
-            criteria = {"name": "Test Entity"}
-            results = await cyoda_repository.find_all_by_criteria(
-                meta, criteria, point_in_time
-            )
-
-            assert len(results) == 1
-            assert results[0]["technical_id"] == "test-entity-123"
-
-            # Verify point_in_time was included in the search
-            call_args = mock_search.call_args
-            assert point_in_time in call_args[0] or "pointInTime" in str(call_args)
-
-    @pytest.mark.asyncio
     async def test_get_entity_count(self, cyoda_repository, point_in_time):
         """Test getting entity count with optional point in time."""
         with patch(

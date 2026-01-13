@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Run Tests
+    name: Run All Checks
     runs-on: ubuntu-latest
 
     steps:
@@ -20,40 +20,73 @@ jobs:
       with:
         python-version: '3.12'
 
+    - name: Create virtual environment
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        python -m pip install --upgrade pip
+
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        # Install from pyproject.toml
-        pip install -e .
+        source .venv/bin/activate
+        pip install -e ".[dev]"
+        pip install lizard
 
-    - name: Run basic linting
+    - name: Run coverage tests
       run: |
-        pip install flake8 black isort mypy bandit
-        # Only check for critical syntax errors
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.venv,build,dist,proto,backup
-        echo "✅ Basic linting passed"
+        source .venv/bin/activate
+        make test-coverage
+      continue-on-error: true
 
-    - name: Run code quality checks
+    - name: Run eval tests
       run: |
-        # Run with relaxed settings to ensure they pass
-        black --check . || echo "⚠️ Black formatting issues found (non-blocking)"
-        isort --check-only . || echo "⚠️ Import sorting issues found (non-blocking)"
-        mypy --config-file pyproject.toml . || echo "⚠️ Type checking issues found (non-blocking)"
-        bandit -r common/ example_application/ cyoda_mcp/ application/ services/ scripts/ -ll || echo "⚠️ Security issues found (non-blocking)"
-        echo "✅ Code quality checks completed"
+        source .venv/bin/activate
+        make test-eval
+      continue-on-error: true
 
-    - name: Run unit tests
+    - name: Run lint checks
       run: |
-        pip install pytest pytest-asyncio
-        # Run only unit tests that are guaranteed to pass
-        pytest tests/unit/ -v || echo "⚠️ Some unit tests failed (non-blocking)"
-        echo "✅ Unit tests completed"
+        source .venv/bin/activate
+        make lint
+      continue-on-error: true
 
-    - name: Verify project structure
+    - name: Run complexity analysis
       run: |
-        echo "✅ Verifying project structure..."
-        ls -la
-        echo "✅ Project structure verified"
+        source .venv/bin/activate
+        make complexity
+      continue-on-error: true
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: reports/coverage/
+        retention-days: 30
+
+    - name: Upload eval report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: eval-report
+        path: reports/eval/
+        retention-days: 30
+
+    - name: Upload lint report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lint-report
+        path: reports/lint/
+        retention-days: 30
+
+    - name: Upload complexity report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: complexity-report
+        path: reports/complexity/
+        retention-days: 30
 
   build:
     name: Build Check
@@ -137,11 +170,18 @@ jobs:
         echo "✅ Tests: ${{ needs.test.result }}"
         echo "✅ Build: ${{ needs.build.result }}"
         echo ""
-        echo "📋 Next Steps for Enhancement:"
-        echo "1. Add integration tests"
-        echo "2. Set up Docker registry"
-        echo "3. Configure deployment environments"
-        echo "4. Add security scanning"
-        echo "5. Set up monitoring and alerts"
+        echo "📊 Reports Generated:"
+        echo "  • Coverage Report (HTML)"
+        echo "  • Eval Report (HTML)"
+        echo "  • Lint Report (HTML)"
+        echo "  • Complexity Report (HTML)"
+        echo ""
+        echo "📥 Download reports from the Actions artifacts"
+        echo ""
+        echo "💡 Local Development:"
+        echo "  • make help           - Show all targets"
+        echo "  • make check-all      - Run all checks locally"
+        echo "  • make open-reports   - View all reports"
+        echo "  • bash scripts/setup-dev.sh - Setup environment"
         echo ""
         echo "🚀 Pipeline completed successfully!"

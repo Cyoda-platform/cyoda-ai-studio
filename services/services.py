@@ -131,6 +131,13 @@ def _create_deployment_service(deployment_repository: Any) -> Any:
     return cast(Any, DeploymentService(deployment_repository=deployment_repository))  # type: ignore[no-untyped-call]
 
 
+def _create_task_service(entity_service: EntityService) -> Any:
+    """Create task service with lazy import."""
+    from application.services.task_service import TaskService
+
+    return cast(Any, TaskService(entity_service=entity_service))
+
+
 def _create_processor_manager(modules: List[str]) -> IProcessorManager:
     """Create processor manager with lazy import."""
     from common.processor import get_processor_manager
@@ -182,6 +189,28 @@ class ServiceContainer(containers.DeclarativeContainer):
     # Utilities
     chat_lock = providers.Singleton(asyncio.Lock)
 
+    # Google ADK Service
+    google_adk_service = providers.Singleton(
+        lambda: __import__(
+            "application.services.google_adk_service", fromlist=["GoogleADKService"]
+        ).GoogleADKService()
+    )
+
+    # Cyoda Assistant (Google ADK Sequential Pipeline with Cyoda-persistent sessions)
+    # Supports multiple models via AI_MODEL env var:
+    # - Google Gemini: gemini-2.0-flash-exp, gemini-2.5-pro-preview-03-25
+    # - OpenAI via LiteLLM: openai/gpt-4o-mini, openai/gpt-4o
+    # - Anthropic via LiteLLM: anthropic/claude-3-haiku-20240307
+    cyoda_assistant = providers.Singleton(
+        lambda google_adk, entity_svc: __import__(
+            "application.agents", fromlist=["create_cyoda_assistant"]
+        ).create_cyoda_assistant(
+            google_adk_service=google_adk, entity_service=entity_svc
+        ),
+        google_adk=google_adk_service,
+        entity_svc=entity_service,
+    )
+
     # MCP Services
     entity_management_service = providers.Singleton(
         _create_entity_management_service,
@@ -224,6 +253,12 @@ class ServiceContainer(containers.DeclarativeContainer):
     deployment_service = providers.Singleton(
         _create_deployment_service,
         deployment_repository=deployment_repository,
+    )
+
+    # Task Service
+    task_service = providers.Singleton(
+        _create_task_service,
+        entity_service=entity_service,
     )
 
 
@@ -274,6 +309,14 @@ def initialize_services(config: Dict[str, Any]) -> None:
 
         _ = _container.entity_management_service()
         logger.info("✓ Entity management service initialized")
+
+        _ = _container.google_adk_service()
+        logger.info("✓ Google ADK service initialized")
+
+        _ = _container.cyoda_assistant()
+        logger.info(
+            "✓ Cyoda Assistant initialized (Sequential Pipeline: Validator → Processor → Reporter)"
+        )
 
         logger.info("All services initialized successfully")
     except Exception as e:
@@ -331,6 +374,18 @@ def get_chat_lock() -> asyncio.Lock:
     return container.chat_lock()  # type: ignore[return-value]
 
 
+def get_google_adk_service() -> Any:
+    """Get the Google ADK service."""
+    container = _ensure_initialized()
+    return container.google_adk_service()
+
+
+def get_cyoda_assistant() -> Any:
+    """Get the Cyoda Assistant (main agent)."""
+    container = _ensure_initialized()
+    return container.cyoda_assistant()
+
+
 def get_entity_management_service() -> Any:
     """Get the entity management service."""
     container = _ensure_initialized()
@@ -377,6 +432,12 @@ def get_deployment_service() -> Any:
     """Get the deployment service."""
     container = _ensure_initialized()
     return container.deployment_service()
+
+
+def get_task_service() -> Any:
+    """Get the task service."""
+    container = _ensure_initialized()
+    return container.task_service()
 
 
 def is_initialized() -> bool:

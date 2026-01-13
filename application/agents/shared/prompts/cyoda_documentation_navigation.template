@@ -1,0 +1,199 @@
+# Cyoda Documentation Navigation
+
+## Documentation Sources
+
+### Live Documentation Site
+**URL**: https://docs.cyoda.net/
+**Purpose**: User-facing documentation with interactive features
+
+### GitHub Repository (Source)
+**URL**: https://github.com/Cyoda-platform/cyoda-docs
+**Purpose**: Source markdown files, schemas, and OpenAPI specifications
+**Raw Content Base**: https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/
+
+---
+
+## Documentation Structure
+
+### Getting Started
+| Topic | Live URL | GitHub Source |
+|-------|----------|---------------|
+| Introduction to Cyoda | https://docs.cyoda.net/getting-started/introduction/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/getting-started/introduction.md |
+| Quick Start Guide | https://docs.cyoda.net/getting-started/quickstart/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/getting-started/quickstart.md |
+
+### Guides
+| Topic | Live URL | GitHub Source |
+|-------|----------|---------------|
+| Design Principles | https://docs.cyoda.net/guides/cyoda-design-principles/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/guides/cyoda-design-principles.mdx |
+| Provision Environment | https://docs.cyoda.net/guides/provision-environment/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/guides/provision-environment.mdx |
+| Workflow Config Guide | https://docs.cyoda.net/guides/workflow-config-guide/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/guides/workflow-config-guide.mdx |
+| Authentication & Authorization | https://docs.cyoda.net/guides/authentication-authorization/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/guides/authentication-authorization.md |
+| API: Saving and Getting Data | https://docs.cyoda.net/guides/api-saving-and-getting-data/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/guides/api-saving-and-getting-data.md |
+| SQL and Trino | https://docs.cyoda.net/guides/sql-and-trino/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/guides/sql-and-trino.md |
+
+### Concepts and Ideas
+| Topic | Live URL | GitHub Source |
+|-------|----------|---------------|
+| EDBMS | https://docs.cyoda.net/concepts/edbms/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/concepts/edbms.md |
+| Event-Driven Architecture | https://docs.cyoda.net/concepts/event-driven-architecture/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/concepts/event-driven-architecture.md |
+| Cyoda Platform Library (CPL) | https://docs.cyoda.net/concepts/cpl-overview/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/concepts/cpl-overview.md |
+
+### Architecture
+| Topic | Live URL | GitHub Source |
+|-------|----------|---------------|
+| Cloud Architecture | https://docs.cyoda.net/architecture/cyoda-cloud-architecture/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/architecture/cyoda-cloud-architecture.md |
+
+### Cloud Info
+| Topic | Live URL | GitHub Source |
+|-------|----------|---------------|
+| Current Status | https://docs.cyoda.net/cloud/status/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/cloud/status.md |
+| Service Details | https://docs.cyoda.net/cloud/service-details/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/cloud/service-details.mdx |
+| Subscription Tiers | https://docs.cyoda.net/cloud/entitlements/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/cloud/entitlements.md |
+| Roadmap | https://docs.cyoda.net/cloud/roadmap/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/content/docs/cloud/roadmap.md |
+
+---
+
+## API Reference
+
+### Interactive API Reference
+**URL**: https://docs.cyoda.net/api-reference/
+**Purpose**: Interactive API documentation with Scalar viewer
+
+### OpenAPI Specification
+| Resource | Live URL | GitHub Source |
+|----------|----------|---------------|
+| Full OpenAPI Spec (JSON) | https://docs.cyoda.net/openapi/openapi.json | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/public/openapi/openapi.json |
+
+---
+
+## JSON Schemas
+
+**Note**: JSON schemas are available both on the live site (as HTML pages) and in the GitHub repository (as raw JSON files).
+
+**Live Base URL**: https://docs.cyoda.net/json-schemas/
+**GitHub Base URL**: https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/
+
+### Common Schemas
+| Schema | Live URL | GitHub Source (JSON) |
+|--------|----------|----------------------|
+| BaseEvent | https://docs.cyoda.net/json-schemas/common/baseevent/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/BaseEvent.json |
+| CloudEventType | https://docs.cyoda.net/json-schemas/common/cloudeventtype/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/CloudEventType.json |
+| DataFormat | https://docs.cyoda.net/json-schemas/common/dataformat/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/DataFormat.json |
+| DataPayload | https://docs.cyoda.net/json-schemas/common/datapayload/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/DataPayload.json |
+| EntityChangeMeta | https://docs.cyoda.net/json-schemas/common/entitychangemeta/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/EntityChangeMeta.json |
+| EntityMetadata | https://docs.cyoda.net/json-schemas/common/entitymetadata/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/EntityMetadata.json |
+| ErrorCode | https://docs.cyoda.net/json-schemas/common/errorcode/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/ErrorCode.json |
+| ExternalizedFunctionConfig | https://docs.cyoda.net/json-schemas/common/externalizedfunctionconfig/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/ExternalizedFunctionConfig.json |
+| ModelConverterType | https://docs.cyoda.net/json-schemas/common/modelconvertertype/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/ModelConverterType.json |
+| ModelInfo | https://docs.cyoda.net/json-schemas/common/modelinfo/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/ModelInfo.json |
+| ModelSpec | https://docs.cyoda.net/json-schemas/common/modelspec/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/ModelSpec.json |
+| ScheduledTransitionConfig | https://docs.cyoda.net/json-schemas/common/scheduledtransitionconfig/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/ScheduledTransitionConfig.json |
+
+### Condition Schemas
+| Schema | Live URL | GitHub Source (JSON) |
+|--------|----------|----------------------|
+| FunctionCondition | https://docs.cyoda.net/json-schemas/condition/functioncondition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/condition/FunctionCondition.json |
+| GroupCondition | https://docs.cyoda.net/json-schemas/condition/groupcondition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/condition/GroupCondition.json |
+| LifecycleCondition | https://docs.cyoda.net/json-schemas/condition/lifecyclecondition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/condition/LifecycleCondition.json |
+| Operation | https://docs.cyoda.net/json-schemas/condition/operation/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/condition/Operation.json |
+| QueryCondition | https://docs.cyoda.net/json-schemas/condition/querycondition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/condition/QueryCondition.json |
+| SimpleCondition | https://docs.cyoda.net/json-schemas/condition/simplecondition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/condition/SimpleCondition.json |
+
+### State Machine Schemas
+| Schema | Live URL | GitHub Source (JSON) |
+|--------|----------|----------------------|
+| ProcessorInfo | https://docs.cyoda.net/json-schemas/statemachine/processorinfo/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/statemachine/ProcessorInfo.json |
+| TransitionInfo | https://docs.cyoda.net/json-schemas/statemachine/transitioninfo/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/statemachine/TransitionInfo.json |
+| WorkflowInfo | https://docs.cyoda.net/json-schemas/statemachine/workflowinfo/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/statemachine/WorkflowInfo.json |
+
+### State Machine Configuration Schemas
+| Schema | Live URL | GitHub Source (JSON) |
+|--------|----------|----------------------|
+| ExternalizedProcessorDefinition | https://docs.cyoda.net/json-schemas/statemachine/conf/externalizedprocessordefinition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/statemachine/conf/ExternalizedProcessorDefinition.json |
+| ProcessorDefinition | https://docs.cyoda.net/json-schemas/statemachine/conf/processordefinition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/statemachine/conf/ProcessorDefinition.json |
+| ScheduledTransitionProcessorDefinition | https://docs.cyoda.net/json-schemas/statemachine/conf/scheduledtransitionprocessordefinition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/statemachine/conf/ScheduledTransitionProcessorDefinition.json |
+| StateDefinition | https://docs.cyoda.net/json-schemas/statemachine/conf/statedefinition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/statemachine/conf/StateDefinition.json |
+| TransitionDefinition | https://docs.cyoda.net/json-schemas/statemachine/conf/transitiondefinition/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/statemachine/conf/TransitionDefinition.json |
+| WorkflowConfiguration | https://docs.cyoda.net/json-schemas/statemachine/conf/workflowconfiguration/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/common/statemachine/conf/WorkflowConfiguration.json |
+
+### Entity Schemas
+| Schema | Live URL | GitHub Source (JSON) |
+|--------|----------|----------------------|
+| EntityCreateCollectionRequest | https://docs.cyoda.net/json-schemas/entity/entitycreatecollectionrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityCreateCollectionRequest.json |
+| EntityCreatePayload | https://docs.cyoda.net/json-schemas/entity/entitycreatepayload/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityCreatePayload.json |
+| EntityCreateRequest | https://docs.cyoda.net/json-schemas/entity/entitycreaterequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityCreateRequest.json |
+| EntityDeleteAllRequest | https://docs.cyoda.net/json-schemas/entity/entitydeleteallrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityDeleteAllRequest.json |
+| EntityDeleteAllResponse | https://docs.cyoda.net/json-schemas/entity/entitydeleteallresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityDeleteAllResponse.json |
+| EntityDeleteRequest | https://docs.cyoda.net/json-schemas/entity/entitydeleterequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityDeleteRequest.json |
+| EntityDeleteResponse | https://docs.cyoda.net/json-schemas/entity/entitydeleteresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityDeleteResponse.json |
+| EntityTransactionInfo | https://docs.cyoda.net/json-schemas/entity/entitytransactioninfo/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityTransactionInfo.json |
+| EntityTransactionResponse | https://docs.cyoda.net/json-schemas/entity/entitytransactionresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityTransactionResponse.json |
+| EntityTransitionRequest | https://docs.cyoda.net/json-schemas/entity/entitytransitionrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityTransitionRequest.json |
+| EntityTransitionResponse | https://docs.cyoda.net/json-schemas/entity/entitytransitionresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityTransitionResponse.json |
+| EntityUpdateCollectionRequest | https://docs.cyoda.net/json-schemas/entity/entityupdatecollectionrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityUpdateCollectionRequest.json |
+| EntityUpdatePayload | https://docs.cyoda.net/json-schemas/entity/entityupdatepayload/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityUpdatePayload.json |
+| EntityUpdateRequest | https://docs.cyoda.net/json-schemas/entity/entityupdaterequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/entity/EntityUpdateRequest.json |
+
+### Model Schemas
+| Schema | Live URL | GitHub Source (JSON) |
+|--------|----------|----------------------|
+| EntityModelDeleteRequest | https://docs.cyoda.net/json-schemas/model/entitymodeldeleterequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelDeleteRequest.json |
+| EntityModelDeleteResponse | https://docs.cyoda.net/json-schemas/model/entitymodeldeleteresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelDeleteResponse.json |
+| EntityModelExportRequest | https://docs.cyoda.net/json-schemas/model/entitymodelexportrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelExportRequest.json |
+| EntityModelExportResponse | https://docs.cyoda.net/json-schemas/model/entitymodelexportresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelExportResponse.json |
+| EntityModelGetAllRequest | https://docs.cyoda.net/json-schemas/model/entitymodelgetallrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelGetAllRequest.json |
+| EntityModelGetAllResponse | https://docs.cyoda.net/json-schemas/model/entitymodelgetallresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelGetAllResponse.json |
+| EntityModelImportRequest | https://docs.cyoda.net/json-schemas/model/entitymodelimportrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelImportRequest.json |
+| EntityModelImportResponse | https://docs.cyoda.net/json-schemas/model/entitymodelimportresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelImportResponse.json |
+| EntityModelTransitionRequest | https://docs.cyoda.net/json-schemas/model/entitymodeltransitionrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelTransitionRequest.json |
+| EntityModelTransitionResponse | https://docs.cyoda.net/json-schemas/model/entitymodeltransitionresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/model/EntityModelTransitionResponse.json |
+
+### Processing Schemas
+| Schema | Live URL | GitHub Source (JSON) |
+|--------|----------|----------------------|
+| CalculationMemberGreetEvent | https://docs.cyoda.net/json-schemas/processing/calculationmembergreetevent/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/processing/CalculationMemberGreetEvent.json |
+| CalculationMemberJoinEvent | https://docs.cyoda.net/json-schemas/processing/calculationmemberjoinevent/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/processing/CalculationMemberJoinEvent.json |
+| CalculationMemberKeepAliveEvent | https://docs.cyoda.net/json-schemas/processing/calculationmemberkeepaliveevent/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/processing/CalculationMemberKeepAliveEvent.json |
+| EntityCriteriaCalculationRequest | https://docs.cyoda.net/json-schemas/processing/entitycriteriacalculationrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/processing/EntityCriteriaCalculationRequest.json |
+| EntityCriteriaCalculationResponse | https://docs.cyoda.net/json-schemas/processing/entitycriteriacalculationresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/processing/EntityCriteriaCalculationResponse.json |
+| EntityProcessorCalculationRequest | https://docs.cyoda.net/json-schemas/processing/entityprocessorcalculationrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/processing/EntityProcessorCalculationRequest.json |
+| EntityProcessorCalculationResponse | https://docs.cyoda.net/json-schemas/processing/entityprocessorcalculationresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/processing/EntityProcessorCalculationResponse.json |
+| EventAckResponse | https://docs.cyoda.net/json-schemas/processing/eventackresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/processing/EventAckResponse.json |
+
+### Search Schemas
+| Schema | Live URL | GitHub Source (JSON) |
+|--------|----------|----------------------|
+| EntityChangesMetadataGetRequest | https://docs.cyoda.net/json-schemas/search/entitychangesmetadatagetrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntityChangesMetadataGetRequest.json |
+| EntityChangesMetadataResponse | https://docs.cyoda.net/json-schemas/search/entitychangesmetadataresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntityChangesMetadataResponse.json |
+| EntityGetAllRequest | https://docs.cyoda.net/json-schemas/search/entitygetallrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntityGetAllRequest.json |
+| EntityGetRequest | https://docs.cyoda.net/json-schemas/search/entitygetrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntityGetRequest.json |
+| EntityResponse | https://docs.cyoda.net/json-schemas/search/entityresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntityResponse.json |
+| EntitySearchRequest | https://docs.cyoda.net/json-schemas/search/entitysearchrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntitySearchRequest.json |
+| EntitySnapshotSearchRequest | https://docs.cyoda.net/json-schemas/search/entitysnapshotsearchrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntitySnapshotSearchRequest.json |
+| EntitySnapshotSearchResponse | https://docs.cyoda.net/json-schemas/search/entitysnapshotsearchresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntitySnapshotSearchResponse.json |
+| EntityStatsByStateGetRequest | https://docs.cyoda.net/json-schemas/search/entitystatsbystategetrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntityStatsByStateGetRequest.json |
+| EntityStatsByStateResponse | https://docs.cyoda.net/json-schemas/search/entitystatsbystateresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntityStatsByStateResponse.json |
+| EntityStatsGetRequest | https://docs.cyoda.net/json-schemas/search/entitystatsgetrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntityStatsGetRequest.json |
+| EntityStatsResponse | https://docs.cyoda.net/json-schemas/search/entitystatsresponse/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/EntityStatsResponse.json |
+| SearchSnapshotStatus | https://docs.cyoda.net/json-schemas/search/searchsnapshotstatus/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/SearchSnapshotStatus.json |
+| SnapshotCancelRequest | https://docs.cyoda.net/json-schemas/search/snapshotcancelrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/SnapshotCancelRequest.json |
+| SnapshotGetRequest | https://docs.cyoda.net/json-schemas/search/snapshotgetrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/SnapshotGetRequest.json |
+| SnapshotGetStatusRequest | https://docs.cyoda.net/json-schemas/search/snapshotgetstatusrequest/ | https://raw.githubusercontent.com/Cyoda-platform/cyoda-docs/main/src/schemas/search/SnapshotGetStatusRequest.json |
+
+---
+
+## Usage Instructions
+
+When you need Cyoda documentation:
+
+1. **Identify the topic**: Determine which section of the documentation is most relevant
+2. **Use the exact URL**: Copy the exact URL from this navigation tree
+3. **Fetch the page**: Use `load_web_page(url='<exact-url>')` to retrieve the content
+4. **Extract information**: Parse the returned content to answer the user's question
+
+Example:
+```python
+# User asks about workflow configuration
+content = load_web_page(url='https://docs.cyoda.net/guides/workflow-config-guide/')
+# Parse content and provide answer
+```

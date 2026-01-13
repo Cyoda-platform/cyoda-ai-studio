@@ -1,0 +1,100 @@
+{
+  "eval_set_id": "build_app_repo_setup",
+  "name": "build_app_repo_setup",
+  "eval_cases": [
+    {
+      "eval_id": "gh_repo_setup",
+      "conversation": [
+        {
+          "invocation_id": "e-690b4d0d-7715-4405-8c50-61f06a9a80c8",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Develop an institutional trading platform with real-time market data feeds, advanced order management systems, comprehensive portfolio tracking, risk controls, regulatory compliance for equities and derivatives, and real-time P&L calculations"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nYou're building an institutional trading platform with real-time market data, advanced order management, portfolio tracking, risk controls, compliance, and real-time P&L \u2014 a complex system where traceability and repeatability matter. Choosing the repository strategy (language, visibility, and whether we'll create a new branch or use an existing one) is the first practical step so we can initialize a repo template and capture requirements and designs as persistent artifacts.\n\nWhen you choose an option below, I'll initialize the repository branch and then guide you through the next steps in the Cyoda journey: Design (Canvas) \u2192 Build \u2192 Environment \u2192 Deploy.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767647321.569783
+        },
+        {
+          "invocation_id": "e-a64db065-570b-4e5e-a1e7-8c8ef0c38518",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Python \u2014 Public repo \u2014 New Branch"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Great \u2014 public Python repository initialized. I created a new branch named test-branch-uuid-12345 from the Cyoda Python template and cloned it to /tmp/mocked/repo/path. We'll continue with a GitOps approach: the repo is the single source of truth and will capture requirements, designs, and code as we progress.\n\nRecommended next step: Start by defining functional and non-functional requirements (markets supported, data feed latency, order types, risk limits, compliance reporting needs, P&L cadence). I can draft a requirements file for you (and we\u2019ll persist it immediately to the repo), or we can jump straight to entities or workflows if you prefer.\n\nWhat would you like to do next?\n\n[options-single-choice: Define Requirements, Create Entities, Design Workflows, Analyze Repo, Help me run my application locally, Generate Application]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "repository_type": "public"
+                },
+                "name": "set_repository_config",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "generate_branch_uuid",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "language": "python",
+                  "branch_name": "test-branch-uuid-12345"
+                },
+                "name": "clone_repository",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767647547.102665
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767647721.1745148
+    }
+  ],
+  "creation_timestamp": 1767647716.9962404
+}

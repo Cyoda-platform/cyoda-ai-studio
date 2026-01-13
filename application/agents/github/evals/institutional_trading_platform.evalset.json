@@ -1,0 +1,50 @@
+{
+  "eval_set_id": "build_app_institutional_trading",
+  "eval_cases": [
+    {
+      "eval_id": "gh_trading_platform",
+      "conversation": [
+        {
+          "invocation_id": "inv-001",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Develop an institutional trading platform with real-time market data feeds, advanced order management systems, comprehensive portfolio tracking, risk controls, regulatory compliance for equities and derivatives, and real-time P&L calculations"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nSince we're building an institutional trading platform (real-time data feeds, advanced OMS, portfolio tracking, risk controls, compliance, real-time P&L), we should pick the repository strategy that best matches your team and workflow before we design anything. The options below let us choose:\n\n- Language: Python or Java \u2014 which determines the project template and runtime patterns.\n- Repository visibility: Public (use Cyoda's standard template) or Private (use your existing repo).\n- Branch: Create a new branch (recommended for CI/GitOps) or work on an existing branch you provide.\n\nSelect the combination that matches how you want us to initialize the repo. After you choose, I\u2019ll walk you through the exact next steps for cloning/initializing and we\u2019ll proceed to the Design phase.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "intermediate_responses": [],
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

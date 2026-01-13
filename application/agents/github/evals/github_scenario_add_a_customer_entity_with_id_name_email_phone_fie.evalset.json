@@ -1,0 +1,58 @@
+{
+  "eval_set_id": "github_scenario_add_a_customer_entity_with_id_name_email_phone_fie",
+  "name": "github_scenario_add_a_customer_entity_with_id_name_email_phone_fie",
+  "description": "Test case for: As a user, I want to add a Customer entity with id, name, email, phone fields.",
+  "eval_cases": [
+    {
+      "eval_id": "gh_add_customer_entity",
+      "conversation": [
+        {
+          "invocation_id": "e-2a265275-41f9-401d-9187-e1d4c9f42776",
+          "user_content": {
+            "parts": [
+              {
+                "text": "add a Customer entity with id, name, email, phone fields."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nI can add the Customer entity (id, name, email, phone) and save it directly into the repository, but before I create or commit files I need to know how you want the repo initialized \u2014 language (Python or Java), public vs private, and whether to create a new branch or use an existing one. The choice determines which Cyoda template we start from and the branch we push the changes to, so it\u2019s important to pick the best fit for your workflow.\n\nWhen you choose an option I\u2019ll proceed with the repository setup and then we can create the entity JSON and commit it to the resolved path.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767901727.3276238
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767901727.3276327
+    }
+  ],
+  "creation_timestamp": 1767901727.3276336
+}

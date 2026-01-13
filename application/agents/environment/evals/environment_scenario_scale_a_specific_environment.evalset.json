@@ -1,0 +1,61 @@
+{
+  "eval_set_id": "environment_scenario_scale_a_specific_environment",
+  "name": "environment_scenario_scale_a_specific_environment",
+  "description": "Test case for: As a user, I want to scale a specific environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_scale_env",
+      "conversation": [
+        {
+          "invocation_id": "e-0aaf16ea-ec84-47f4-be21-058caad5ccbf",
+          "user_content": {
+            "parts": [
+              {
+                "text": "scale a specific environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "I can scale an app in a specific environment \u2014 I need a few details first.\n\nRequired:\n- Environment name (e.g., dev, staging, prod)\n- App name\n- Deployment name (if unknown I can list app deployments)\n- Desired replicas (integer)\n\nIf you want, I can list your environments or list apps in a given environment to help find names.\n\n[options-single-choice: Provide environment & app details, List Environments, List Apps in an Environment, Cancel]",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8049548
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8049552
+    }
+  ],
+  "creation_timestamp": 1767903917.8049555
+}

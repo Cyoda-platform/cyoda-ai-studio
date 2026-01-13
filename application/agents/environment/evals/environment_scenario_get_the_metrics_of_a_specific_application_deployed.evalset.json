@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_get_the_metrics_of_a_specific_application_deployed",
+  "name": "environment_scenario_get_the_metrics_of_a_specific_application_deployed",
+  "description": "Test case for: As a user, I want to get the metrics of a specific application deployed in a Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_get_app_metrics",
+      "conversation": [
+        {
+          "invocation_id": "e-fcbf19e4-4aad-4385-a4a2-cf6707f7ee21",
+          "user_content": {
+            "parts": [
+              {
+                "text": "get the metrics of a specific application deployed in a Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I can fetch metrics for a specific app \u2014 I just need two details:\n\n- Environment name (e.g., dev, staging, prod)  \n- Application name (exact app identifier)\n\nOptional: a time range (e.g., 3m, 15m, 1h) or a since_timestamp for newly deployed apps.\n\nPlease provide those and I\u2019ll start by checking the environment exists.\n\n[options-single-choice: Provide Environment & App, List Environments, Cancel]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.8054168
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.805417
+    }
+  ],
+  "creation_timestamp": 1767903917.8054173
+}

@@ -1,0 +1,130 @@
+{
+  "eval_set_id": "build_app_design_functional_requirements",
+  "name": "build_app_design_functional_requirements",
+  "eval_cases": [
+    {
+      "eval_id": "gh_design_requirements",
+      "conversation": [
+        {
+          "invocation_id": "e-690b4d0d-7715-4405-8c50-61f06a9a80c8",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Develop an institutional trading platform with real-time market data feeds, advanced order management systems, comprehensive portfolio tracking, risk controls, regulatory compliance for equities and derivatives, and real-time P&L calculations"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nSince we're building an institutional trading platform (real-time market data feeds, advanced OMS, portfolio tracking, risk controls, compliance, and real-time P&L), having the repo initialized up front is important so requirements, designs, and incremental code are tracked and reproducible. Once the repo and branch are created from the standard Cyoda template, we can iterate through Design (Canvas) \u2192 Build \u2192 Environment \u2192 Deploy with the repository as the single source of truth.\n\nWhen you choose the language and repository strategy below, I'll initialize the repository using the Cyoda template for that stack and generate the branch for our work.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "github_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "check_existing_branch_configuration",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767647321.569783
+        },
+        {
+          "invocation_id": "e-a64db065-570b-4e5e-a1e7-8c8ef0c38518",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Python \u2014 Public repo \u2014 New Branch"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "Great \u2014 thanks. I\u2019ve initialized the repository using the Cyoda Python template and created a branch for our work.\n\nWhat I did:\n- Created a new branch: test-branch-uuid-12345\n- Cloned the Cyoda Python template into: /tmp/mocked/repo/path\n- The repo is ready as the single source of truth for Design \u2192 Build \u2192 Environment \u2192 Deploy.\n\nNext steps I recommend (brief):\n- Define Requirements first so we capture real-time market, OMS, risk, compliance, and P&L expectations.\n- Then either analyze the template repo to see available entity/workflow patterns or start designing Entities and Workflows in Canvas.\n\nChoose what you\u2019d like to do next:\n\n[options-single-choice: Define Requirements, Create Entities, Design Workflows, Analyze Repo, Help me run my application locally, Generate Application]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "repository_type": "public"
+                },
+                "name": "set_repository_config",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {},
+                "name": "generate_branch_uuid",
+                "partial_args": null,
+                "will_continue": null
+              },
+              {
+                "id": null,
+                "args": {
+                  "language": "python",
+                  "branch_name": "test-branch-uuid-12345"
+                },
+                "name": "clone_repository",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767647547.102665
+        },
+        {
+          "invocation_id": "e-fc8e3a5b-1470-4950-9ccc-0d39887c863f",
+          "user_content": {
+            "parts": [
+              {
+                "text": "please design functional requirements"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I can generate a complete draft of the functional requirements for your institutional trading platform. I\u2019ll cover scope, core features (real-time market feeds, OMS, portfolio tracking, risk controls, compliance, real-time P&L), integrations, non-functional requirements (latency, throughput, availability), data model touchpoints, and acceptance criteria \u2014 then persist the requirements into the repo so we have a single source of truth.\n\nBefore I generate the draft, one quick question to tune the requirements profile for your use case:\n\nWhich market/regulatory focus should I target for the requirements?\n\n- Focus: US Equities & Derivatives (SEC-focused reporting/compliance)\n- Focus: EU Markets (MiFID II / EU derivatives compliance)\n- Focus: Global Multi-Asset (Equities & Derivatives across regions)\n- Focus: Crypto & Digital Assets (high volatility, exchange connectivity)\n\nPick the profile below and I\u2019ll produce a tailored functional requirements document and save it to the repository.\n\n[options-single-choice: Focus: US Equities & Derivatives (SEC-focused reporting/compliance), Focus: EU Markets (MiFID II / EU derivatives compliance), Focus: Global Multi-Asset (Equities & Derivatives across regions), Focus: Crypto & Digital Assets (high volatility, exchange connectivity)]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": []
+          },
+          "creation_timestamp": 1767647734.2366
+        }
+      ],
+      "session_input": {
+        "app_name": "github",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767647817.0595136
+    }
+  ],
+  "creation_timestamp": 1767647812.553044
+}

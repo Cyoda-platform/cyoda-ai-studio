@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "environment_scenario_restart_a_specific_application_deployed_in_a_cyoda",
+  "name": "environment_scenario_restart_a_specific_application_deployed_in_a_cyoda",
+  "description": "Test case for: As a user, I want to restart a specific application deployed in a Cyoda environment.",
+  "eval_cases": [
+    {
+      "eval_id": "env_restart_app",
+      "conversation": [
+        {
+          "invocation_id": "e-e677faa6-2c15-4ef9-a8f3-d3700efb2b22",
+          "user_content": {
+            "parts": [
+              {
+                "text": "restart a specific application deployed in a Cyoda environment."
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "I can restart your app \u2014 I need three details first:\n\n- Environment name (e.g., `dev`, `staging`, `prod`)  \n- Application name (exact app namespace)  \n- Deployment name (the deployment within the app, e.g., `web`, `api`, or `<app>-deployment`)\n\nReply with those and I will run check_environment_exists() and then restart the deployment.\n\n[options-single-choice: Provide Environment & App, List Environments, Cancel]"
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "agent_name": "environment_agent"
+                },
+                "name": "transfer_to_agent",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ]
+          },
+          "creation_timestamp": 1767903917.805075
+        }
+      ],
+      "session_input": {
+        "app_name": "environment",
+        "user_id": "user"
+      },
+      "creation_timestamp": 1767903917.8050752
+    }
+  ],
+  "creation_timestamp": 1767903917.8050754
+}

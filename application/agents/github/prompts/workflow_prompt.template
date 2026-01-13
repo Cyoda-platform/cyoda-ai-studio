@@ -1,0 +1,19 @@
+## Workflow Design Instructions for {split_parameter_value}
+
+Design a workflow for the {split_parameter_value} entity based on the functional requirements.
+
+### Key Rules:
+
+1. **Structure**: Use a Finite State Machine (FSM) model with states as an object (dictionary)
+2. **State Naming**: Use lowercase with underscores (e.g., `created`, `validated`, `processing`, `completed`)
+3. **Transitions**: Each state has a list of transitions with:
+   - `name`: lowercase with underscores (e.g., `validate`, `process`, `complete`)
+   - `to`: target state name
+   - `manual`: boolean (true for user-initiated, false for system-driven)
+4. **Optional**: Add `description` field to transitions for clarity
+5. **Terminal States**: Include final states (e.g., `completed`, `cancelled`, `archived`)
+6. **Avoid Loops**: Avoid circular transitions unless explicitly required
+
+### Output:
+
+Return valid JSON ready for copy/paste only. No extra text or markdown.

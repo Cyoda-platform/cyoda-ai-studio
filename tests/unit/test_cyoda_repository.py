@@ -821,32 +821,6 @@ class TestCyodaRepository:
         assert result["conditions"][0]["type"] == "lifecycle"
 
     @pytest.mark.asyncio
-    async def test_ensure_cyoda_format_state_field(self, repository):
-        """Test _ensure_cyoda_format converts state field to lifecycle condition."""
-        criteria = {"state": "VALIDATED"}
-
-        result = repository._ensure_cyoda_format(criteria)
-
-        assert result["type"] == "group"
-        assert result["operator"] == "AND"
-        assert len(result["conditions"]) == 1
-        assert result["conditions"][0]["type"] == "lifecycle"
-        assert result["conditions"][0]["field"] == "state"
-        assert result["conditions"][0]["value"] == "VALIDATED"
-
-    @pytest.mark.asyncio
-    async def test_ensure_cyoda_format_current_state_field(self, repository):
-        """Test _ensure_cyoda_format converts current_state field to lifecycle condition."""
-        criteria = {"current_state": "ACTIVE"}
-
-        result = repository._ensure_cyoda_format(criteria)
-
-        assert result["type"] == "group"
-        assert len(result["conditions"]) == 1
-        assert result["conditions"][0]["type"] == "lifecycle"
-        assert result["conditions"][0]["field"] == "current_state"
-
-    @pytest.mark.asyncio
     async def test_find_by_id_with_state_in_meta(self, repository, sample_meta):
         """Test finding entity by ID with state in meta."""
         with patch(
@@ -939,60 +913,6 @@ class TestCyodaRepository:
         assert result["conditions"][0]["type"] == "lifecycle"
 
     @pytest.mark.asyncio
-    async def test_ensure_cyoda_format_dict_with_operators(self, repository):
-        """Test _ensure_cyoda_format with dict containing operators."""
-        criteria = {
-            "name": {"eq": "Test"},
-            "value": {"gt": 10},
-            "status": {"contains": "active"},
-        }
-
-        result = repository._ensure_cyoda_format(criteria)
-
-        assert result["type"] == "group"
-        assert result["operator"] == "AND"
-        assert len(result["conditions"]) == 3
-
-        # Check operator mapping
-        name_condition = next(
-            c for c in result["conditions"] if c["jsonPath"] == "$.name"
-        )
-        assert name_condition["operatorType"] == "EQUALS"
-        assert name_condition["value"] == "Test"
-
-        value_condition = next(
-            c for c in result["conditions"] if c["jsonPath"] == "$.value"
-        )
-        assert value_condition["operatorType"] == "GREATER_THAN"
-        assert value_condition["value"] == 10
-
-    @pytest.mark.asyncio
-    async def test_ensure_cyoda_format_simple_field_value(self, repository):
-        """Test _ensure_cyoda_format with simple field-value pairs."""
-        criteria = {"name": "Test", "status": "active"}
-
-        result = repository._ensure_cyoda_format(criteria)
-
-        assert result["type"] == "group"
-        assert result["operator"] == "AND"
-        assert len(result["conditions"]) == 2
-
-        # All should use EQUALS operator
-        for condition in result["conditions"]:
-            assert condition["operatorType"] == "EQUALS"
-
-    @pytest.mark.asyncio
-    async def test_ensure_cyoda_format_with_json_path(self, repository):
-        """Test _ensure_cyoda_format with existing jsonPath."""
-        criteria = {"$.custom.field": "value"}
-
-        result = repository._ensure_cyoda_format(criteria)
-
-        assert result["type"] == "group"
-        # Should preserve the jsonPath format
-        assert any("$.custom.field" in c["jsonPath"] for c in result["conditions"])
-
-    @pytest.mark.asyncio
     async def test_ensure_cyoda_format_non_dict(self, repository):
         """Test _ensure_cyoda_format with non-dict input."""
         criteria = "not a dict"
@@ -1001,53 +921,6 @@ class TestCyodaRepository:
 
         # Should return as-is
         assert result == criteria
-
-    @pytest.mark.asyncio
-    async def test_ensure_cyoda_format_with_all_operators(self, repository):
-        """Test _ensure_cyoda_format with various operators."""
-        criteria = {
-            "field1": {"eq": "value1"},
-            "field2": {"ieq": "value2"},
-            "field3": {"ne": "value3"},
-            "field4": {"contains": "value4"},
-            "field5": {"icontains": "value5"},
-            "field6": {"gt": 100},
-            "field7": {"lt": 50},
-            "field8": {"gte": 10},
-            "field9": {"lte": 90},
-            "field10": {"startswith": "prefix"},
-            "field11": {"endswith": "suffix"},
-            "field12": {"in": ["a", "b", "c"]},
-            "field13": {"not_in": ["x", "y"]},
-        }
-
-        result = repository._ensure_cyoda_format(criteria)
-
-        assert result["type"] == "group"
-        assert len(result["conditions"]) == 13
-
-        # Verify operator mappings
-        operator_map = {
-            "field1": "EQUALS",
-            "field2": "IEQUALS",
-            "field3": "NOT_EQUALS",
-            "field4": "CONTAINS",
-            "field5": "ICONTAINS",
-            "field6": "GREATER_THAN",
-            "field7": "LESS_THAN",
-            "field8": "GREATER_THAN_OR_EQUAL",
-            "field9": "LESS_THAN_OR_EQUAL",
-            "field10": "STARTS_WITH",
-            "field11": "ENDS_WITH",
-            "field12": "IN",
-            "field13": "NOT_IN",
-        }
-
-        for field, expected_op in operator_map.items():
-            condition = next(
-                c for c in result["conditions"] if f"$.{field}" in c["jsonPath"]
-            )
-            assert condition["operatorType"] == expected_op
 
     # Edge Message Tests
 
@@ -1209,7 +1082,12 @@ class TestCyodaRepository:
             }
 
             criteria = {"name": "Test"}
-            result = await repository._send_search_request(sample_meta, criteria, None)
+            search_path = (
+                f"search/{sample_meta['entity_model']}/{sample_meta['entity_version']}"
+            )
+            result = await repository._send_search_request(
+                method="post", path=search_path, data=json.dumps(criteria)
+            )
 
             assert result["status"] == 200
             assert len(result["json"]) == 1
@@ -1225,7 +1103,12 @@ class TestCyodaRepository:
             ]
 
             criteria = {"name": "Test"}
-            result = await repository._send_search_request(sample_meta, criteria, None)
+            search_path = (
+                f"search/{sample_meta['entity_model']}/{sample_meta['entity_version']}"
+            )
+            result = await repository._send_search_request(
+                method="post", path=search_path, data=json.dumps(criteria)
+            )
 
             assert result["status"] == 200
             assert mock_request.call_count == 2

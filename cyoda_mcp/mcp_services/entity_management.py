@@ -9,12 +9,11 @@ import logging
 from typing import Any, Dict
 
 from common.config.config import ENTITY_VERSION
+from common.search import CyodaOperator
 from common.service.entity_service import (
-    CYODA_OPERATOR_MAPPING,
     EntityService,
     LogicalOperator,
     SearchConditionRequest,
-    SearchOperator,
 )
 
 logger = logging.getLogger(__name__)
@@ -353,11 +352,9 @@ class EntityManagementService:
             operator_type = condition.get("operatorType", "EQUALS")
             value = condition.get("value")
 
-            # Map Cyoda operators to internal operators using enum mapping
-            search_operator = CYODA_OPERATOR_MAPPING.get(
-                operator_type, SearchOperator.EQUALS
-            )
-            builder.add_condition(field, search_operator, value)
+            # Use CyodaOperator directly
+            cyoda_operator = CyodaOperator(operator_type)
+            builder.add_condition(field, cyoda_operator, value)
 
         elif condition_type == "simple":
             # Handle simple JSON path conditions
@@ -370,8 +367,6 @@ class EntityManagementService:
                 json_path.replace("$.", "") if json_path.startswith("$.") else json_path
             )
 
-            # Map Cyoda operators to internal operators using enum mapping
-            search_operator = CYODA_OPERATOR_MAPPING.get(
-                operator_type, SearchOperator.EQUALS
-            )
-            builder.add_condition(field, search_operator, value)
+            # Use CyodaOperator directly
+            cyoda_operator = CyodaOperator(operator_type)
+            builder.add_condition(field, cyoda_operator, value)

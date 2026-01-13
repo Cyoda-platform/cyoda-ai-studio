@@ -13,7 +13,7 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence, cast
 
-from common.config.config import CYODA_ENTITY_TYPE_EDGE_MESSAGE
+from common.config.config import CYODA_API_URL, CYODA_ENTITY_TYPE_EDGE_MESSAGE
 from common.config.conts import (
     EDGE_MESSAGE_CLASS,
     TREE_NODE_ENTITY_CLASS,
@@ -37,16 +37,18 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
     _instance: Optional["CyodaRepository"] = None
     _lock: threading.Lock = threading.Lock()
 
-    def __init__(self, cyoda_auth_service: Any) -> None:
+    def __init__(self, cyoda_auth_service: Any, api_url: Optional[str] = None) -> None:
         """Initialize the repository."""
         self._cyoda_auth_service: Any = cyoda_auth_service
+        self._api_url = api_url
 
-    def __new__(cls, cyoda_auth_service: Any) -> "CyodaRepository":  # type: ignore[override]
+    def __new__(cls, cyoda_auth_service: Any, api_url: Optional[str] = None) -> "CyodaRepository":  # type: ignore[override]
         """Thread-safe singleton implementation."""
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
                 cls._instance._cyoda_auth_service = cyoda_auth_service
+                cls._instance._api_url = api_url
         return cls._instance
 
     # -----------------------
@@ -111,6 +113,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
                 cyoda_auth_service=self._cyoda_auth_service,
                 method="get",
                 path=status_path,
+                base_url=self._api_url or CYODA_API_URL,
             )
             if resp.get("status") != 200:
                 return
@@ -138,9 +141,12 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             key = str(entity_id)
             if key in _edge_messages_cache:
                 return _edge_messages_cache[key]
-            path = f"message/get/{entity_id}"
+            path = f"message/{entity_id}"
             resp: Dict[str, Any] = await send_cyoda_request(
-                cyoda_auth_service=self._cyoda_auth_service, method="get", path=path
+                cyoda_auth_service=self._cyoda_auth_service,
+                method="get",
+                path=path,
+                base_url=self._api_url or CYODA_API_URL,
             )
             content = resp.get("json", {}).get("content", "{}")
             parsed = self._json_loads_or_empty(content)
@@ -157,7 +163,10 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             path = f"{path}?pointInTime={pit_str}"
 
         resp = await send_cyoda_request(
-            cyoda_auth_service=self._cyoda_auth_service, method="get", path=path
+            cyoda_auth_service=self._cyoda_auth_service,
+            method="get",
+            path=path,
+            base_url=self._api_url or CYODA_API_URL,
         )
 
         # Handle 404 responses (entity not found)
@@ -178,7 +187,10 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         """Find all entities of a specific model."""
         path = f"entity/{meta['entity_model']}/{meta['entity_version']}"
         resp: Dict[str, Any] = await send_cyoda_request(
-            cyoda_auth_service=self._cyoda_auth_service, method="get", path=path
+            cyoda_auth_service=self._cyoda_auth_service,
+            method="get",
+            path=path,
+            base_url=self._api_url or CYODA_API_URL,
         )
 
         # Handle 404 responses (no entities found)
@@ -193,30 +205,78 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         meta: Dict[str, Any],
         criteria: Any,
         point_in_time: Optional[datetime] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Find entities matching specific criteria, optionally at a specific point in time."""
+        import time
+
+        start_time = time.time()
+
         # Use direct search endpoint: POST /search/{entityName}/{modelVersion}
         search_path = f"search/{meta['entity_model']}/{meta['entity_version']}"
 
-        # Add point_in_time parameter if provided
+        # Build query parameters
+        query_params = []
+
+        # Add clientPointTime parameter if provided (for cursor-based pagination)
+        # This gets entities created/updated BEFORE this timestamp
         if point_in_time:
             pit_str = point_in_time.isoformat()
-            search_path = f"{search_path}?pointInTime={pit_str}"
+            query_params.append(f"clientPointTime={pit_str}")
+
+        # Add limit parameter if provided (Cyoda default is 1000, max is 10000)
+        if limit is not None:
+            query_params.append(f"limit={min(limit, 10000)}")
+
+        # Note: We don't use offset with clientPointTime (cursor-based pagination)
+        # offset is only for traditional pagination which we're not using
+
+        # Append query parameters to path
+        if query_params:
+            search_path = f"{search_path}?{'&'.join(query_params)}"
+
+        logger.info(f"🔍 Using DIRECT IN-MEMORY search endpoint: POST /{search_path}")
 
         # Convert criteria to Cyoda-native format if needed
         search_criteria: Dict[str, Any] = self._ensure_cyoda_format(criteria)
 
-        resp = await self._send_search_request(
-            method="post", path=search_path, data=json.dumps(search_criteria)
+        logger.info(
+            f"🔍 Final search criteria: {json.dumps(search_criteria, indent=2)}"
         )
 
+        search_data = json.dumps(search_criteria, default=custom_serializer)
+        full_url = f"{self._api_url or CYODA_API_URL}/{search_path}"
+        logger.info(f"🔍 Sending request to: POST {full_url}")
+        logger.info(f"🔍 Request body: {search_data}")
+
+        resp = await self._send_search_request(
+            method="post", path=search_path, data=search_data
+        )
+
+        elapsed_time = time.time() - start_time
+
+        logger.info(f"🔍 Response status: {resp.get('status')}")
+        logger.info(f"🔍 Response JSON length: {len(resp.get('json', []))} items")
+
         if resp.get("status") != 200:
+            error_detail = resp.get("json", resp.get("content", "No error details"))
+            logger.warning(
+                f"❌ Direct search failed with status {resp.get('status')} (took {elapsed_time:.3f}s)"
+            )
+            logger.warning(f"❌ Error details: {error_detail}")
             return []
 
         # Handle the response - it should be a list of entities
         entities_any = resp.get("json", [])
         entities = self._coerce_list_of_dicts(entities_any)
-        return self._ensure_technical_id_on_entities(entities)
+        result = self._ensure_technical_id_on_entities(entities)
+
+        logger.info(
+            f"✅ Direct search completed: found {len(result)} entities in {elapsed_time:.3f}s"
+        )
+
+        return result
 
     # -----------------------
     # Internal HTTP utilities
@@ -237,7 +297,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         from common.utils.utils import send_request
 
         if base_url is None:
-            base_url = CYODA_API_URL
+            base_url = self._api_url or CYODA_API_URL
 
         token: str = await self._cyoda_auth_service.get_access_token()
 
@@ -245,6 +305,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             # Prepare headers for search endpoint
             headers: Dict[str, str] = {
                 "Content-Type": "application/json",
+                "Accept": "application/x-ndjson, application/json",
                 "Authorization": (
                     f"Bearer {token}" if not token.startswith("Bearer") else token
                 ),
@@ -252,10 +313,25 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
 
             url = f"{base_url}/{path}"
 
+            # DEBUG: Log the actual request being sent
+            logger.info(f"🔍 SENDING TO CYODA: {method.upper()} {url}")
+            logger.info(f"🔍 Headers: {headers}")
+            logger.info(f"🔍 Body: {data}")
+
             # Send request (transport errors bubble up; we only handle 401 responses here)
             response: Dict[str, Any] = await send_request(
                 headers, url, method, data=data
             )
+
+            # DEBUG: Log the response
+            logger.info(f"🔍 RESPONSE STATUS: {response.get('status')}")
+            resp_body = response.get("json", response.get("content", "NO CONTENT"))
+            if isinstance(resp_body, list):
+                logger.info(f"🔍 RESPONSE: List with {len(resp_body)} items")
+                if len(resp_body) > 0:
+                    logger.info(f"🔍 First item: {resp_body[0]}")
+            else:
+                logger.info(f"🔍 RESPONSE BODY: {resp_body}")
 
             status = response.get("status") if isinstance(response, dict) else None
             if attempt == 0 and status == 401:
@@ -276,6 +352,13 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
     @staticmethod
     def _ensure_cyoda_format(criteria: Any) -> Dict[str, Any]:
         """Ensure criteria is in Cyoda-native format."""
+        from common.search.condition_builder import SearchConditionRequest
+        from common.search.condition_converter import SearchConditionConverter
+
+        # If it's a SearchConditionRequest, use the unified converter
+        if isinstance(criteria, SearchConditionRequest):
+            return SearchConditionConverter.to_cyoda_format(criteria)
+
         if not isinstance(criteria, dict):
             # If it's not a dict, assume it's already acceptable
             return cast(Dict[str, Any], criteria)
@@ -288,70 +371,8 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         if criteria.get("type") in ["simple", "lifecycle"]:
             return {"type": "group", "operator": "AND", "conditions": [criteria]}
 
-        # If it's a simple field-value dictionary, convert to Cyoda group format
-        conditions: List[Dict[str, Any]] = []
-        for field, value in criteria.items():
-            if field in ["state", "current_state"]:
-                conditions.append(
-                    {
-                        "type": "lifecycle",
-                        "field": field,
-                        "operatorType": "EQUALS",
-                        "value": value,
-                    }
-                )
-            else:
-                # Handle complex field-operator-value format
-                if isinstance(value, dict) and len(value) == 1:
-                    # Format: {"field": {"operator": "value"}}
-                    operator, actual_value = next(iter(value.items()))
-
-                    # Map internal operators back to Cyoda operators
-                    operator_mapping: Dict[str, str] = {
-                        "eq": "EQUALS",
-                        "ieq": "IEQUALS",
-                        "ne": "NOT_EQUALS",
-                        "contains": "CONTAINS",
-                        "icontains": "ICONTAINS",
-                        "gt": "GREATER_THAN",
-                        "lt": "LESS_THAN",
-                        "gte": "GREATER_THAN_OR_EQUAL",
-                        "lte": "LESS_THAN_OR_EQUAL",
-                        "startswith": "STARTS_WITH",
-                        "endswith": "ENDS_WITH",
-                        "in": "IN",
-                        "not_in": "NOT_IN",
-                    }
-
-                    cyoda_operator = operator_mapping.get(str(operator), "EQUALS")
-
-                    # Convert field to jsonPath format
-                    json_path = (
-                        f"$.{field}" if not str(field).startswith("$.") else str(field)
-                    )
-                    conditions.append(
-                        {
-                            "type": "simple",
-                            "jsonPath": json_path,
-                            "operatorType": cyoda_operator,
-                            "value": actual_value,
-                        }
-                    )
-                else:
-                    # Simple field-value format: {"field": "value"}
-                    json_path = (
-                        f"$.{field}" if not str(field).startswith("$.") else str(field)
-                    )
-                    conditions.append(
-                        {
-                            "type": "simple",
-                            "jsonPath": json_path,
-                            "operatorType": "EQUALS",
-                            "value": value,
-                        }
-                    )
-
-        return {"type": "group", "operator": "AND", "conditions": conditions}
+        # For any other dict format, assume it's already in Cyoda format
+        return cast(Dict[str, Any], criteria)
 
     # -----------------------
     # Mutations
@@ -368,7 +389,10 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             path = f"message/new/{meta['entity_model']}_{meta['entity_version']}"
         else:
             data = json.dumps(entity, default=custom_serializer)
-            path = f"entity/JSON/{meta['entity_model']}/{meta['entity_version']}"
+            path = (
+                f"entity/JSON/{meta['entity_model']}/{meta['entity_version']}"
+                "?waitForConsistencyAfter=true"
+            )
             logger.info(f"DEBUG: Sending payload to Cyoda: {data}")  # Debug logging
 
         resp: Dict[str, Any] = await send_cyoda_request(
@@ -376,6 +400,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             method="post",
             path=path,
             data=data,
+            base_url=self._api_url or CYODA_API_URL,
         )
         status = resp.get("status") if isinstance(resp, dict) else None
         if status != 200:
@@ -401,6 +426,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             method="post",
             path=path,
             data=data,
+            base_url=self._api_url or CYODA_API_URL,
         )
         result = resp.get("json", [])
         return self._extract_technical_id_from_result(result)
@@ -414,17 +440,22 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             await self._launch_transition(meta=meta, technical_id=str(technical_id))
             return None
 
-        transition: str = meta.get("update_transition", UPDATE_TRANSITION)
-        path = (
-            f"entity/JSON/{technical_id}/{transition}"
-            "?transactional=true&waitForConsistencyAfter=true"
-        )
+        transition: str = meta.get("update_transition")
+        if transition:
+            path = (
+                f"entity/JSON/{technical_id}/{transition}"
+                "?transactional=true&waitForConsistencyAfter=true"
+            )
+        else:
+            path = f"entity/JSON/{technical_id}?waitForConsistencyAfter=true"
+
         data = json.dumps(entity, default=custom_serializer)
         resp: Dict[str, Any] = await send_cyoda_request(
             cyoda_auth_service=self._cyoda_auth_service,
             method="put",
             path=path,
             data=data,
+            base_url=self._api_url or CYODA_API_URL,
         )
         status = resp.get("status") if isinstance(resp, dict) else None
         if status != 200:
@@ -445,7 +476,10 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         """Delete entity by ID."""
         path = f"entity/{technical_id}"
         await send_cyoda_request(
-            cyoda_auth_service=self._cyoda_auth_service, method="delete", path=path
+            cyoda_auth_service=self._cyoda_auth_service,
+            method="delete",
+            path=path,
+            base_url=self._api_url or CYODA_API_URL,
         )
 
     async def count(self, meta: Dict[str, Any]) -> int:
@@ -472,7 +506,10 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         """Delete all entities of a specific model."""
         path = f"entity/{meta['entity_model']}/{meta['entity_version']}"
         await send_cyoda_request(
-            cyoda_auth_service=self._cyoda_auth_service, method="delete", path=path
+            cyoda_auth_service=self._cyoda_auth_service,
+            method="delete",
+            path=path,
+            base_url=self._api_url or CYODA_API_URL,
         )
 
     async def get_meta(
@@ -498,9 +535,13 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             f"platform-api/entity/transition?entityId={technical_id}"
             f"&entityClass={entity_class}&transitionName="
             f"{meta.get('update_transition', UPDATE_TRANSITION)}"
+            f"&waitForConsistencyAfter=true"
         )
         resp: Dict[str, Any] = await send_cyoda_request(
-            cyoda_auth_service=self._cyoda_auth_service, method="put", path=path
+            cyoda_auth_service=self._cyoda_auth_service,
+            method="put",
+            path=path,
+            base_url=self._api_url or CYODA_API_URL,
         )
         if resp.get("status") != 200:
             raise Exception(resp.get("json"))
@@ -532,7 +573,10 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             path = f"{path}?pointInTime={pit_str}"
 
         resp: Dict[str, Any] = await send_cyoda_request(
-            cyoda_auth_service=self._cyoda_auth_service, method="get", path=path
+            cyoda_auth_service=self._cyoda_auth_service,
+            method="get",
+            path=path,
+            base_url=self._api_url or CYODA_API_URL,
         )
 
         if resp.get("status") != 200:
@@ -578,7 +622,10 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             path = f"{path}?pointInTime={pit_str}"
 
         resp: Dict[str, Any] = await send_cyoda_request(
-            cyoda_auth_service=self._cyoda_auth_service, method="get", path=path
+            cyoda_auth_service=self._cyoda_auth_service,
+            method="get",
+            path=path,
+            base_url=self._api_url or CYODA_API_URL,
         )
 
         if resp.get("status") != 200:

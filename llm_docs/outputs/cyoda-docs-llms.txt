@@ -1,0 +1,130 @@
+# Cyoda Documentation
+
+## Getting Started
+
+- [Introduction](https://docs.cyoda.net/getting-started/introduction/)
+- [Quickstart](https://docs.cyoda.net/getting-started/quickstart/)
+
+## Guides
+
+- [Api Saving And Getting Data](https://docs.cyoda.net/guides/api-saving-and-getting-data/)
+- [Authentication Authorization](https://docs.cyoda.net/guides/authentication-authorization/)
+- [Cyoda Design Principles](https://docs.cyoda.net/guides/cyoda-design-principles/)
+- [Provision Environment](https://docs.cyoda.net/guides/provision-environment/)
+- [Sql And Trino](https://docs.cyoda.net/guides/sql-and-trino/)
+- [Workflow Config Guide](https://docs.cyoda.net/guides/workflow-config-guide/)
+
+## Concepts
+
+- [Cpl Overview](https://docs.cyoda.net/concepts/cpl-overview/)
+- [Edbms](https://docs.cyoda.net/concepts/edbms/)
+- [Event Driven Architecture](https://docs.cyoda.net/concepts/event-driven-architecture/)
+
+## Architecture
+
+- [Cyoda Cloud Architecture](https://docs.cyoda.net/architecture/cyoda-cloud-architecture/)
+
+## Cloud Services
+
+- [Entitlements](https://docs.cyoda.net/cloud/entitlements/)
+- [Roadmap](https://docs.cyoda.net/cloud/roadmap/)
+- [Service Details](https://docs.cyoda.net/cloud/service-details/)
+- [Status](https://docs.cyoda.net/cloud/status/)
+
+## Schema Reference
+
+- [Schemas](https://docs.cyoda.net/schemas/)
+  - [Common](https://docs.cyoda.net/schemas/common/)
+    - [Base Event](https://docs.cyoda.net/schemas/common/base-event/)
+    - [Cloud Event Type](https://docs.cyoda.net/schemas/common/cloud-event-type/)
+    - [Condition](https://docs.cyoda.net/schemas/common/condition/)
+      - [Function Condition](https://docs.cyoda.net/schemas/common/condition/function-condition/)
+      - [Group Condition](https://docs.cyoda.net/schemas/common/condition/group-condition/)
+      - [Lifecycle Condition](https://docs.cyoda.net/schemas/common/condition/lifecycle-condition/)
+      - [Operation](https://docs.cyoda.net/schemas/common/condition/operation/)
+      - [Query Condition](https://docs.cyoda.net/schemas/common/condition/query-condition/)
+      - [Simple Condition](https://docs.cyoda.net/schemas/common/condition/simple-condition/)
+    - [Data Format](https://docs.cyoda.net/schemas/common/data-format/)
+    - [Data Payload](https://docs.cyoda.net/schemas/common/data-payload/)
+    - [Entity Change Meta](https://docs.cyoda.net/schemas/common/entity-change-meta/)
+    - [Entity Metadata](https://docs.cyoda.net/schemas/common/entity-metadata/)
+    - [Error Code](https://docs.cyoda.net/schemas/common/error-code/)
+    - [Externalized Function Config](https://docs.cyoda.net/schemas/common/externalized-function-config/)
+    - [Model Converter Type](https://docs.cyoda.net/schemas/common/model-converter-type/)
+    - [Model Info](https://docs.cyoda.net/schemas/common/model-info/)
+    - [Model Spec](https://docs.cyoda.net/schemas/common/model-spec/)
+    - [Scheduled Transition Config](https://docs.cyoda.net/schemas/common/scheduled-transition-config/)
+    - [Statemachine](https://docs.cyoda.net/schemas/common/statemachine/)
+      - [Conf](https://docs.cyoda.net/schemas/common/statemachine/conf/)
+        - [Externalized Processor Definition](https://docs.cyoda.net/schemas/common/statemachine/conf/externalized-processor-definition/)
+        - [Processor Definition](https://docs.cyoda.net/schemas/common/statemachine/conf/processor-definition/)
+        - [Scheduled Transition Processor Definition](https://docs.cyoda.net/schemas/common/statemachine/conf/scheduled-transition-processor-definition/)
+        - [State Definition](https://docs.cyoda.net/schemas/common/statemachine/conf/state-definition/)
+        - [Transition Definition](https://docs.cyoda.net/schemas/common/statemachine/conf/transition-definition/)
+        - [Workflow Configuration](https://docs.cyoda.net/schemas/common/statemachine/conf/workflow-configuration/)
+      - [Processor Info](https://docs.cyoda.net/schemas/common/statemachine/processor-info/)
+      - [Transition Info](https://docs.cyoda.net/schemas/common/statemachine/transition-info/)
+      - [Workflow Info](https://docs.cyoda.net/schemas/common/statemachine/workflow-info/)
+  - [Entity](https://docs.cyoda.net/schemas/entity/)
+    - [Entity Create Collection Request](https://docs.cyoda.net/schemas/entity/entity-create-collection-request/)
+    - [Entity Create Payload](https://docs.cyoda.net/schemas/entity/entity-create-payload/)
+    - [Entity Create Request](https://docs.cyoda.net/schemas/entity/entity-create-request/)
+    - [Entity Delete All Request](https://docs.cyoda.net/schemas/entity/entity-delete-all-request/)
+    - [Entity Delete All Response](https://docs.cyoda.net/schemas/entity/entity-delete-all-response/)
+    - [Entity Delete Request](https://docs.cyoda.net/schemas/entity/entity-delete-request/)
+    - [Entity Delete Response](https://docs.cyoda.net/schemas/entity/entity-delete-response/)
+    - [Entity Transaction Info](https://docs.cyoda.net/schemas/entity/entity-transaction-info/)
+    - [Entity Transaction Response](https://docs.cyoda.net/schemas/entity/entity-transaction-response/)
+    - [Entity Transition Request](https://docs.cyoda.net/schemas/entity/entity-transition-request/)
+    - [Entity Transition Response](https://docs.cyoda.net/schemas/entity/entity-transition-response/)
+    - [Entity Update Collection Request](https://docs.cyoda.net/schemas/entity/entity-update-collection-request/)
+    - [Entity Update Payload](https://docs.cyoda.net/schemas/entity/entity-update-payload/)
+    - [Entity Update Request](https://docs.cyoda.net/schemas/entity/entity-update-request/)
+  - [Model](https://docs.cyoda.net/schemas/model/)
+    - [Entity Model Delete Request](https://docs.cyoda.net/schemas/model/entity-model-delete-request/)
+    - [Entity Model Delete Response](https://docs.cyoda.net/schemas/model/entity-model-delete-response/)
+    - [Entity Model Export Request](https://docs.cyoda.net/schemas/model/entity-model-export-request/)
+    - [Entity Model Export Response](https://docs.cyoda.net/schemas/model/entity-model-export-response/)
+    - [Entity Model Get All Request](https://docs.cyoda.net/schemas/model/entity-model-get-all-request/)
+    - [Entity Model Get All Response](https://docs.cyoda.net/schemas/model/entity-model-get-all-response/)
+    - [Entity Model Import Request](https://docs.cyoda.net/schemas/model/entity-model-import-request/)
+    - [Entity Model Import Response](https://docs.cyoda.net/schemas/model/entity-model-import-response/)
+    - [Entity Model Transition Request](https://docs.cyoda.net/schemas/model/entity-model-transition-request/)
+    - [Entity Model Transition Response](https://docs.cyoda.net/schemas/model/entity-model-transition-response/)
+  - [Processing](https://docs.cyoda.net/schemas/processing/)
+    - [Calculation Member Greet Event](https://docs.cyoda.net/schemas/processing/calculation-member-greet-event/)
+    - [Calculation Member Join Event](https://docs.cyoda.net/schemas/processing/calculation-member-join-event/)
+    - [Calculation Member Keep Alive Event](https://docs.cyoda.net/schemas/processing/calculation-member-keep-alive-event/)
+    - [Entity Criteria Calculation Request](https://docs.cyoda.net/schemas/processing/entity-criteria-calculation-request/)
+    - [Entity Criteria Calculation Response](https://docs.cyoda.net/schemas/processing/entity-criteria-calculation-response/)
+    - [Entity Processor Calculation Request](https://docs.cyoda.net/schemas/processing/entity-processor-calculation-request/)
+    - [Entity Processor Calculation Response](https://docs.cyoda.net/schemas/processing/entity-processor-calculation-response/)
+    - [Event Ack Response](https://docs.cyoda.net/schemas/processing/event-ack-response/)
+  - [Search](https://docs.cyoda.net/schemas/search/)
+    - [Entity Changes Metadata Get Request](https://docs.cyoda.net/schemas/search/entity-changes-metadata-get-request/)
+    - [Entity Changes Metadata Response](https://docs.cyoda.net/schemas/search/entity-changes-metadata-response/)
+    - [Entity Get All Request](https://docs.cyoda.net/schemas/search/entity-get-all-request/)
+    - [Entity Get Request](https://docs.cyoda.net/schemas/search/entity-get-request/)
+    - [Entity Response](https://docs.cyoda.net/schemas/search/entity-response/)
+    - [Entity Search Request](https://docs.cyoda.net/schemas/search/entity-search-request/)
+    - [Entity Snapshot Search Request](https://docs.cyoda.net/schemas/search/entity-snapshot-search-request/)
+    - [Entity Snapshot Search Response](https://docs.cyoda.net/schemas/search/entity-snapshot-search-response/)
+    - [Entity Stats By State Get Request](https://docs.cyoda.net/schemas/search/entity-stats-by-state-get-request/)
+    - [Entity Stats By State Response](https://docs.cyoda.net/schemas/search/entity-stats-by-state-response/)
+    - [Entity Stats Get Request](https://docs.cyoda.net/schemas/search/entity-stats-get-request/)
+    - [Entity Stats Response](https://docs.cyoda.net/schemas/search/entity-stats-response/)
+    - [Search Snapshot Status](https://docs.cyoda.net/schemas/search/search-snapshot-status/)
+    - [Snapshot Cancel Request](https://docs.cyoda.net/schemas/search/snapshot-cancel-request/)
+    - [Snapshot Get Request](https://docs.cyoda.net/schemas/search/snapshot-get-request/)
+    - [Snapshot Get Status Request](https://docs.cyoda.net/schemas/search/snapshot-get-status-request/)
+
+## API Reference
+
+- [Api Reference](https://docs.cyoda.net/api-reference/)
+
+## Legal
+
+- [Cookies](https://docs.cyoda.net/cookies/)
+- [Imprint](https://docs.cyoda.net/imprint/)
+- [Privacy](https://docs.cyoda.net/privacy/)
+- [Terms](https://docs.cyoda.net/terms/)
