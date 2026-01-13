@@ -326,20 +326,41 @@ async def _commit_and_push_files(
         if error_msg:
             logger.warning(f"⚠️ Git push failed (may not have remote): {error_msg}")
             rel_path = func_req_dir.relative_to(repo_path)
-            return (
-                f"SUCCESS: Saved {len(saved_files)} file(s) to {rel_path} and committed locally. "
-                f"Push to remote failed (may not have remote configured)."
-            )
+            files_str = ", ".join(saved_files)
+
+            # Check if functional requirements directory
+            is_requirements_dir = "functional_requirements" in str(rel_path)
+            if is_requirements_dir:
+                return (
+                    f"SUCCESS: Requirements file(s) have been saved to {rel_path} and committed locally. "
+                    f"Files: {files_str}. Push to remote failed (may not have remote configured). "
+                    f"IMPORTANT: Requirements are already saved - do NOT call save_file_to_repository again for the same content."
+                )
+            else:
+                return (
+                    f"SUCCESS: Saved {len(saved_files)} file(s) to {rel_path} and committed locally. "
+                    f"Push to remote failed (may not have remote configured)."
+                )
 
         logger.info(
             f"🎉 Successfully saved, committed, and pushed {len(saved_files)} files"
         )
         rel_path = func_req_dir.relative_to(repo_path)
         files_str = ", ".join(saved_files)
-        return (
-            f"SUCCESS: Saved {len(saved_files)} file(s) to {rel_path}, committed, "
-            f"and pushed to branch {branch_name}. Files: {files_str}"
-        )
+
+        # Check if functional requirements directory to provide agent-friendly message
+        is_requirements_dir = "functional_requirements" in str(rel_path)
+        if is_requirements_dir:
+            return (
+                f"SUCCESS: Requirements file(s) have been saved to {rel_path} and pushed to branch {branch_name}. "
+                f"Files: {files_str}. "
+                f"IMPORTANT: Requirements are already saved - do NOT call save_file_to_repository again for the same content."
+            )
+        else:
+            return (
+                f"SUCCESS: Saved {len(saved_files)} file(s) to {rel_path}, committed, "
+                f"and pushed to branch {branch_name}. Files: {files_str}"
+            )
 
     except Exception as e:
         logger.error(f"❌ Failed to commit/push files: {e}", exc_info=True)
