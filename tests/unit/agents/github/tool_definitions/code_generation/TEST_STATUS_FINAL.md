@@ -86,6 +86,7 @@ All scenarios tested and working:
 - Corrected mock import paths to match actual imports inside `retry_failed_generation`
 - Added missing `repository_path` and `branch_name` fields to code_generation test fixtures
 - Patched `get_circuit_breaker` at the retry_generation_tool module level
+- Added global circuit breaker reset fixture in `tests/conftest.py` to prevent OPEN state from affecting tests
 
 ---
 
@@ -181,3 +182,35 @@ python -m pytest tests/unit/routes/test_tasks_routes.py tests/unit/agents/github
 - Agent conversation handling verified
 
 **Ready for production! ✅**
+
+---
+
+## 🔧 Additional Improvements
+
+### Circuit Breaker Test Infrastructure
+
+**Problem:** The circuit breaker singleton persisted in OPEN state across test runs, causing unrelated tests to fail with "Circuit open - too many failures" errors.
+
+**Solution:** Added an autouse pytest fixture in `tests/conftest.py`:
+
+```python
+@pytest.fixture(autouse=True)
+def reset_circuit_breaker_before_test():
+    """Reset circuit breaker state before each test to prevent OPEN state from affecting tests."""
+    from application.agents.github.tool_definitions.code_generation.helpers import (
+        reset_circuit_breaker,
+    )
+
+    reset_circuit_breaker()
+    yield
+    # Reset again after test to clean up
+    reset_circuit_breaker()
+```
+
+**Impact:** This fixture automatically resets the circuit breaker before and after every test, preventing state pollution between tests and ensuring consistent test results.
+
+**Benefits:**
+- ✅ Eliminates intermittent test failures due to circuit breaker state
+- ✅ Improves test reliability and reproducibility
+- ✅ Applies to all tests automatically (autouse=True)
+- ✅ No changes needed to individual tests

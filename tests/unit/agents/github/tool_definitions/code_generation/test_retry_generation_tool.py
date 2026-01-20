@@ -150,7 +150,7 @@ class TestRetryApplicationBuild:
         """Test successful retry of failed application build (retryable error)."""
         with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
             ) as mock_cb:
                 # Mock the import statement inside retry_failed_generation
                 with patch(
@@ -250,7 +250,7 @@ class TestRetryCodeGeneration:
         """Test successful retry of failed code generation (retryable error)."""
         with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
             ) as mock_cb:
                 # Mock the import statement inside retry_failed_generation
                 with patch(
@@ -314,7 +314,7 @@ class TestRetryCodeGeneration:
         """Test retry attempt that also fails."""
         with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
             ) as mock_cb:
                 # Mock the import statement inside retry_failed_generation
                 with patch(
@@ -391,7 +391,7 @@ class TestRetryEdgeCases:
 
         with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
             ) as mock_cb:
                 mock_task_service = AsyncMock()
                 mock_service.return_value = mock_task_service
@@ -425,7 +425,7 @@ class TestRetryEdgeCases:
 
         with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
             ) as mock_cb:
                 mock_task_service = AsyncMock()
                 mock_service.return_value = mock_task_service
@@ -486,7 +486,7 @@ class TestRetryDifferentErrorTypes:
 
         with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
             ) as mock_cb:
                 # Mock the import statement inside retry_failed_generation
                 with patch(
@@ -564,7 +564,7 @@ class TestRetryDifferentErrorTypes:
 
         with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
             ) as mock_cb:
                 # Mock the import statement inside retry_failed_generation
                 with patch(
