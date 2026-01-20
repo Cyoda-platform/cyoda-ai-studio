@@ -34,6 +34,7 @@ from ._application_build_helpers import (
     _load_build_prompt_template,
     _load_pattern_catalog,
 )
+from ._circuit_breaker import get_circuit_breaker
 from ._cli_common import (
     _check_build_already_started,
     _create_background_task,
@@ -46,6 +47,7 @@ from ._cli_common import (
     _validate_cli_invocation_limit,
     _write_prompt_to_tempfile,
 )
+from ._conversation_lock import check_conversation_lock
 from ._prompt_loader import load_informational_prompt_template
 
 logger = logging.getLogger(__name__)
@@ -174,6 +176,17 @@ async def _validate_preconditions(
     Returns:
         Tuple of (success, error_message)
     """
+    # Check conversation lock - prevent parallel code generation in same conversation
+    from services.services import get_entity_service
+
+    entity_service = get_entity_service()
+    is_locked, lock_message = await check_conversation_lock(
+        context.conversation_id, entity_service
+    )
+    if is_locked:
+        logger.warning(f"Conversation lock prevented execution: {lock_message}")
+        return False, lock_message
+
     # Check if build already started (optional based on config)
     if config.check_build_already_started:
         already_started, error_msg = await _check_build_already_started(
@@ -504,6 +517,15 @@ async def _generate_code_core(
         Status message with task ID or error
     """
     try:
+        # Step 0: Check circuit breaker
+        circuit_breaker = get_circuit_breaker()
+        can_execute, reason = circuit_breaker.can_execute()
+        if not can_execute:
+            logger.warning(f"Circuit breaker blocked CLI execution: {reason}")
+            return f"ERROR: {reason}"
+
+        logger.info(f"Circuit breaker check passed: {reason}")
+
         # Step 1: Validate and extract context
         success, error_msg, context = await _validate_context(
             config, user_input, language, repository_path, branch_name, tool_context
@@ -547,11 +569,19 @@ async def _generate_code_core(
             config, context, process, prompt_file, output_file, user_input
         )
         if not success:
+            circuit_breaker.record_failure()
             return error_msg
+
+        # Record successful start (process will track actual completion)
+        # We only record success here as process started successfully
+        # Actual completion tracking happens in monitor_cli_process
+        logger.info("CLI process started successfully")
 
         # Step 8: Format and return response
         return _format_response(config, context, task_id, hook, user_input, process.pid)
 
     except Exception as e:
         logger.error(f"Error in _generate_code_core: {e}", exc_info=True)
+        circuit_breaker = get_circuit_breaker()
+        circuit_breaker.record_failure()
         return f"ERROR: {str(e)}"

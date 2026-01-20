@@ -174,3 +174,4 @@ reports/
 *.html
 **/report.html
 **/*_report.html
+/logs/

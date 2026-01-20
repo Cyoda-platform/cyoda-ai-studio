@@ -45,6 +45,7 @@ def to_api_response(task: Any) -> Dict[str, Any]:
         "conversation_id": task.conversation_id,
         "repository_path": task.repository_path,
         "repository_type": task.repository_type,
+        "repository_url": task.repository_url,
         "progress_messages": task.progress_messages,
         "result": task.result,
         "error": task.error,
@@ -59,4 +60,6 @@ def to_api_response(task: Any) -> Dict[str, Any]:
         "state": task.state,
         # Statistics
         "statistics": statistics,
+        # Metadata (includes CLI output, error details, etc.)
+        "metadata": task.metadata,
     }
