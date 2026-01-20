@@ -323,7 +323,7 @@
                 "function_call": null,
                 "function_response": null,
                 "inline_data": null,
-                "text": "Great \u2014 I can help with that. Is your app a Python app or a Java app?\n\nIf you're not sure, tell me whether your repo has a requirements.txt (Python) or build.gradle / pom.xml (Java), and I\u2019ll show the exact local run commands for that path.",
+                "text": "Thank you for the request. To get started, we need to set up the repository first. We follow a **GitOps practice**, which means the repo isn't just for code\u2014it's the anchor for your entire project. Setting it up now ensures that every design choice and configuration we make next has a permanent home immediately.\n\nSince you've already built the app and want to run it locally, the next step is to attach the project to a branch so I can read its README and build files (pyproject.toml / requirements.txt / pom.xml / .env.template, etc.) and then give you concise, runnable steps. Tell me which repository strategy to use and the language so I can continue.\n\n[options-single-choice: Python \u2014 Public repo \u2014 New Branch, Python \u2014 Public repo \u2014 My Existing Branch, Python \u2014 Private repo \u2014 New Branch, Python \u2014 Private repo \u2014 My Existing Branch, Java \u2014 Public repo \u2014 New Branch, Java \u2014 Public repo \u2014 My Existing Branch, Java \u2014 Private repo \u2014 New Branch, Java \u2014 Private repo \u2014 My Existing Branch]",
                 "thought": null,
                 "thought_signature": null,
                 "video_metadata": null

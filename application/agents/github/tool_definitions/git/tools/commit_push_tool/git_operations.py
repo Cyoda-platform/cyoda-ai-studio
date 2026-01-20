@@ -17,7 +17,7 @@ from .context import GitConfiguration
 logger = logging.getLogger(__name__)
 
 # Get the project root directory (where the tests folder is)
-PROJECT_ROOT = Path(__file__).resolve().parents[6]  # Go up to project root
+PROJECT_ROOT = Path(__file__).resolve().parents[7]  # Go up to project root
 
 
 def _is_test_mode_with_real_repo(repo_path: str) -> bool:
