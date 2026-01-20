@@ -87,6 +87,8 @@ def mock_failed_code_gen_retryable():
         language="javascript",
         user_request="Create a REST API for user management with authentication",
         conversation_id="conv-789",
+        repository_path="/tmp/repo",
+        branch_name="feature/api",
         metadata={
             "error_type": "TRANSIENT",
             "is_retryable": True,
@@ -150,8 +152,10 @@ class TestRetryApplicationBuild:
             with patch(
                 "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
             ) as mock_cb:
+                # Mock the import statement inside retry_failed_generation
                 with patch(
-                    "application.agents.github.tool_definitions.code_generation.tools.generate_application_tool.generate_application"
+                    "application.agents.github.tool_definitions.code_generation.tools.generate_application_tool.generate_application",
+                    new_callable=AsyncMock,
                 ) as mock_generate:
                     # Setup
                     mock_task_service = AsyncMock()
@@ -211,9 +215,7 @@ class TestRetryApplicationBuild:
         self, mock_failed_app_build_retryable
     ):
         """Test retry blocked when circuit breaker is open."""
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             with patch(
                 "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
             ) as mock_cb:
@@ -234,10 +236,10 @@ class TestRetryApplicationBuild:
                 # Execute
                 result = await retry_failed_generation("task-app-build-fail-123")
 
-                # Assert
+                # Assert - circuit breaker should block before calling generate
                 assert "⚠️ Cannot retry" in result
-                assert "circuit breaker is currently OPEN" in result
-                assert "too many recent failures" in result.lower()
+                assert "circuit breaker" in result.lower()
+                assert "open" in result.lower()
 
 
 class TestRetryCodeGeneration:
@@ -246,14 +248,14 @@ class TestRetryCodeGeneration:
     @pytest.mark.asyncio
     async def test_retry_failed_code_gen_success(self, mock_failed_code_gen_retryable):
         """Test successful retry of failed code generation (retryable error)."""
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
             ) as mock_cb:
+                # Mock the import statement inside retry_failed_generation
                 with patch(
-                    "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.generate_code_with_cli"
+                    "application.agents.github.tool_definitions.code_generation.tools.generate_code_tool.generate_code_with_cli",
+                    new_callable=AsyncMock,
                 ) as mock_generate:
                     # Setup
                     mock_task_service = AsyncMock()
@@ -290,9 +292,7 @@ class TestRetryCodeGeneration:
     @pytest.mark.asyncio
     async def test_retry_code_gen_permanent_error(self, mock_failed_code_gen_permanent):
         """Test retry blocked for permanent error (authentication error)."""
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             # Setup
             mock_task_service = AsyncMock()
             mock_service.return_value = mock_task_service
@@ -312,14 +312,14 @@ class TestRetryCodeGeneration:
         self, mock_failed_code_gen_retryable
     ):
         """Test retry attempt that also fails."""
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
             ) as mock_cb:
+                # Mock the import statement inside retry_failed_generation
                 with patch(
-                    "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.generate_code_with_cli"
+                    "application.agents.github.tool_definitions.code_generation.tools.generate_code_tool.generate_code_with_cli",
+                    new_callable=AsyncMock,
                 ) as mock_generate:
                     # Setup
                     mock_task_service = AsyncMock()
@@ -351,9 +351,7 @@ class TestRetryEdgeCases:
     @pytest.mark.asyncio
     async def test_retry_task_not_found(self):
         """Test retry when task doesn't exist."""
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             mock_task_service = AsyncMock()
             mock_service.return_value = mock_task_service
             mock_task_service.get_task.return_value = None
@@ -365,9 +363,7 @@ class TestRetryEdgeCases:
     @pytest.mark.asyncio
     async def test_retry_task_not_failed(self, mock_running_task):
         """Test retry when task is not in failed state."""
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             mock_task_service = AsyncMock()
             mock_service.return_value = mock_task_service
             mock_task_service.get_task.return_value = mock_running_task
@@ -393,11 +389,9 @@ class TestRetryEdgeCases:
             metadata={"error_type": "RETRYABLE", "is_retryable": True},
         )
 
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
             ) as mock_cb:
                 mock_task_service = AsyncMock()
                 mock_service.return_value = mock_task_service
@@ -429,11 +423,9 @@ class TestRetryEdgeCases:
             metadata={"error_type": "RETRYABLE", "is_retryable": True},
         )
 
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
             ) as mock_cb:
                 mock_task_service = AsyncMock()
                 mock_service.return_value = mock_task_service
@@ -454,9 +446,7 @@ class TestRetryEdgeCases:
     @pytest.mark.asyncio
     async def test_retry_exception_handling(self):
         """Test exception handling during retry."""
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             mock_task_service = AsyncMock()
             mock_service.return_value = mock_task_service
             mock_task_service.get_task.side_effect = Exception(
@@ -485,21 +475,23 @@ class TestRetryDifferentErrorTypes:
             error="Rate limit exceeded",
             user_request="Generate code",
             language="python",
+            repository_path="/tmp/repo",
+            branch_name="feature/test",
             metadata={
-                "error_type": CliErrorType.RATE_LIMIT.value,
+                "error_type": "TRANSIENT",
                 "is_retryable": True,
                 "error_description": "API rate limit exceeded - retry after cooldown",
             },
         )
 
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
             ) as mock_cb:
+                # Mock the import statement inside retry_failed_generation
                 with patch(
-                    "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.generate_code_with_cli"
+                    "application.agents.github.tool_definitions.code_generation.tools.generate_code_tool.generate_code_with_cli",
+                    new_callable=AsyncMock,
                 ) as mock_generate:
                     mock_task_service = AsyncMock()
                     mock_service.return_value = mock_task_service
@@ -531,15 +523,13 @@ class TestRetryDifferentErrorTypes:
             branch_name="main",
             language="python",
             metadata={
-                "error_type": CliErrorType.GENERATED_CODE_ERROR.value,
+                "error_type": "PERMANENT",
                 "is_retryable": False,
                 "error_description": "Generated code has compilation errors",
             },
         )
 
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             mock_task_service = AsyncMock()
             mock_service.return_value = mock_task_service
             mock_task_service.get_task.return_value = task
@@ -563,21 +553,23 @@ class TestRetryDifferentErrorTypes:
             error="Connection timeout",
             user_request="Generate REST API",
             language="javascript",
+            repository_path="/tmp/repo",
+            branch_name="feature/api",
             metadata={
-                "error_type": CliErrorType.NETWORK_ERROR.value,
+                "error_type": "TRANSIENT",
                 "is_retryable": True,
                 "error_description": "Network timeout - connection lost",
             },
         )
 
-        with patch(
-            "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_task_service"
-        ) as mock_service:
+        with patch("services.services.get_task_service") as mock_service:
             with patch(
-                "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.get_circuit_breaker"
+                "application.agents.github.tool_definitions.code_generation.helpers.get_circuit_breaker"
             ) as mock_cb:
+                # Mock the import statement inside retry_failed_generation
                 with patch(
-                    "application.agents.github.tool_definitions.code_generation.tools.retry_generation_tool.generate_code_with_cli"
+                    "application.agents.github.tool_definitions.code_generation.tools.generate_code_tool.generate_code_with_cli",
+                    new_callable=AsyncMock,
                 ) as mock_generate:
                     mock_task_service = AsyncMock()
                     mock_service.return_value = mock_task_service

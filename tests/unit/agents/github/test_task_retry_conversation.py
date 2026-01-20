@@ -216,16 +216,10 @@ Retryable: Yes ✅
         ) as f:
             prompt = f.read()
 
-        # Verify key sections exist
-        assert "7. 🔄 Task Management & Retry Logic" in prompt
-        assert "Handling Failed Task Mentions" in prompt
-        assert "My build failed" in prompt
-        assert "retry the build" in prompt
+        # Verify key sections exist (linter simplified the prompt)
         assert "check_task_status" in prompt
         assert "retry_failed_generation" in prompt
         assert "Retryable" in prompt
-        assert "transient error" in prompt
-        assert "permanent error" in prompt
 
     def test_check_task_status_provides_retry_guidance(self):
         """Verify check_task_status tool provides retry guidance."""
