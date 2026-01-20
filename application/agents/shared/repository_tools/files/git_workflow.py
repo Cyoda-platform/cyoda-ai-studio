@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 from pathlib import Path
 
 from application.agents.shared.repository_tools.constants import (
@@ -19,6 +20,46 @@ logger = logging.getLogger(__name__)
 # Constants for git configuration
 GIT_USER_NAME = "Cyoda Agent"
 GIT_USER_EMAIL = "agent@cyoda.ai"
+
+# Get the project root directory (where the tests folder is)
+PROJECT_ROOT = Path(__file__).resolve().parents[5]  # Go up from files/ to project root
+
+
+def _is_test_mode_with_real_repo(repo_path: Path) -> bool:
+    """Check if we're running tests and repo_path points to the actual project directory.
+
+    This prevents tests from accidentally committing to the real repository.
+
+    Args:
+        repo_path: Path to check
+
+    Returns:
+        True if in test mode and using real project directory
+    """
+    # Check if running under pytest
+    in_pytest = "PYTEST_CURRENT_TEST" in os.environ or "pytest" in os.environ.get(
+        "_", ""
+    )
+
+    if not in_pytest:
+        return False
+
+    # Check if repo_path is the actual project directory
+    try:
+        repo_path_resolved = repo_path.resolve()
+        project_root_resolved = PROJECT_ROOT.resolve()
+
+        # Check if paths are the same or repo_path is within project root
+        is_project_dir = repo_path_resolved == project_root_resolved or str(
+            repo_path_resolved
+        ).startswith(str(project_root_resolved))
+
+        # Also check if repo_path contains a tests/ directory (strong indicator it's the project root)
+        has_tests_dir = (repo_path_resolved / "tests").exists()
+
+        return is_project_dir and has_tests_dir
+    except Exception:
+        return False
 
 
 async def _configure_git_user(repo_path: Path) -> bool:
@@ -135,6 +176,15 @@ async def _commit_files_to_git(repo_path: Path, saved_files: list[str]) -> str:
     Returns:
         Empty string if successful, error message otherwise.
     """
+    # SAFETY CHECK: Prevent tests from committing to the real project repository
+    if _is_test_mode_with_real_repo(repo_path):
+        error_msg = (
+            "SAFETY CHECK FAILED: Attempted to commit to actual project directory during tests. "
+            f"Repository path: {repo_path}. Tests must use temporary directories for git operations."
+        )
+        logger.error(f"🚨 {error_msg}")
+        return error_msg
+
     commit_message = f"Add functional requirements files: {', '.join(saved_files)}"
     process = await asyncio.create_subprocess_exec(
         "git",
