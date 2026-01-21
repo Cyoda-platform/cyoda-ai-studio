@@ -158,12 +158,18 @@ async def _check_build_already_started(
             )
             return False, None
 
-    # Fallback: if we only have PID, assume it might be running
+    # Fallback: if we only have PID, block to prevent conflicts (fail-closed)
     if existing_build_pid and existing_branch:
         logger.warning(
             f"⚠️ Build PID exists for branch {existing_branch} (PID: {existing_build_pid}). "
-            f"Unable to verify task status, allowing new generation."
+            f"Unable to verify task status, blocking to prevent conflicts."
         )
+        error_msg = (
+            f"⚠️ Build already in progress for branch {existing_branch} "
+            f"(Process PID: {existing_build_pid}). "
+            f"Unable to verify task status. Please ensure the previous build is complete before starting a new one."
+        )
+        return True, error_msg
 
     return False, None
 
