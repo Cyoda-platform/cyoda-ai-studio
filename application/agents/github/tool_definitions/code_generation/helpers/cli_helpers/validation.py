@@ -117,17 +117,53 @@ async def _check_build_already_started(
         Tuple of (already_started, error_message)
     """
     existing_build_pid = tool_context.state.get("build_process_pid")
+    existing_task_id = tool_context.state.get("background_task_id")
     existing_branch = tool_context.state.get("branch_name")
 
+    if not existing_build_pid and not existing_task_id:
+        return False, None
+
+    # If we have a task ID, check its actual status
+    if existing_task_id:
+        try:
+            from services.services import get_task_service
+
+            task_service = get_task_service()
+            task = await task_service.get_task(existing_task_id)
+
+            if task:
+                # Allow new generation if previous task is not actively running
+                if task.status in ["failed", "cancelled", "completed"]:
+                    logger.info(
+                        f"✅ Previous task {existing_task_id} has status '{task.status}'. "
+                        f"Allowing new generation."
+                    )
+                    return False, None
+
+                # Block if task is still running
+                if task.status in ["running", "pending"]:
+                    logger.warning(
+                        f"⚠️ Build already started for branch {existing_branch} "
+                        f"(Task ID: {existing_task_id}, Status: {task.status})"
+                    )
+                    error_msg = (
+                        f"⚠️ Build already in progress for branch {existing_branch} "
+                        f"(Task ID: {existing_task_id}, Status: {task.status}). "
+                        f"Please wait for it to complete or cancel it first."
+                    )
+                    return True, error_msg
+        except Exception as e:
+            logger.warning(
+                f"⚠️ Error checking task status: {e}. Allowing new generation."
+            )
+            return False, None
+
+    # Fallback: if we only have PID, assume it might be running
     if existing_build_pid and existing_branch:
         logger.warning(
-            f"⚠️ Build already started for branch {existing_branch} (PID: {existing_build_pid})"
+            f"⚠️ Build PID exists for branch {existing_branch} (PID: {existing_build_pid}). "
+            f"Unable to verify task status, allowing new generation."
         )
-        error_msg = (
-            f"⚠️ Build already in progress for branch {existing_branch} "
-            f"(PID: {existing_build_pid}). Please wait for it to complete."
-        )
-        return True, error_msg
 
     return False, None
 
