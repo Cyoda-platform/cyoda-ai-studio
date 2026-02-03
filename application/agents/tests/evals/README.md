@@ -1,6 +1,6 @@
 # Cyoda AI Assistant - Agent Evaluations
 
-Google ADK evaluation suite for testing multi-agent workflows with 90%+ pass rate.
+Google  ADK evaluation suite for testing multi-agent workflows with 90%+ pass rate.
 
 ---
 
