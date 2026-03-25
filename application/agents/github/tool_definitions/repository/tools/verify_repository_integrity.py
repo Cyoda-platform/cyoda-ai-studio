@@ -10,12 +10,14 @@ from typing import Optional
 
 from google.adk.tools.tool_context import ToolContext
 
+from application.agents.github.tool_definitions.repository.helpers import (
+    get_github_service_from_context,
+)
 from application.agents.shared.repository_tools.generation_validator import (
     GenerationValidator,
 )
 from application.services.github.github_service import GitHubService
 from application.services.repository_parser.service import RepositoryParser
-from services.services import get_github_service
 
 logger = logging.getLogger(__name__)
 
@@ -56,15 +58,17 @@ async def verify_repository_integrity(
         if not repository_path:
             return "ERROR: repository_path not found. Repository must be cloned first."
 
-        # Get GitHub service
-        github_service: GitHubService = get_github_service()
+        if not tool_context:
+            return "ERROR: tool_context is required for repository verification."
+
+        # Get GitHub service from context
+        github_service: GitHubService = await get_github_service_from_context(
+            tool_context
+        )
 
         # Get repository info from context
-        repository_name = None
-        branch_name = None
-        if tool_context:
-            repository_name = tool_context.state.get("repository_name")
-            branch_name = tool_context.state.get("branch_name")
+        repository_name = tool_context.state.get("repository_name")
+        branch_name = tool_context.state.get("branch_name")
 
         if not repository_name or not branch_name:
             return "ERROR: repository_name or branch_name not found in context."
