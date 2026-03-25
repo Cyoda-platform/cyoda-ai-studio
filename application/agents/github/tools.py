@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 from google.adk.tools.tool_context import ToolContext
 
 from application.agents.github.tool_definitions.code_generation import (
+    check_task_status,
     generate_application,
     generate_code_with_cli,
 )
@@ -19,6 +20,11 @@ from application.agents.github.tool_definitions.code_generation import (
 )
 from application.agents.github.tool_definitions.code_generation import (
     monitor_code_generation_process as _monitor_code_generation_process,
+)
+from application.agents.github.tool_definitions.code_generation import (
+    retry_failed_generation,
+    validate_fr_consolidation,
+    validate_generation,
 )
 from application.agents.github.tool_definitions.code_generation.helpers import (
     cleanup_temp_files as _cleanup_temp_files,
@@ -57,6 +63,7 @@ from application.agents.github.tool_definitions.repository import (
     pull_repository_changes,
     save_file_to_repository,
     search_repository_files,
+    verify_repository_integrity,
 )
 from application.agents.github.tool_definitions.repository.helpers import (
     get_github_service_from_context as _get_github_service_from_context,

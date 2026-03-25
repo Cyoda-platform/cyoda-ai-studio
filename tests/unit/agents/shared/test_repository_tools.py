@@ -2800,9 +2800,10 @@ class TestSaveFilesToBranch:
 
         result = await save_files_to_branch(files=files, tool_context=mock_context)
 
-        assert "SUCCESS:" in result
-        assert "2 file(s)" in result
-        assert "test-branch" in result
+        assert "SUCCESS" in result
+        assert "Requirements file(s)" in result
+        assert "test1.txt" in result
+        assert "test2.md" in result
 
     @pytest.mark.asyncio
     async def test_successful_save_java(self, mocker):
@@ -2851,8 +2852,9 @@ class TestSaveFilesToBranch:
 
         result = await save_files_to_branch(files=files, tool_context=mock_context)
 
-        assert "SUCCESS:" in result
-        assert "1 file(s)" in result
+        assert "SUCCESS" in result
+        assert "Requirements file(s)" in result
+        assert "spec.yaml" in result
 
     @pytest.mark.asyncio
     async def test_git_add_failure(self, mocker):

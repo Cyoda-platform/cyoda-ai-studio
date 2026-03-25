@@ -363,6 +363,100 @@ async def update_task_status(task_id: str):
         return APIResponse.error(str(e), 500)
 
 
+@tasks_bp.route("/<task_id>/cancel", methods=["DELETE", "POST"])
+@rate_limit(20, timedelta(minutes=1), key_function=default_rate_limit_key)
+async def cancel_task(task_id: str):
+    """
+    Cancel a running background task.
+
+    Terminates the process and updates task status to 'cancelled'.
+    Only works for tasks with status 'pending' or 'running'.
+
+    Returns:
+        Success response with updated task data or error
+    """
+    try:
+        user_id, is_superuser = await get_authenticated_user()
+
+        # Get task
+        task_service = get_task_service()
+        task = await task_service.get_task(task_id)
+
+        if not task:
+            return APIResponse.error("Task not found", 404)
+
+        # Validate ownership (unless superuser)
+        if not is_superuser and task.user_id != user_id:
+            return APIResponse.error("Access denied", 403)
+
+        # Check if task can be cancelled
+        if task.status not in ["pending", "running"]:
+            return APIResponse.error(
+                f"Cannot cancel task with status '{task.status}'. "
+                f"Only pending or running tasks can be cancelled.",
+                400,
+            )
+
+        # Kill the process if it exists
+        pid = task.process_pid
+        if pid:
+            logger.info(f"Attempting to kill process {pid} for task {task_id}")
+            try:
+                import os
+                import signal
+
+                # Try to kill the process gracefully (SIGTERM)
+                os.kill(pid, signal.SIGTERM)
+                logger.info(f"✅ Sent SIGTERM to process {pid}")
+
+                # Wait a bit and check if it's still running
+                import asyncio
+
+                await asyncio.sleep(1)
+
+                # Check if process is still running
+                from application.agents.shared.process_utils import _is_process_running
+
+                is_running = await _is_process_running(pid)
+                if is_running:
+                    # Force kill with SIGKILL
+                    logger.warning(f"Process {pid} still running, sending SIGKILL")
+                    os.kill(pid, signal.SIGKILL)
+                    logger.info(f"✅ Sent SIGKILL to process {pid}")
+            except ProcessLookupError:
+                logger.info(f"Process {pid} not found (may have already exited)")
+            except Exception as e:
+                logger.error(f"Error killing process {pid}: {e}")
+                # Continue with status update even if process kill fails
+
+        # Update task status to cancelled
+        await task_service.update_task_status(
+            task_id=task_id,
+            status="cancelled",
+            message=f"Task cancelled by user",
+            progress=task.progress,  # Keep current progress
+            error="Task was cancelled by user request",
+        )
+
+        # Get updated task
+        updated_task = await task_service.get_task(task_id)
+
+        return APIResponse.success(
+            {
+                "message": "Task cancelled successfully",
+                "task": updated_task.to_api_response() if updated_task else None,
+            }
+        )
+
+    except TokenExpiredError:
+        return APIResponse.error("Token expired", 401)
+    except TokenValidationError:
+        return APIResponse.error("Invalid token", 401)
+    except Exception as e:
+        logger.exception(f"Error cancelling task: {e}")
+        return APIResponse.error(str(e), 500)
+
+
 @tasks_bp.route("/<task_id>/stream", methods=["GET"])
 @rate_limit(100, timedelta(minutes=1), key_function=default_rate_limit_key)
 async def stream_task_progress(task_id: str) -> Response:

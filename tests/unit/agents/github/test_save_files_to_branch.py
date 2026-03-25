@@ -57,7 +57,9 @@ class TestSaveFilesToBranch:
 
         # Verify success
         assert "SUCCESS" in result
-        assert "2 file(s)" in result
+        assert "Requirements file(s)" in result
+        assert "requirements.txt" in result
+        assert "spec.md" in result
 
         # Verify files were saved
         repo_path = Path(mock_tool_context.state["repository_path"])

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+from pathlib import Path
 from typing import Optional
 
 from application.agents.github.tool_definitions.common.constants import (
@@ -26,6 +28,48 @@ from application.agents.github.tool_definitions.common.constants import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Get the project root directory (where the tests folder is)
+PROJECT_ROOT = Path(__file__).resolve().parents[8]  # Go up to project root
+
+
+def _is_test_mode_with_real_repo(repo_path: str) -> bool:
+    """Check if we're running tests and repo_path points to the actual project directory.
+
+    This prevents tests from accidentally committing to the real repository.
+
+    Args:
+        repo_path: Path to check
+
+    Returns:
+        True if in test mode and using real project directory
+    """
+    # Check if running under pytest or adk eval
+    in_test = (
+        "PYTEST_CURRENT_TEST" in os.environ
+        or "pytest" in os.environ.get("_", "")
+        or "adk" in os.environ.get("_", "")
+    )
+
+    if not in_test:
+        return False
+
+    # Check if repo_path is the actual project directory
+    try:
+        repo_path_obj = Path(repo_path).resolve()
+        project_root_resolved = PROJECT_ROOT.resolve()
+
+        # Check if paths are the same or repo_path is within project root
+        is_project_dir = repo_path_obj == project_root_resolved or str(
+            repo_path_obj
+        ).startswith(str(project_root_resolved))
+
+        # Also check if repo_path contains a tests/ directory (strong indicator it's the project root)
+        has_tests_dir = (repo_path_obj / "tests").exists()
+
+        return is_project_dir and has_tests_dir
+    except Exception:
+        return False
 
 
 async def _stage_all_changes(repository_path: str) -> bool:
@@ -106,6 +150,15 @@ async def _commit_changes(repository_path: str, branch_name: str) -> bool:
     Returns:
         True if successful, False otherwise
     """
+    # SAFETY CHECK: Prevent tests/evals from committing to the real project repository
+    if _is_test_mode_with_real_repo(repository_path):
+        error_msg = (
+            "🚨 SAFETY CHECK FAILED: Attempted to commit to actual project directory during tests/evals. "
+            f"Repository path: {repository_path}. Tests must use temporary directories for git operations."
+        )
+        logger.error(error_msg)
+        return False
+
     commit_msg = f"Code generation progress on {branch_name}"
     logger.info(f"📝 Running: git commit -m '{commit_msg}'")
 

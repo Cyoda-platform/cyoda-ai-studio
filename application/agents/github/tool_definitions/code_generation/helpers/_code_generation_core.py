@@ -34,6 +34,7 @@ from ._application_build_helpers import (
     _load_build_prompt_template,
     _load_pattern_catalog,
 )
+from ._circuit_breaker import get_circuit_breaker
 from ._cli_common import (
     _check_build_already_started,
     _create_background_task,
@@ -46,6 +47,7 @@ from ._cli_common import (
     _validate_cli_invocation_limit,
     _write_prompt_to_tempfile,
 )
+from ._conversation_lock import check_conversation_lock
 from ._prompt_loader import load_informational_prompt_template
 
 logger = logging.getLogger(__name__)
@@ -163,18 +165,22 @@ async def _validate_context(
 
 
 async def _validate_preconditions(
-    config: CodeGenerationConfig, context
+    config: CodeGenerationConfig, context, exclude_task_id: Optional[str] = None
 ) -> tuple[bool, str]:
     """Validate all preconditions before starting generation.
+
+    Checks are ordered by priority - early checks prevent unnecessary work.
 
     Args:
         config: Generation configuration
         context: CLI context
+        exclude_task_id: Task ID to exclude from lock check (for current task)
 
     Returns:
         Tuple of (success, error_message)
     """
-    # Check if build already started (optional based on config)
+    # PRIORITY 1: Check if build already started (fast, prevents duplicate work)
+    # This should be checked FIRST to avoid counting it against CLI limits
     if config.check_build_already_started:
         already_started, error_msg = await _check_build_already_started(
             context.tool_context
@@ -182,12 +188,30 @@ async def _validate_preconditions(
         if already_started:
             return False, error_msg
 
-    # Validate branch is not protected
+    # PRIORITY 2: Check conversation lock - prevent parallel code generation
+    try:
+        from services.services import get_entity_service
+
+        entity_service = get_entity_service()
+        is_locked, lock_message = await check_conversation_lock(
+            context.conversation_id, entity_service, exclude_task_id
+        )
+        if is_locked:
+            logger.warning(f"Conversation lock prevented execution: {lock_message}")
+            return False, lock_message
+    except RuntimeError as e:
+        # Services not initialized (e.g., in tests) - skip conversation lock check
+        if "Services not initialized" in str(e):
+            logger.debug("Services not initialized - skipping conversation lock check")
+        else:
+            raise
+
+    # PRIORITY 3: Validate branch is not protected
     is_valid, error_msg = await _validate_branch_not_protected(context.branch_name)
     if not is_valid:
         return False, error_msg
 
-    # Check CLI invocation limit
+    # PRIORITY 4: Check CLI invocation limit (last check before heavy work)
     is_allowed, error_msg, cli_count = _validate_cli_invocation_limit(
         context.session_id
     )
@@ -381,6 +405,140 @@ async def _start_process(
     return True, "", process, output_file
 
 
+async def _reserve_task_slot(
+    config: CodeGenerationConfig,
+    context,
+    user_input: str,
+) -> tuple[bool, str, Optional[str]]:
+    """Reserve a task slot by creating task in 'initializing' status.
+
+    This minimizes race conditions by reserving the slot immediately after lock check.
+
+    NOTE: There is still a small race window between lock check and task creation.
+    For fully atomic locking, consider adding a database constraint:
+      UNIQUE INDEX ON BackgroundTask(conversation_id, status)
+      WHERE status IN ('initializing', 'running', 'pending')
+
+    Args:
+        config: Generation configuration
+        context: CLI context
+        user_input: User requirements or request
+
+    Returns:
+        Tuple of (success, error_msg, task_id)
+    """
+    from services.services import get_task_service
+
+    try:
+        # Build task metadata
+        if config.mode == "application_build":
+            task_name = f"Build {context.language} application: {context.branch_name}"
+            task_description = f"Building complete {context.language} application: {user_input[:200]}..."
+        else:
+            task_name = f"Generate code: {user_input[:50]}..."
+            task_description = f"Generating code with CLI: {user_input[:200]}..."
+
+        # Build repository URL
+        from ._cli_common import _build_repository_url, _build_task_data
+
+        repository_url = _build_repository_url(
+            context.repository_type, context.language, context.branch_name
+        )
+
+        # Build task data
+        task_data = _build_task_data(
+            context, config.task_type, task_name, task_description, repository_url
+        )
+
+        # Create task in 'initializing' status to reserve the slot
+        task_service = get_task_service()
+        task_dict = task_data.model_dump()
+        task_dict["status"] = "initializing"  # Reserve the slot
+        task_dict["progress"] = 0
+
+        background_task = await task_service.create_task(**task_dict)
+        task_id = background_task.technical_id
+
+        logger.info(f"🎫 Reserved task slot: {task_id} (status: initializing)")
+
+        # Store in context
+        context.tool_context.state["background_task_id"] = task_id
+
+        return True, "", task_id
+
+    except RuntimeError as e:
+        # Services not initialized (e.g., in tests) - skip task reservation
+        if "Services not initialized" in str(e):
+            logger.debug("Services not initialized - skipping task reservation")
+            return True, "", None
+        raise
+    except Exception as e:
+        logger.error(f"Failed to reserve task slot: {e}", exc_info=True)
+        return False, f"ERROR: Failed to reserve task slot: {str(e)}", None
+
+
+async def _update_task_to_running(
+    task_id: Optional[str],
+    process_pid: int,
+    output_file: str,
+) -> None:
+    """Update task from 'initializing' to 'running' status.
+
+    Args:
+        task_id: Task ID (None if task reservation was skipped)
+        process_pid: Process PID
+        output_file: Output log file path
+    """
+    if not task_id:
+        logger.debug("No task ID - skipping task status update")
+        return
+
+    try:
+        from services.services import get_task_service
+
+        task_service = get_task_service()
+        await task_service.update_task_status(
+            task_id=task_id,
+            status="running",
+            message=f"Process started (PID: {process_pid})",
+            progress=5,
+            process_pid=process_pid,
+            metadata={"output_log": output_file},
+        )
+        logger.info(f"✅ Task {task_id} updated to running status")
+    except RuntimeError as e:
+        # Services not initialized (e.g., in tests) - skip update
+        if "Services not initialized" in str(e):
+            logger.debug("Services not initialized - skipping task status update")
+        else:
+            raise
+
+
+async def _mark_task_failed(task_id: Optional[str], error_msg: str) -> None:
+    """Mark task as failed if it was created.
+
+    Args:
+        task_id: Task ID (if exists)
+        error_msg: Error message
+    """
+    if not task_id:
+        return
+
+    try:
+        from services.services import get_task_service
+
+        task_service = get_task_service()
+        await task_service.update_task_status(
+            task_id=task_id,
+            status="failed",
+            message="Initialization failed",
+            error=error_msg,
+        )
+        logger.warning(f"❌ Marked task {task_id} as failed: {error_msg}")
+    except Exception as e:
+        logger.error(f"Failed to mark task as failed: {e}", exc_info=True)
+
+
 async def _setup_monitoring_and_hooks(
     config: CodeGenerationConfig,
     context,
@@ -388,6 +546,7 @@ async def _setup_monitoring_and_hooks(
     prompt_file: str,
     output_file: str,
     user_input: str,
+    task_id: str,
 ) -> tuple[bool, str, Optional[str], Optional[dict]]:
     """Setup background monitoring and create hooks.
 
@@ -398,29 +557,18 @@ async def _setup_monitoring_and_hooks(
         prompt_file: Path to prompt file
         output_file: Path to output log file
         user_input: User requirements or request
+        task_id: Pre-created task ID
 
     Returns:
         Tuple of (success, error_msg, task_id, hook)
     """
-    # Create background task
-    if config.mode == "application_build":
-        task_name = f"Build {context.language} application: {context.branch_name}"
-        task_description = (
-            f"Building complete {context.language} application: {user_input[:200]}..."
-        )
-        logger.info(f"🔍 Build requirements: {user_input[:100]}...")
-    else:
-        task_name = f"Generate code: {user_input[:50]}..."
-        task_description = f"Generating code with CLI: {user_input[:200]}..."
+    # Update task to running status
+    await _update_task_to_running(task_id, process.pid, output_file)
 
-    task_id = await _create_background_task(
-        context=context,
-        task_type=config.task_type,
-        task_name=task_name,
-        task_description=task_description,
-        process_pid=process.pid,
-        output_file=output_file,
-    )
+    # Add task to conversation
+    from ._cli_common import _add_task_to_conversation_safe
+
+    await _add_task_to_conversation_safe(context.conversation_id, task_id)
 
     # Start monitoring in background
     _start_monitoring_task(
@@ -503,7 +651,18 @@ async def _generate_code_core(
     Returns:
         Status message with task ID or error
     """
+    task_id = None  # Track task for cleanup on error
+
     try:
+        # Step 0: Check circuit breaker
+        circuit_breaker = get_circuit_breaker()
+        can_execute, reason = circuit_breaker.can_execute()
+        if not can_execute:
+            logger.warning(f"Circuit breaker blocked CLI execution: {reason}")
+            return f"ERROR: {reason}"
+
+        logger.info(f"Circuit breaker check passed: {reason}")
+
         # Step 1: Validate and extract context
         success, error_msg, context = await _validate_context(
             config, user_input, language, repository_path, branch_name, tool_context
@@ -511,8 +670,15 @@ async def _generate_code_core(
         if not success:
             return error_msg
 
-        # Step 2: Validate preconditions
-        success, error_msg = await _validate_preconditions(config, context)
+        # Step 1.5: Check conversation lock FIRST (before reserving slot)
+        success, error_msg = await _validate_preconditions(config, context, None)
+        if not success:
+            return error_msg
+
+        # Step 2: Reserve task slot immediately after lock check (minimizes race window)
+        success, error_msg, task_id = await _reserve_task_slot(
+            config, context, user_input
+        )
         if not success:
             return error_msg
 
@@ -521,6 +687,7 @@ async def _generate_code_core(
             config, context, user_input
         )
         if not success:
+            await _mark_task_failed(task_id, error_msg)
             return error_msg
 
         # Step 4: Validate CLI configuration
@@ -528,11 +695,13 @@ async def _generate_code_core(
             config, context, user_input
         )
         if not success:
+            await _mark_task_failed(task_id, error_msg)
             return error_msg
 
         # Step 5: Write prompt to temp file
         success, error_msg, prompt_file = _write_prompt_to_tempfile(full_prompt)
         if not success:
+            await _mark_task_failed(task_id, error_msg)
             return error_msg
 
         # Step 6: Start CLI process
@@ -540,18 +709,29 @@ async def _generate_code_core(
             config, context, script_path, cli_model, prompt_file
         )
         if not success:
+            await _mark_task_failed(task_id, error_msg)
             return error_msg
 
-        # Step 7: Setup monitoring and hooks
+        # Step 7: Update task to running and setup monitoring
         success, error_msg, task_id, hook = await _setup_monitoring_and_hooks(
-            config, context, process, prompt_file, output_file, user_input
+            config, context, process, prompt_file, output_file, user_input, task_id
         )
         if not success:
+            circuit_breaker.record_failure()
+            await _mark_task_failed(task_id, error_msg)
             return error_msg
+
+        # Record successful start (process will track actual completion)
+        # We only record success here as process started successfully
+        # Actual completion tracking happens in monitor_cli_process
+        logger.info("CLI process started successfully")
 
         # Step 8: Format and return response
         return _format_response(config, context, task_id, hook, user_input, process.pid)
 
     except Exception as e:
         logger.error(f"Error in _generate_code_core: {e}", exc_info=True)
+        circuit_breaker = get_circuit_breaker()
+        circuit_breaker.record_failure()
+        await _mark_task_failed(task_id, f"Unexpected error: {str(e)}")
         return f"ERROR: {str(e)}"

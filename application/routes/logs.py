@@ -29,9 +29,11 @@ logger = logging.getLogger(__name__)
 MISSING_API_KEY_HEADER = "X-API-Key header required"
 MISSING_REQUEST_BODY = "Request body required with env_name and app_name"
 MISSING_ENV_APP_NAME = "env_name and app_name are required"
+FORBIDDEN_APP_NAME = "app_name 'cyoda' is not allowed"
 MISSING_API_KEY_HEADER_CODE = 400
 MISSING_BODY_CODE = 400
 MISSING_ENV_CODE = 400
+FORBIDDEN_APP_NAME_CODE = 400
 EXPIRED_API_KEY_ERROR = "ELK_API_KEY_EXPIRED"
 EXPIRED_API_KEY_MESSAGE = "ELK API key has expired. Please regenerate the API key using /api/v1/logs/elk-token endpoint."
 EXPIRED_API_KEY_CODE = 500
@@ -139,6 +141,10 @@ async def _extract_search_params() -> Optional[tuple]:
 
     if not env_name or not app_name:
         return APIResponse.error(MISSING_ENV_APP_NAME, MISSING_ENV_CODE)
+
+    # Step 2.5: Validate app_name is not "cyoda"
+    if app_name.lower() == "cyoda":
+        return APIResponse.error(FORBIDDEN_APP_NAME, FORBIDDEN_APP_NAME_CODE)
 
     # Step 3: Extract optional fields with defaults
     size = data.get("size", DEFAULT_SEARCH_SIZE)

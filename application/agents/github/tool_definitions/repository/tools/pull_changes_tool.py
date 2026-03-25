@@ -15,6 +15,9 @@ from application.agents.github.tool_definitions.common.constants import STOP_ON_
 from application.agents.github.tool_definitions.common.utils import (
     ensure_repository_available,
 )
+from application.agents.github.tool_definitions.repository.tools.verify_repository_integrity import (
+    verify_repository_integrity,
+)
 from application.entity.conversation import Conversation
 from services.services import get_entity_service
 
@@ -149,9 +152,30 @@ async def pull_repository_changes(tool_context: ToolContext) -> str:
             return "✅ Repository is already up to date. No changes to pull."
 
         logger.info(f"✅ Successfully pulled changes:\n{stdout_text}")
-        return (
-            f"✅ Successfully pulled changes from remote repository.\n\n{stdout_text}"
-        )
+
+        # Verify repository integrity after pull
+        try:
+            logger.info("🔍 Verifying repository integrity after pull...")
+            verification_report = await verify_repository_integrity(
+                tool_context=tool_context
+            )
+
+            # Combine pull success message with verification report
+            return (
+                f"✅ Successfully pulled changes from remote repository.\n\n"
+                f"**Pull Output:**\n{stdout_text}\n\n"
+                f"---\n\n"
+                f"{verification_report}"
+            )
+
+        except Exception as verify_error:
+            logger.warning(f"⚠️ Pull succeeded but verification failed: {verify_error}")
+            # Still return success for pull, but note verification failed
+            return (
+                f"✅ Successfully pulled changes from remote repository.\n\n"
+                f"{stdout_text}\n\n"
+                f"⚠️ Note: Post-pull verification failed: {str(verify_error)}"
+            )
 
     except Exception as e:
         logger.error(f"Error pulling repository changes: {e}", exc_info=True)

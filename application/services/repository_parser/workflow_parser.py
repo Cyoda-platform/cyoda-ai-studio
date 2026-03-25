@@ -91,21 +91,30 @@ class WorkflowParser:
         # Extract version number
         version = self._extract_version_number(version_item.name)
 
-        # List workflow files
-        workflow_files = await self.github_service.contents.list_directory(
-            repository_name, version_item.path, ref=branch
-        )
+        try:
+            # List workflow files
+            workflow_files = await self.github_service.contents.list_directory(
+                repository_name, version_item.path, ref=branch
+            )
 
-        # Process each workflow file
-        for wf_file in workflow_files:
-            if self._is_workflow_file(wf_file):
-                workflow_info = self._create_workflow_info(
-                    entity_name, version, wf_file
-                )
-                workflows.append(workflow_info)
-                logger.info(
-                    f"  Found workflow: {entity_name} v{version} ({wf_file.name})"
-                )
+            # Process each workflow file
+            for wf_file in workflow_files:
+                if self._is_workflow_file(wf_file):
+                    try:
+                        workflow_info = self._create_workflow_info(
+                            entity_name, version, wf_file
+                        )
+                        workflows.append(workflow_info)
+                        logger.info(
+                            f"  ✅ Found workflow: {entity_name} v{version} ({wf_file.name})"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"  ❌ Failed to parse workflow: {entity_name} v{version} ({wf_file.name}): {e}"
+                        )
+
+        except Exception as e:
+            logger.error(f"  ❌ Failed to list workflows in {version_item.path}: {e}")
 
         return workflows
 
@@ -144,19 +153,26 @@ class WorkflowParser:
                 if not item.is_directory:
                     continue
 
-                # List version directories
-                version_items = await self.github_service.contents.list_directory(
-                    repository_name, item.path, ref=branch
-                )
-
-                # Process each version directory
-                for version_item in version_items:
-                    version_workflows = await self._process_version_directory(
-                        repository_name, branch, item.name, version_item
+                try:
+                    # List version directories
+                    version_items = await self.github_service.contents.list_directory(
+                        repository_name, item.path, ref=branch
                     )
-                    workflows.extend(version_workflows)
+
+                    # Process each version directory
+                    for version_item in version_items:
+                        version_workflows = await self._process_version_directory(
+                            repository_name, branch, item.name, version_item
+                        )
+                        workflows.extend(version_workflows)
+
+                except Exception as e:
+                    logger.error(
+                        f"  ❌ Failed to process entity workflows for {item.name}: {e}"
+                    )
 
         except Exception as e:
-            logger.error(f"Error parsing workflows: {e}")
+            logger.error(f"❌ Error parsing workflows from {workflow_path}: {e}")
 
+        logger.info(f"📊 Workflow parsing complete: {len(workflows)} workflows found")
         return workflows

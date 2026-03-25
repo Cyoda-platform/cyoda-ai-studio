@@ -12,6 +12,15 @@ from ._application_build_helpers import (
 # Deprecated - use monitor_cli_process directly with appropriate parameters
 from ._build_monitor import monitor_build_process
 
+# Circuit breaker and retry logic
+from ._circuit_breaker import (
+    CircuitBreakerConfig,
+    CircuitState,
+    CliCircuitBreaker,
+    get_circuit_breaker,
+    reset_circuit_breaker,
+)
+
 # Shared CLI helpers
 from ._cli_common import (
     CLIContext,
@@ -28,7 +37,16 @@ from ._cli_common import (
     _validate_cli_invocation_limit,
     _write_prompt_to_tempfile,
 )
+from ._cli_error_analyzer import (
+    CliErrorType,
+    ErrorSource,
+    classify_cli_error,
+)
 from ._cli_monitor import monitor_cli_process
+from ._cli_retry import (
+    RetryConfig,
+    should_retry,
+)
 
 # Core code generation logic
 from ._code_generation_core import (
@@ -37,6 +55,7 @@ from ._code_generation_core import (
     CodeGenerationConfig,
     _generate_code_core,
 )
+from ._conversation_lock import check_conversation_lock
 from ._process_monitor import monitor_code_generation_process
 from ._prompt_loader import load_informational_prompt_template
 from ._temp_file_cleanup import cleanup_temp_files, log_temp_file_preserved
@@ -51,6 +70,17 @@ __all__ = [
     "cleanup_temp_files",  # Deprecated, use log_temp_file_preserved
     "monitor_code_generation_process",  # Deprecated, use monitor_cli_process
     "monitor_build_process",  # Deprecated, use monitor_cli_process
+    # Circuit breaker and retry logic
+    "CircuitBreakerConfig",
+    "CircuitState",
+    "CliCircuitBreaker",
+    "get_circuit_breaker",
+    "reset_circuit_breaker",
+    "CliErrorType",
+    "ErrorSource",
+    "classify_cli_error",
+    "RetryConfig",
+    "should_retry",
     # Shared CLI helpers
     "CLIContext",
     "CLIProcessInfo",
@@ -76,4 +106,6 @@ __all__ = [
     "APPLICATION_BUILD_CONFIG",
     "CODE_GENERATION_CONFIG",
     "CodeGenerationConfig",
+    # Conversation lock
+    "check_conversation_lock",
 ]
