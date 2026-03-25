@@ -92,9 +92,9 @@ async def issue_technical_user(
     logger.info(f"🔧 Constructed env_url: {env_url}")
 
     # Return UI function marker in text format - UI will parse this and render an executable button
-    # Format: [ui-function: issue_technical_user, env: <env_url>, withAdminRole: <true|false>]
+    # Format: [ui-function: issue_technical_user, env: <env_url>, with_admin_role: <true|false>]
     with_admin_role_str = "true" if with_admin_role else "false"
-    ui_function_marker = f"I have displayed UI function. Please run it to get your technical credentials: [ui-function: issue_technical_user, env: https://{env_url}, withAdminRole: {with_admin_role_str}]"
+    ui_function_marker = f"I have displayed UI function. Please run it to get your technical credentials: [ui-function: issue_technical_user, env: https://{env_url}, with_admin_role: {with_admin_role_str}]"
 
     logger.info(f"🔧 Returning UI function marker: {ui_function_marker}")
 

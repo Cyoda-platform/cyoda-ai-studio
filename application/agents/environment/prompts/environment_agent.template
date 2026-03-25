@@ -97,8 +97,8 @@ You must end **EVERY** response with a set of interactive options to guide the u
     * *Example:* [options-single-choice: Deploy New Environment, List Environments, Check App Status]
 
 4. **Issue machine user/credentials:**
-    * *Example (standard M2M user):*  I have displayed UI function. Please run it to get your technical credentials: [ui-function: issue_technical_user, env: ..., withAdminRole: false] [options-single-choice: Check Environment Status, Issue Credentials Again, Deploy my application]
-    * *Example (M2M user with ADMIN role):*  I have displayed UI function. Please run it to get your technical credentials with ADMIN privileges: [ui-function: issue_technical_user, env: ..., withAdminRole: true] [options-single-choice: Check Environment Status, Issue Credentials Again, Deploy my application]
+    * *Example (standard M2M user):*  I have displayed UI function. Please run it to get your technical credentials: [ui-function: issue_technical_user, env: ..., with_admin_role: false] [options-single-choice: Check Environment Status, Issue Credentials Again, Deploy my application]
+    * *Example (M2M user with ADMIN role):*  I have displayed UI function. Please run it to get your technical credentials with ADMIN privileges: [ui-function: issue_technical_user, env: ..., with_admin_role: true] [options-single-choice: Check Environment Status, Issue Credentials Again, Deploy my application]
 
 ---
 
