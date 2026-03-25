@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 async def issue_technical_user(
     tool_context: ToolContext,
     env_name: str,
-    with_admin_role: bool,
+    with_admin_role: Optional[bool] = None,
 ) -> str:
     """Issue M2M (machine-to-machine)  technical user credentials.
 
@@ -62,6 +62,19 @@ async def issue_technical_user(
     logger.info(
         f"🔧 issue_technical_user called with env_name={env_name}, with_admin_role={with_admin_role}"
     )
+
+    # CRITICAL: Validate with_admin_role parameter
+    if with_admin_role is None:
+        error_msg = (
+            "❌ ERROR: with_admin_role parameter was not provided!\n\n"
+            "You MUST specify whether to grant ADMIN role when calling issue_technical_user().\n\n"
+            "INSTRUCTIONS:\n"
+            "- If user mentioned 'admin', 'admin role', or 'admin privileges': with_admin_role=True\n"
+            "- Otherwise (standard M2M user): with_admin_role=False\n\n"
+            "CALL THE TOOL AGAIN with the correct parameter."
+        )
+        logger.error(f"🔧 {error_msg}")
+        return error_msg
 
     # Get user ID and conversation ID from context
     user_id = tool_context.state.get("user_id", "guest")
