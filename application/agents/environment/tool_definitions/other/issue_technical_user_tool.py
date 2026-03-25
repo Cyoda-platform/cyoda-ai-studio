@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 @handle_tool_errors
 async def issue_technical_user(
     tool_context: ToolContext,
-    env_name: Optional[str] = None,
-    with_admin_role: Optional[bool] = None,
+    env_name: str,
+    with_admin_role: bool,
 ) -> str:
     """Issue M2M (machine-to-machine) technical user credentials.
 
@@ -45,21 +45,16 @@ async def issue_technical_user(
     Use this tool when the user asks for credentials or needs to authenticate
     their application with the Cyoda environment.
 
-    IMPORTANT: You MUST ask the user for env_name before calling this function.
-    DO NOT assume or infer the environment name. The user might have multiple environments
-    (dev, staging, prod, etc.), so you must explicitly ask them which environment needs credentials.
-
     Args:
         tool_context: The ADK tool context (auto-injected)
-        env_name: Environment name to issue credentials for. REQUIRED - must be provided by the user.
-                  If not provided, this function will return an error asking you to prompt the user.
-                  Example prompt: "Which environment would you like to issue credentials for?
-                  For example: 'dev', 'prod', 'staging', etc."
-        with_admin_role: Whether to grant ADMIN role to the technical user. REQUIRED - must be provided by the user.
-                        If not provided, this function will return an error asking you to prompt the user.
-                        Example prompt: "Should this technical user have ADMIN privileges? (yes/no)"
-                        - True: User gets M2M and ADMIN roles
-                        - False: User gets only M2M role
+        env_name: (REQUIRED) Environment name to issue credentials for (e.g., 'dev', 'prod', 'staging').
+                  You must infer this from the user's request - they will specify which environment.
+        with_admin_role: (REQUIRED) Whether to grant ADMIN role to the technical user.
+                        - Set to True if user explicitly mentions "admin", "admin role", or "admin privileges"
+                        - Set to False for standard M2M users (when admin is NOT mentioned)
+                        Examples:
+                          "create technical user for dev with admin role" -> with_admin_role=True
+                          "issue credentials for prod" -> with_admin_role=False
 
     Returns:
         UI function marker for the frontend to render credential issuance button. Return this verbatim.
@@ -72,24 +67,7 @@ async def issue_technical_user(
     user_id = tool_context.state.get("user_id", "guest")
     conversation_id = get_conversation_id(tool_context)
     logger.info(f"🔧 user_id from context: {user_id}")
-
-    if not env_name:
-        logger.warning("⚠️ env_name not provided to issue_technical_user")
-        return (
-            "ERROR: env_name parameter is required but was not provided. You MUST ask the user which "
-            "environment to issue credentials for before calling this function. Ask them: 'Which environment "
-            "would you like to issue credentials for? For example: dev, prod, staging, etc.' "
-            "DO NOT assume or infer the environment name."
-        )
-
-    if with_admin_role is None:
-        logger.warning("⚠️ with_admin_role not provided to issue_technical_user")
-        return (
-            "ERROR: with_admin_role parameter is required but was not provided. You MUST ask the user whether "
-            "this technical user should have ADMIN privileges before calling this function. Ask them: "
-            "'Should this technical user have ADMIN privileges? (yes/no)' "
-            "DO NOT assume or infer this setting."
-        )
+    logger.info(f"🔧 with_admin_role parameter value: {with_admin_role}")
 
     # Construct environment URL using the same pattern as other functions
     client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
