@@ -25,7 +25,7 @@ async def issue_technical_user(
     env_name: str,
     with_admin_role: bool,
 ) -> str:
-    """Issue M2M (machine-to-machine) technical user credentials.
+    """Issue M2M (machine-to-machine)  technical user credentials.
 
     This function returns a UI function marker that tells the frontend to render an executable
     button for issuing technical user credentials (CYODA_CLIENT_ID and CYODA_CLIENT_SECRET).
