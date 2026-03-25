@@ -90,18 +90,26 @@ class EventHandlers:
         )
 
         if loop_error:
-            logger.error(loop_error)
+            logger.error(f"🔄 LOOP DETECTED: {loop_error}")
+            # Mark error on processor so finalize_stream sends proper done event
+            self.processor.error_occurred = True
+            self.processor.error_details = {
+                "error": "Infinite loop detected",
+                "message": loop_error,
+                "tool_name": tool_name,
+                "error_type": "InfiniteLoopError",
+            }
+
+            # Send error event to UI
             yield StreamEvent(
                 event_type="error",
-                data={
-                    "error": "Infinite loop detected",
-                    "message": loop_error,
-                    "tool_name": tool_name,
-                },
+                data=self.processor.error_details,
                 event_id=str(self.processor.event_counter),
             ).to_sse()
             self.processor.event_counter += 1
-            return
+
+            # Raise exception to stop stream and trigger finalization
+            raise RuntimeError(f"Infinite loop detected: {loop_error}")
 
         if tool_name != self.current_tool or tool_args != self.current_tool_args:
             self.current_tool = tool_name

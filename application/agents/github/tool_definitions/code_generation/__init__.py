@@ -10,6 +10,8 @@ from .tools import (
     generate_application,
     generate_code_with_cli,
     retry_failed_generation,
+    validate_fr_consolidation,
+    validate_generation,
 )
 
 __all__ = [
@@ -17,6 +19,8 @@ __all__ = [
     "generate_application",
     "retry_failed_generation",
     "check_task_status",
+    "validate_generation",
+    "validate_fr_consolidation",
     "load_informational_prompt_template",
     "monitor_code_generation_process",
     "monitor_build_process",

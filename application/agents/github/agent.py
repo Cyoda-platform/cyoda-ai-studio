@@ -44,7 +44,10 @@ from .tools import (
     load_workflow_schema,
     pull_repository_changes,
     save_file_to_repository,
+    validate_fr_consolidation,
+    validate_generation,
     validate_workflow_against_schema,
+    verify_repository_integrity,
 )
 
 logger = logging.getLogger(__name__)
@@ -193,6 +196,10 @@ tools = [
     generate_code_with_cli,
     # Application generation (complete apps from scratch)
     generate_application,
+    # Validation of generated code
+    validate_generation,
+    # Validation of FR consolidation
+    validate_fr_consolidation,
     # File management
     retrieve_and_save_conversation_files,
     save_files_to_branch,
@@ -213,6 +220,7 @@ tools = [
     save_file_to_repository,
     commit_and_push_changes,
     pull_repository_changes,
+    verify_repository_integrity,
     get_repository_diff,
 ]
 

@@ -8,6 +8,7 @@ from .tools import (
     pull_repository_changes,
     save_file_to_repository,
     search_repository_files,
+    verify_repository_integrity,
 )
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "search_repository_files",
     "execute_unix_command",
     "pull_repository_changes",
+    "verify_repository_integrity",
     "analyze_repository_structure",
     "analyze_repository_structure_agentic",
 ]

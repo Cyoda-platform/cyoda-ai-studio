@@ -7,6 +7,7 @@ from .get_diff_tool import get_repository_diff
 from .pull_changes_tool import pull_repository_changes
 from .save_file_tool import save_file_to_repository
 from .search_files_tool import search_repository_files
+from .verify_repository_integrity import verify_repository_integrity
 
 __all__ = [
     "save_file_to_repository",
@@ -16,4 +17,5 @@ __all__ = [
     "pull_repository_changes",
     "analyze_repository_structure",
     "analyze_repository_structure_agentic",
+    "verify_repository_integrity",
 ]

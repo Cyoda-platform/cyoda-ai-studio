@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 @require_authenticated_user
 @handle_tool_errors
 async def issue_technical_user(
-    tool_context: ToolContext, env_name: Optional[str] = None
+    tool_context: ToolContext,
+    env_name: Optional[str] = None,
+    with_admin_role: Optional[bool] = None,
 ) -> str:
     """Issue M2M (machine-to-machine) technical user credentials.
 
@@ -53,11 +55,18 @@ async def issue_technical_user(
                   If not provided, this function will return an error asking you to prompt the user.
                   Example prompt: "Which environment would you like to issue credentials for?
                   For example: 'dev', 'prod', 'staging', etc."
+        with_admin_role: Whether to grant ADMIN role to the technical user. REQUIRED - must be provided by the user.
+                        If not provided, this function will return an error asking you to prompt the user.
+                        Example prompt: "Should this technical user have ADMIN privileges? (yes/no)"
+                        - True: User gets M2M and ADMIN roles
+                        - False: User gets only M2M role
 
     Returns:
         UI function marker for the frontend to render credential issuance button. Return this verbatim.
     """
-    logger.info(f"🔧 issue_technical_user called with env_name={env_name}")
+    logger.info(
+        f"🔧 issue_technical_user called with env_name={env_name}, with_admin_role={with_admin_role}"
+    )
 
     # Get user ID and conversation ID from context
     user_id = tool_context.state.get("user_id", "guest")
@@ -73,6 +82,15 @@ async def issue_technical_user(
             "DO NOT assume or infer the environment name."
         )
 
+    if with_admin_role is None:
+        logger.warning("⚠️ with_admin_role not provided to issue_technical_user")
+        return (
+            "ERROR: with_admin_role parameter is required but was not provided. You MUST ask the user whether "
+            "this technical user should have ADMIN privileges before calling this function. Ask them: "
+            "'Should this technical user have ADMIN privileges? (yes/no)' "
+            "DO NOT assume or infer this setting."
+        )
+
     # Construct environment URL using the same pattern as other functions
     client_host = os.getenv("CLIENT_HOST", "cyoda.cloud")
     env_service = get_environment_management_service()
@@ -83,8 +101,9 @@ async def issue_technical_user(
     logger.info(f"🔧 Constructed env_url: {env_url}")
 
     # Return UI function marker in text format - UI will parse this and render an executable button
-    # Format: [ui-function: issue_technical_user, env: <env_url>]
-    ui_function_marker = f"I have displayed UI function. Please run it to get your technical credentials: [ui-function: issue_technical_user, env: https://{env_url}]"
+    # Format: [ui-function: issue_technical_user, env: <env_url>, withAdminRole: <true|false>]
+    with_admin_role_str = "true" if with_admin_role else "false"
+    ui_function_marker = f"I have displayed UI function. Please run it to get your technical credentials: [ui-function: issue_technical_user, env: https://{env_url}, withAdminRole: {with_admin_role_str}]"
 
     logger.info(f"🔧 Returning UI function marker: {ui_function_marker}")
 

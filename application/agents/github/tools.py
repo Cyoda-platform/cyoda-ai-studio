@@ -23,6 +23,8 @@ from application.agents.github.tool_definitions.code_generation import (
 )
 from application.agents.github.tool_definitions.code_generation import (
     retry_failed_generation,
+    validate_fr_consolidation,
+    validate_generation,
 )
 from application.agents.github.tool_definitions.code_generation.helpers import (
     cleanup_temp_files as _cleanup_temp_files,
@@ -61,6 +63,7 @@ from application.agents.github.tool_definitions.repository import (
     pull_repository_changes,
     save_file_to_repository,
     search_repository_files,
+    verify_repository_integrity,
 )
 from application.agents.github.tool_definitions.repository.helpers import (
     get_github_service_from_context as _get_github_service_from_context,
