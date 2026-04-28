@@ -1,0 +1,318 @@
+# Cyoda AI Studio - Complete Documentation Reference
+
+> **Note:** This file provides pointers to complete documentation rather than duplicating content.
+> For full concatenated docs, AI agents should read the files listed below in sequence.
+
+---
+
+## Documentation Reading Order
+
+### 1. Essential Project Documentation
+
+Read these files in order for complete project understanding:
+
+1. **CLAUDE.md** (1862 lines)
+   - Project brain
+   - Tech stack & philosophy
+   - Command reference
+   - Common patterns
+   - Decision log
+   - Troubleshooting
+
+2. **.claude/instructions.md** (253 lines)
+   - Detailed coding guidelines
+   - Google ADK reference
+   - Cyoda integration patterns
+   - Code organization principles
+   - Error handling guidelines
+
+3. **llm_code_guidelines.md** (location varies)
+   - Function size limits (50 lines max)
+   - File size limits (350 lines max)
+   - Naming conventions
+   - Type hint requirements
+   - Code organization principles
+
+4. **README.md** (634 lines)
+   - Installation guide
+   - Configuration
+   - API integration guidelines
+   - Project structure
+   - Contributing guide
+   - Utility scripts
+
+### 2. Skills Documentation (Specialized Workflows)
+
+Located in `.claude/skills/`, read based on task:
+
+1. **.claude/skills/add-agent/SKILL.md** (400+ lines)
+   - Creating new ADK agents
+   - Agent structure & configuration
+   - Prompt templates
+   - Tool registration
+   - Evaluation tests
+
+2. **.claude/skills/cyoda-integration/SKILL.md** (650+ lines)
+   - Entity CRUD operations
+   - Search patterns (simple & complex)
+   - Workflow export/import
+   - Authentication & token management
+   - Error handling patterns
+
+3. **.claude/skills/debug-streaming/SKILL.md** (450+ lines)
+   - SSE streaming architecture
+   - Field name issues (chunk vs content)
+   - Connection timeout handling
+   - Event handling patterns
+   - Debugging techniques
+
+4. **.claude/skills/run-evals/SKILL.md** (500+ lines)
+   - Running ADK evaluations
+   - Creating evaluation tests
+   - Report generation
+   - CI/CD integration
+   - Performance benchmarking
+
+5. **.claude/skills/workflow-management/SKILL.md** (600+ lines)
+   - FSM workflow structure
+   - Workflow JSON schema
+   - Processor implementation
+   - Criterion functions
+   - Export/import operations
+
+### 3. Cyoda Platform Documentation
+
+Located in `llm_docs/outputs/`:
+
+1. **llm_docs/outputs/cyoda-api-sitemap-llms.txt** (extensive)
+   - All 79 Cyoda API endpoints
+   - Organized by category:
+     - Entity Management (15 endpoints)
+     - Search APIs (8 endpoints)
+     - Workflow Management (12 endpoints)
+     - OAuth/Authentication (6 endpoints)
+     - Model Management (10 endpoints)
+     - Edge Messages (8 endpoints)
+     - And more...
+   - Navigation links to full documentation
+
+2. **llm_docs/outputs/cyoda-api-descriptions-llms.txt** (medium)
+   - Detailed descriptions of 13 API sections
+   - Authentication flows
+   - Usage guidelines
+   - Best practices
+
+3. **llm_docs/outputs/cyoda-docs-llms.txt** (extensive)
+   - Platform architecture (EDBMS)
+   - Event-driven patterns
+   - CPL (Cyoda Processing Language)
+   - Schema references
+   - 105+ documentation pages
+   - Conceptual guides
+
+### 4. Contributing & Testing
+
+1. **CONTRIBUTING.md** (location varies)
+   - Development workflow
+   - Code quality standards
+   - Testing requirements
+   - PR guidelines
+
+2. **AI_TESTING_GUIDE.md** (location varies)
+   - AI assistant testing commands
+   - Integration test procedures
+   - Evaluation workflows
+
+3. **tests/unit/README.md** (if exists)
+   - Unit testing guidelines
+   - Test structure
+   - Mock patterns
+
+4. **tests/integration/agents/README.md** (if exists)
+   - Integration testing
+   - End-to-end workflows
+   - Evaluation guides
+
+### 5. Build & Configuration
+
+1. **Makefile** (152 lines)
+   - All build commands
+   - Test automation
+   - Report generation
+   - Code quality checks
+
+2. **pyproject.toml** (304 lines)
+   - Project metadata
+   - Dependencies (runtime & dev)
+   - Tool configurations:
+     - Black (formatter)
+     - isort (import sorting)
+     - mypy (type checking)
+     - pytest (testing)
+     - flake8 (linting)
+     - bandit (security)
+     - coverage (test coverage)
+
+3. **.env.template** (small)
+   - Required environment variables
+   - Configuration examples
+
+---
+
+## Detailed Component Documentation
+
+### Application Structure
+
+```
+application/
+├── agents/                     # ADK agent implementations
+│   ├── coordinator/           # Main orchestrator agent
+│   │   └── agent.py          # Coordinator definition
+│   ├── cyoda_assistant/       # Cyoda platform integration agent
+│   │   └── agent.py          # Cyoda assistant definition
+│   ├── github/                # GitHub integration agent
+│   ├── qa/                    # QA agent
+│   ├── shared/
+│   │   └── prompts/          # Prompt templates (YAML/TXT)
+│   └── tests/evals/          # ADK evaluation tests
+├── entity/                    # Entity definitions
+│   ├── conversation/          # Conversation entity
+│   ├── task/                  # Task entity
+│   └── build_progress/        # Build progress tracking
+├── routes/                    # Quart API endpoints
+│   ├── chat.py               # Chat endpoints
+│   ├── agent_routes.py       # Agent management
+│   └── repository_routes.py  # Repository operations
+└── services/                  # Business services
+    ├── streaming_service.py  # SSE streaming
+    ├── google_adk_service.py # ADK integration
+    └── github_service_factory.py # GitHub service
+```
+
+### Common Structure
+
+```
+common/
+├── proto/                     # gRPC protocol definitions
+│   ├── cloudevents_pb2.py    # CloudEvents proto
+│   └── cyoda_cloud_api_pb2.py # Cyoda API proto
+├── repository/                # Data access layer
+│   ├── cyoda/
+│   │   └── cyoda_repository.py # Cyoda REST/gRPC client
+│   └── crud_repository.py    # Generic repository interface
+├── service/                   # Entity service layer
+│   ├── entity_service_interface.py # Service interface
+│   └── service.py            # Service implementation
+├── config/                    # Configuration
+│   └── config.py             # Environment & constants
+├── exception/                 # Exception definitions
+│   └── exception.py          # Custom exceptions
+└── grpc_client/              # gRPC client utilities
+    └── grpc_client.py        # gRPC connection management
+```
+
+---
+
+## Comprehensive Topic Index
+
+### Authentication & Security
+- Token management: `.claude/skills/cyoda-integration/SKILL.md` (Section 4)
+- OAuth flows: `llm_docs/outputs/cyoda-api-descriptions-llms.txt` (OAuth section)
+- Error handling: `.claude/instructions.md` (Section 5, Error Handling)
+
+### Agents & ADK
+- Creating agents: `.claude/skills/add-agent/SKILL.md`
+- Agent patterns: `.claude/instructions.md` (Section 2, ADK Reference)
+- Multi-agent coordination: `application/agents/coordinator/` (code)
+- Evaluation: `.claude/skills/run-evals/SKILL.md`
+
+### Entity Management
+- CRUD operations: `.claude/skills/cyoda-integration/SKILL.md` (Section 1)
+- Search patterns: `.claude/skills/cyoda-integration/SKILL.md` (Section 2)
+- Entity models: `application/entity/` (code examples)
+- API reference: `llm_docs/outputs/cyoda-api-sitemap-llms.txt`
+
+### Workflows
+- FSM structure: `.claude/skills/workflow-management/SKILL.md` (Section 2)
+- Processors: `.claude/skills/workflow-management/SKILL.md` (Section 3)
+- Criterions: `.claude/skills/workflow-management/SKILL.md` (Section 2.3)
+- Export/Import: `.claude/skills/workflow-management/SKILL.md` (Section 4)
+
+### Streaming
+- SSE architecture: `.claude/skills/debug-streaming/SKILL.md` (Section 2)
+- Field names: `.claude/skills/debug-streaming/SKILL.md` (Issue 1)
+- Event handling: `.claude/skills/debug-streaming/SKILL.md` (Section 2.2)
+- Debugging: `.claude/skills/debug-streaming/SKILL.md` (Section 3)
+
+### Code Quality
+- Function size: `llm_code_guidelines.md` + `CLAUDE.md` (50 lines max)
+- Type hints: `.claude/instructions.md` (Section 1)
+- Testing: `.claude/skills/run-evals/SKILL.md`
+- Linting: `Makefile` (lint target) + `pyproject.toml` (tool config)
+
+### Development Workflow
+- Setup: `README.md` (Development Installation Guide)
+- Testing: `make test-coverage` + `make test-eval`
+- Code review: `.claude/instructions.md` (Section 3, Checklist)
+- Contributing: `CONTRIBUTING.md`
+
+---
+
+## External References
+
+### Google ADK
+- **Full Documentation:** https://github.com/google/adk-python/blob/main/llms-full.txt
+- **Quick Reference:** https://github.com/google/adk-python/blob/main/llms.txt
+- **GitHub Repo:** https://github.com/google/adk-python
+
+### Cyoda Platform
+- **Documentation:** https://docs.cyoda.net
+- **Platform:** https://ai.cyoda.net
+- **Support:** support@cyoda.io
+
+### Project
+- **Repository:** https://github.com/Cyoda-platform/quart-client-template
+- **Issues:** https://github.com/Cyoda-platform/quart-client-template/issues
+- **License:** MIT
+
+---
+
+## How to Use This File
+
+**For AI Agents:**
+
+1. **Start with essentials:**
+   - Read `CLAUDE.md`
+   - Read `.claude/instructions.md`
+   - Read `llms.txt` (documentation map)
+
+2. **Task-specific:**
+   - Read relevant skill from `.claude/skills/`
+   - Consult `llm_docs/outputs/` for Cyoda specifics
+
+3. **Deep dive:**
+   - Read full files listed in "Documentation Reading Order"
+   - Follow code in `application/` and `common/`
+
+**For Humans:**
+
+1. Start with `README.md`
+2. Read `CLAUDE.md` for project overview
+3. Explore `.claude/skills/` for workflows
+4. Consult `llm_docs/` for Cyoda platform details
+
+---
+
+## Estimated Reading Time
+
+- **Quick Start:** 5 minutes (llms-small.txt)
+- **Essential Docs:** 30 minutes (CLAUDE.md + instructions.md)
+- **Skills:** 2 hours (all 5 skills)
+- **Full Project:** 4-6 hours (all documentation)
+- **Complete Mastery:** 1-2 days (docs + code exploration)
+
+---
+
+**Last Updated:** 2026-04-28
+**Maintained by:** Cyoda Team
+**Total Documentation:** ~5000+ lines across all files

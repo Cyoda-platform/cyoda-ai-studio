@@ -1,0 +1,333 @@
+# Cyoda AI Studio - LLM Documentation Map
+
+> **Project:** Cyoda AI Studio - MCP Server for Cyoda Platform Integration
+> **Version:** 0.1.7
+> **Language:** Python 3.10+
+> **Framework:** Google ADK (Agent Development Kit) + Quart
+> **Last Updated:** 2026-04-28
+
+---
+
+## Project Overview
+
+Cyoda AI Studio is a Model Context Protocol (MCP) server that enables AI assistants (Claude, Cursor, etc.) to interact with the Cyoda platform's entity management, search, workflow, and deployment capabilities.
+
+**Key Features:**
+- Google ADK-based multi-agent system
+- Async Quart web framework
+- MCP protocol for universal AI integration
+- gRPC + REST for Cyoda platform communication
+- Comprehensive evaluation framework
+
+---
+
+## Essential Documentation
+
+### 1. Getting Started
+
+- **CLAUDE.md** - Project brain (read this first!)
+  - Tech stack & philosophy
+  - Command cheat sheet
+  - Common patterns
+  - Decision log
+  - Quick troubleshooting
+
+- **README.md** - Comprehensive project documentation
+  - Installation guide
+  - Configuration
+  - API integration guidelines
+  - Project structure
+  - Contributing guide
+
+- **.env.template** - Required environment variables
+  - CYODA_CLIENT_ID
+  - CYODA_CLIENT_SECRET
+  - CYODA_HOST
+
+### 2. Coding Standards
+
+- **llm_code_guidelines.md** - Function size/naming rules
+  - Max function: 50 lines
+  - Max file: 350 lines
+  - Type hints mandatory
+  - Top-down narrative
+
+- **.claude/instructions.md** - Detailed coding guidelines
+  - Google ADK reference
+  - Cyoda integration patterns
+  - Code organization principles
+  - Error handling guidelines
+
+### 3. Specialized Skills (Workflows)
+
+Located in `.claude/skills/`:
+
+- **add-agent/** - Creating new ADK agents
+  - Agent structure
+  - Prompt templates
+  - Tool registration
+  - Evaluation tests
+
+- **cyoda-integration/** - Cyoda API integration
+  - Entity CRUD operations
+  - Search patterns
+  - Workflow management
+  - Authentication
+
+- **debug-streaming/** - SSE streaming debugging
+  - Field name issues (chunk vs content)
+  - Connection timeouts
+  - Event handling
+
+- **run-evals/** - ADK evaluations
+  - Running tests
+  - Creating evals
+  - Report generation
+
+- **workflow-management/** - FSM workflows
+  - Workflow JSON structure
+  - Processor implementation
+  - Export/import operations
+
+### 4. Cyoda Platform Documentation
+
+Located in `llm_docs/outputs/`:
+
+- **cyoda-api-sitemap-llms.txt** - All 79 API endpoints
+  - Entity Management APIs
+  - Search APIs
+  - Workflow APIs
+  - OAuth APIs
+  - Navigation links to full docs
+
+- **cyoda-api-descriptions-llms.txt** - API section descriptions
+  - 13 API categories
+  - Usage guidelines
+  - Authentication flows
+
+- **cyoda-docs-llms.txt** - Platform concepts
+  - EDBMS architecture
+  - Event-driven patterns
+  - CPL (Cyoda Processing Language)
+  - Schema references
+  - 105+ documentation pages
+
+### 5. Development Tools
+
+- **Makefile** - Build automation
+  - `make install` - Install dependencies
+  - `make test-coverage` - Run tests with coverage
+  - `make test-eval` - Run ADK evaluations
+  - `make lint` - Code quality checks
+  - `make complexity` - Complexity analysis
+  - `make check-all` - All checks + reports
+  - `make open-reports` - View HTML reports
+
+- **pyproject.toml** - Project configuration
+  - Dependencies (runtime & dev)
+  - Tool configurations (black, mypy, pytest)
+  - Package metadata
+
+### 6. Testing
+
+- **tests/** - Unit & integration tests
+  - `tests/unit/` - Unit tests
+  - `tests/integration/` - Integration tests
+  - `tests/README.md` - Testing guide
+
+- **application/agents/tests/evals/** - ADK evaluations
+  - Per-agent evaluation tests
+  - `run_all_evals.sh` - Run all script
+  - Unified HTML reports
+
+### 7. Project Structure
+
+```
+cyoda-ai-studio/
+├── CLAUDE.md                   # Project brain (START HERE)
+├── llms.txt                    # This file
+├── README.md                   # Full documentation
+├── .claude/
+│   ├── instructions.md         # Detailed coding standards
+│   └── skills/                 # Specialized workflows
+│       ├── add-agent/
+│       ├── cyoda-integration/
+│       ├── debug-streaming/
+│       ├── run-evals/
+│       └── workflow-management/
+├── application/
+│   ├── agents/                 # ADK agents
+│   │   ├── coordinator/        # Main orchestrator
+│   │   ├── cyoda_assistant/    # Cyoda platform agent
+│   │   ├── github/             # GitHub integration
+│   │   ├── qa/                 # QA agent
+│   │   ├── shared/prompts/     # Prompt templates
+│   │   └── tests/evals/        # Evaluation tests
+│   ├── entity/                 # Entity definitions
+│   ├── routes/                 # Quart API endpoints
+│   └── services/               # Business services
+├── common/
+│   ├── proto/                  # gRPC definitions
+│   ├── repository/             # Data access layer
+│   ├── service/                # Entity service
+│   └── config/                 # Configuration
+├── cyoda_mcp/                  # MCP server
+├── services/                   # Top-level services
+├── tests/                      # Test suite
+├── scripts/                    # Utility scripts
+├── llm_docs/                   # LLM-optimized docs
+│   └── outputs/
+│       ├── cyoda-api-sitemap-llms.txt
+│       ├── cyoda-api-descriptions-llms.txt
+│       └── cyoda-docs-llms.txt
+└── Makefile                    # Build automation
+```
+
+---
+
+## Quick Start Commands
+
+```bash
+# Setup
+git clone <repo> && cd cyoda-ai-studio
+python -m venv .venv && source .venv/bin/activate
+make install
+cp .env.template .env  # Add Cyoda credentials
+
+# Development
+python run.py                   # Run Quart web app
+python -m cyoda_mcp            # Run MCP server
+
+# Testing
+make test-coverage              # Unit tests
+make test-eval                  # ADK evaluations
+make check-all                  # All checks + reports
+
+# Code Quality
+black . && isort .              # Format code
+make lint                       # Check style
+make complexity                 # Check function sizes
+```
+
+---
+
+## Architecture Principles
+
+1. **Async-First** - All I/O uses `async/await`
+2. **Function Size** - Max 50 lines, ideal 5-20
+3. **Type Safety** - Mandatory type hints
+4. **Prompt Separation** - Prompts in YAML/TXT, not code
+5. **Top-Down Narrative** - Caller above callee
+6. **Fail Fast** - Validate inputs immediately
+
+---
+
+## Common Integration Patterns
+
+### Entity Operations
+
+```python
+from app_init.app_init import entity_service, cyoda_auth_service
+
+# Create
+entity_id = await entity_service.add_item(
+    token=cyoda_auth_service,
+    entity_model="MyEntity",
+    entity_version="1.0",
+    entity={"field": "value"}
+)
+
+# Read
+entity = await entity_service.get_item(
+    token=cyoda_auth_service,
+    entity_model="MyEntity",
+    entity_version="1.0",
+    technical_id=entity_id
+)
+
+# Search
+results = await entity_service.get_items_by_condition(
+    token=cyoda_auth_service,
+    entity_model="MyEntity",
+    entity_version="1.0",
+    condition={"jsonPath": "$.status", "operatorType": "EQUALS", "value": "active"}
+)
+```
+
+### Creating an Agent
+
+```python
+from google.adk.agents import Agent
+
+my_agent = Agent(
+    name="my_agent",
+    model="gemini-2.5-flash",
+    instruction=load_from_file("prompts/my_agent.txt"),
+    tools=[tool1, tool2]
+)
+```
+
+---
+
+## Troubleshooting Quick Reference
+
+| Issue | Solution |
+|-------|----------|
+| 401 Unauthorized | Token expired → `await cyoda_auth_service.refresh()` |
+| Streaming broken | Check field: `chunk` not `content` |
+| Point-in-time query fails | Parse ISO string to datetime first |
+| Import error | Check `__init__.py` exists |
+| Tests fail | Check `.env` variables |
+
+---
+
+## For AI Assistants
+
+**When working on this codebase:**
+
+1. ✅ **Read CLAUDE.md first** (project brain)
+2. ✅ **Follow .claude/instructions.md** (coding standards)
+3. ✅ **Use .claude/skills/** when applicable (specialized workflows)
+4. ✅ **Consult llm_docs/** for Cyoda specifics
+5. ✅ **Run `make check-all`** before marking work complete
+
+**Key Principles:**
+- Never exceed 50 lines per function
+- Never hardcode prompts (use YAML/TXT files)
+- Always use type hints
+- Async-first (use `async/await` for I/O)
+- Top-down narrative (caller above callee)
+
+**Common Mistakes to Avoid:**
+- ❌ Hardcoding prompts
+- ❌ Functions > 50 lines
+- ❌ Missing type hints
+- ❌ Calling repository directly (use `entity_service`)
+- ❌ Using `content` instead of `chunk` for streaming
+
+---
+
+## Additional Resources
+
+- **Contributing:** CONTRIBUTING.md
+- **Testing Guide:** AI_TESTING_GUIDE.md
+- **Build Automation:** BUILD_AUTOMATION.md
+- **Code Guidelines:** llm_code_guidelines.md
+- **GitHub Issues:** https://github.com/Cyoda-platform/quart-client-template/issues
+- **Documentation:** https://docs.cyoda.net
+- **Support:** https://ai.cyoda.net
+
+---
+
+## License & Contact
+
+- **License:** MIT
+- **Homepage:** https://ai.cyoda.net
+- **Repository:** https://github.com/Cyoda-platform/quart-client-template
+- **Support:** support@cyoda.io
+
+---
+
+**Last Updated:** 2026-04-28
+**Maintained by:** Cyoda Team
+**AI-Native:** Optimized for Claude Code and modern AI agents
