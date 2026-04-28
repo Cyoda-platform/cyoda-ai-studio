@@ -1,0 +1,181 @@
+# Cyoda AI Studio - Quick Reference
+
+**Project:** MCP Server for Cyoda Platform
+**Version:** 0.1.7
+**Stack:** Python 3.10+ | Google ADK | Quart | MCP
+
+---
+
+## Essential Files (Read First)
+
+1. **CLAUDE.md** - Project brain (commands, patterns, decisions)
+2. **.claude/instructions.md** - Coding standards
+3. **llm_docs/outputs/cyoda-api-sitemap-llms.txt** - Cyoda API endpoints
+4. **llms.txt** - Full documentation map
+
+---
+
+## Quick Start
+
+```bash
+# Setup
+python -m venv .venv && source .venv/bin/activate
+make install
+cp .env.template .env  # Add credentials
+
+# Run
+python run.py          # Web app (port 8000)
+python -m cyoda_mcp   # MCP server
+
+# Test
+make test-coverage     # Unit tests
+make test-eval         # ADK evals
+make check-all         # All checks
+```
+
+---
+
+## Architecture Rules
+
+- **Max Function:** 50 lines
+- **Max File:** 350 lines
+- **Type Hints:** Mandatory
+- **Async:** Always for I/O
+- **Prompts:** Separate files (never hardcode)
+
+---
+
+## Common Patterns
+
+### Entity Operations
+```python
+from app_init.app_init import entity_service, cyoda_auth_service
+
+# Create
+entity_id = await entity_service.add_item(
+    token=cyoda_auth_service,
+    entity_model="MyEntity",
+    entity_version="1.0",
+    entity={"field": "value"}
+)
+
+# Read
+entity = await entity_service.get_item(
+    token=cyoda_auth_service,
+    entity_model="MyEntity",
+    entity_version="1.0",
+    technical_id=entity_id
+)
+
+# Search
+results = await entity_service.get_items_by_condition(
+    token=cyoda_auth_service,
+    entity_model="MyEntity",
+    entity_version="1.0",
+    condition={"jsonPath": "$.field", "operatorType": "EQUALS", "value": "value"}
+)
+```
+
+### Create Agent
+```python
+from google.adk.agents import Agent
+
+agent = Agent(
+    name="my_agent",
+    model="gemini-2.5-flash",
+    instruction="Load from prompts/my_agent.txt",
+    tools=[tool1, tool2]
+)
+```
+
+### Streaming (SSE)
+```python
+# IMPORTANT: Use 'chunk' field, not 'content'
+event_data = json.loads(sse_event)
+chunk = event_data.get("chunk") or event_data.get("content")
+accumulated += chunk
+```
+
+---
+
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| 401 Error | `await cyoda_auth_service.refresh()` |
+| Streaming broken | Use `chunk` field, not `content` |
+| Import error | Add `__init__.py` to directory |
+| Tests fail | Check `.env` variables set |
+
+---
+
+## Skills (Specialized Workflows)
+
+Located in `.claude/skills/`:
+- **add-agent** - Creating ADK agents
+- **cyoda-integration** - Cyoda API patterns
+- **debug-streaming** - SSE debugging
+- **run-evals** - ADK evaluations
+- **workflow-management** - FSM workflows
+
+---
+
+## Key Commands
+
+```bash
+make install          # Install dependencies
+make test-coverage    # Run unit tests
+make test-eval        # Run ADK evals
+make lint             # Check code style
+make complexity       # Check function sizes
+make check-all        # All checks + reports
+make open-reports     # View HTML reports
+black . && isort .    # Format code
+```
+
+---
+
+## Environment Variables
+
+```bash
+export CYODA_CLIENT_ID="your-client-id"
+export CYODA_CLIENT_SECRET="your-client-secret"
+export CYODA_HOST="client-123.eu.cyoda.net"
+```
+
+---
+
+## Project Structure
+
+```
+cyoda-ai-studio/
+├── CLAUDE.md                   # Project brain
+├── .claude/skills/             # Specialized workflows
+├── application/agents/         # ADK agents
+├── common/repository/          # Data access
+├── cyoda_mcp/                  # MCP server
+├── llm_docs/outputs/           # Cyoda docs
+└── Makefile                    # Commands
+```
+
+---
+
+## Critical Principles
+
+1. ✅ Read CLAUDE.md first
+2. ✅ Follow .claude/instructions.md
+3. ✅ Use entity_service (not repository directly)
+4. ✅ Type hints on all functions
+5. ✅ Functions < 50 lines
+6. ✅ Prompts in separate files
+7. ✅ Run `make check-all` before committing
+
+❌ Never hardcode prompts
+❌ Never exceed 50 lines/function
+❌ Never call repository directly
+❌ Never use `content` field for streaming (use `chunk`)
+
+---
+
+**Full Docs:** See llms.txt
+**Support:** https://github.com/Cyoda-platform/quart-client-template/issues
