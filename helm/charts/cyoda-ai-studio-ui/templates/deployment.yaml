@@ -125,7 +125,7 @@ spec:
             value: "{{ .Values.clientEnvPrefix }}"
           envFrom:
             - configMapRef:
-                name: ai-assistant-ui-config
+                name: cyoda-ai-studio-ui-config
           {{- range .Values.container.env.configMaps }}
             - configMapRef:
                 name: {{ . }}

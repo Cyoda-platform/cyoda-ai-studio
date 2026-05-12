@@ -1,7 +1,7 @@
-# Production Example Values for AI Assistant
+# Production Example Values for Cyoda AI Studio
 # This file shows how to configure the Helm chart for production deployment
 
-name: ai-assistant
+name: cyoda-ai-studio
 
 # Enable image pull secret for private registry
 imagePullSecret:
@@ -73,7 +73,7 @@ health:
 
 # Service configuration
 service:
-  name: ai-assistant-service
+  name: cyoda-ai-studio-service
   type: ClusterIP  # Use ClusterIP for production (behind ingress)
   serverPort:
     port: 5000
@@ -91,7 +91,7 @@ ingress:
   path: api
   pathType: Prefix
   tls:
-    - secretName: ai-assistant-tls
+    - secretName: cyoda-ai-studio-tls
       hosts:
         - ai.cyoda.net
 
@@ -161,7 +161,7 @@ affinity:
               - key: app.kubernetes.io/name
                 operator: In
                 values:
-                  - ai-assistant
+                  - cyoda-ai-studio
           topologyKey: kubernetes.io/hostname
 
 # Deployment strategy
@@ -174,7 +174,7 @@ strategy:
 # Image configuration
 image:
   pullPolicy: Always
-  imageName: ai-assistant
+  imageName: cyoda-ai-studio
   tag: "latest"
 
 # Replica count (ignored if autoscaling is enabled)
