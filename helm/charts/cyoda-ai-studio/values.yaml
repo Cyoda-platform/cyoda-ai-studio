@@ -1,4 +1,4 @@
-name: ai-assistant
+name: cyoda-ai-studio
 
 imagePullSecret:
   enabled: true
@@ -34,7 +34,7 @@ health:
     periodSeconds: 30
     failureThreshold: 10
 service:
-  name: ai-assistant-service
+  name: cyoda-ai-studio-service
   type: NodePort
   serverPort:
     port: 5000
@@ -89,6 +89,6 @@ githubApp:
 
 image:
   pullPolicy: Always
-  imageName: ai-assistant
+  imageName: cyoda-ai-studio
 replicaCount: 1
 actuatorEnabled: false
